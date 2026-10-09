@@ -1,0 +1,15 @@
+**/node_modules
+**/dist
+**/.turbo
+**/.env
+**/.env.*
+!**/.env.example
+**/coverage
+**/playwright-report
+**/test-results
+**/src/generated
+**/*.db
+.git
+.github
+.husky
+.vscode

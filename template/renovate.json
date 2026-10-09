@@ -1,0 +1,31 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":semanticCommits", ":enableVulnerabilityAlerts"],
+  "minimumReleaseAge": "3 days",
+  "rangeStrategy": "bump",
+  "postUpdateOptions": ["pnpmDedupe"],
+  "lockFileMaintenance": { "enabled": true, "schedule": ["before 6am on monday"] },
+  "packageRules": [
+    { "groupName": "NestJS", "matchPackageNames": ["@nestjs/**"] },
+    { "groupName": "Prisma", "matchPackageNames": ["prisma", "@prisma/**"] },
+    {
+      "groupName": "Better Auth",
+      "matchPackageNames": ["better-auth", "@better-auth/**", "@thallesp/nestjs-better-auth"]
+    },
+    { "groupName": "TanStack", "matchPackageNames": ["@tanstack/**"] },
+    {
+      "groupName": "React",
+      "matchPackageNames": ["react", "react-dom", "@types/react", "@types/react-dom"]
+    },
+    {
+      "groupName": "Lint & format",
+      "matchPackageNames": ["eslint", "@eslint/**", "typescript-eslint", "eslint-*", "prettier", "prettier-*", "globals"]
+    },
+    {
+      "description": "Low-risk updates merge themselves once CI is green",
+      "matchUpdateTypes": ["minor", "patch"],
+      "matchDepTypes": ["devDependencies"],
+      "automerge": true
+    }
+  ]
+}

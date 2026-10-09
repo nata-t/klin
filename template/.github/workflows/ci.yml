@@ -1,0 +1,116 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TURBO_TELEMETRY_DISABLED: 1
+
+jobs:
+  check:
+    name: Lint · typecheck · test · build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      # klin:if pnpm
+      - uses: pnpm/action-setup@v4
+      # klin:elif bun
+      #? - uses: oven-sh/setup-bun@v2
+      # klin:endif
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          # klin:if pnpm
+          cache: pnpm
+          # klin:elif npm
+          #? cache: npm
+          # klin:endif
+      # klin:if pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm turbo run lint typecheck test build
+      # klin:elif bun
+      #? - run: bun install --frozen-lockfile
+      #? - run: bunx turbo run lint typecheck test build
+      # klin:elif npm
+      #? - run: npm ci
+      #? - run: npx turbo run lint typecheck test build
+      # klin:endif
+
+  e2e:
+    name: End-to-end (Playwright)
+    needs: check
+    runs-on: ubuntu-latest
+    # klin:if postgres
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: klin_app
+          POSTGRES_PASSWORD: klin_app_dev_password
+          POSTGRES_DB: klin_app
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U klin_app"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    # klin:elif mysql
+    #? services:
+    #?   mysql:
+    #?     image: mysql:8.4
+    #?     env:
+    #?       MYSQL_ROOT_PASSWORD: klin_app_dev_password
+    #?       MYSQL_DATABASE: klin_app
+    #?     ports: ["3306:3306"]
+    #?     options: >-
+    #?       --health-cmd "mysqladmin ping -h 127.0.0.1 -uroot -pklin_app_dev_password --silent"
+    #?       --health-interval 5s --health-timeout 5s --health-retries 20
+    # klin:endif
+    steps:
+      - uses: actions/checkout@v5
+      # klin:if pnpm
+      - uses: pnpm/action-setup@v4
+      # klin:elif bun
+      #? - uses: oven-sh/setup-bun@v2
+      # klin:endif
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          # klin:if pnpm
+          cache: pnpm
+          # klin:elif npm
+          #? cache: npm
+          # klin:endif
+      - name: Create .env for CI
+        run: |
+          cp .env.example .env
+          sed -i "s|^BETTER_AUTH_SECRET=.*|BETTER_AUTH_SECRET=$(openssl rand -base64 32)|" .env
+      # klin:if pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:push
+      - run: pnpm --dir apps/web exec playwright install --with-deps chromium
+      - run: pnpm turbo run build --filter=@repo/api --filter=@repo/web
+      - run: pnpm test:e2e
+      # klin:elif bun
+      #? - run: bun install --frozen-lockfile
+      #? - run: bun run db:push
+      #? - run: cd apps/web && bunx playwright install --with-deps chromium
+      #? - run: bunx turbo run build --filter=@repo/api --filter=@repo/web
+      #? - run: bun run test:e2e
+      # klin:elif npm
+      #? - run: npm ci
+      #? - run: npm run db:push
+      #? - run: npx --prefix apps/web playwright install --with-deps chromium
+      #? - run: npx turbo run build --filter=@repo/api --filter=@repo/web
+      #? - run: npm run test:e2e
+      # klin:endif
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report
+          retention-days: 7
