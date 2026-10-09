@@ -1,0 +1,45 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":semanticCommits", ":enableVulnerabilityAlerts"],
+  "description": "Keeps the CLI and the template fresh — stale starters are the #1 reason people abandon them.",
+  "minimumReleaseAge": "3 days",
+  "rangeStrategy": "bump",
+  "ignorePaths": ["**/node_modules/**", "packages/create-klin/template/**", ".playground/**"],
+  "packageRules": [
+    {
+      "description": "Template dependencies: one grouped PR per family, labelled so changesets get written",
+      "matchFileNames": ["template/**"],
+      "labels": ["template"],
+      "commitMessageTopic": "template {{depName}}"
+    },
+    { "groupName": "template: NestJS", "matchFileNames": ["template/**"], "matchPackageNames": ["@nestjs/**"] },
+    { "groupName": "template: Prisma", "matchFileNames": ["template/**"], "matchPackageNames": ["prisma", "@prisma/**"] },
+    {
+      "groupName": "template: Better Auth",
+      "matchFileNames": ["template/**"],
+      "matchPackageNames": ["better-auth", "@better-auth/**", "@thallesp/nestjs-better-auth"]
+    },
+    { "groupName": "template: TanStack", "matchFileNames": ["template/**"], "matchPackageNames": ["@tanstack/**"] },
+    {
+      "groupName": "template: React",
+      "matchFileNames": ["template/**"],
+      "matchPackageNames": ["react", "react-dom", "@types/react", "@types/react-dom"]
+    },
+    {
+      "groupName": "template: lint & format",
+      "matchFileNames": ["template/**"],
+      "matchPackageNames": ["eslint", "@eslint/**", "typescript-eslint", "eslint-*", "prettier", "prettier-*", "globals"]
+    },
+    {
+      "groupName": "template: docker images",
+      "matchFileNames": ["template/**"],
+      "matchDatasources": ["docker"]
+    },
+    {
+      "description": "CLI tooling: low-risk updates merge themselves",
+      "matchFileNames": ["package.json", "packages/create-klin/package.json"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true
+    }
+  ]
+}

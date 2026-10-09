@@ -1,0 +1,103 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TURBO_TELEMETRY_DISABLED: 1
+
+jobs:
+  cli:
+    name: CLI — test & build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter create-klin typecheck
+      - run: pnpm test
+      - run: pnpm build
+      - run: node scripts/check-dep-ages.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: create-klin
+          path: packages/create-klin/dist
+
+  # Every generated project must install, typecheck, lint, test and build.
+  generated:
+    name: ${{ matrix.preset }} · ${{ matrix.pm }} · ${{ matrix.db }}
+    needs: cli
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { preset: recommended, pm: pnpm, db: postgres }
+          - { preset: minimal, pm: pnpm, db: sqlite }
+          - { preset: saas, pm: npm, db: mysql }
+          - { preset: everything, pm: bun, db: sqlite }
+          - { preset: everything, pm: pnpm, db: postgres }
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: oven-sh/setup-bun@v2
+        if: matrix.pm == 'bun'
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Create a project
+        run: |
+          mkdir -p /tmp/gen && cd /tmp/gen
+          git config --global user.email "ci@klin.dev" && git config --global user.name "klin CI"
+          node $GITHUB_WORKSPACE/packages/create-klin/dist/index.js app \
+            --preset ${{ matrix.preset }} --pm ${{ matrix.pm }} --db ${{ matrix.db }} --yes --no-banner
+      - name: Check it
+        working-directory: /tmp/gen/app
+        run: npx --no -- turbo run typecheck lint test build
+      - name: Generate a resource and check again
+        working-directory: /tmp/gen/app
+        run: |
+          node $GITHUB_WORKSPACE/packages/create-klin/dist/index.js generate resource project \
+            name:string notes:text? budget:int? active:boolean due:date? status:enum:draft,active,done --yes
+          npx --no -- turbo run typecheck lint build
+
+  # klin add / remove against a project with user edits.
+  transitions:
+    name: add & remove modules
+    needs: cli
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Create, edit, add, remove
+        run: |
+          git config --global user.email "ci@klin.dev" && git config --global user.name "klin CI"
+          KLIN=$GITHUB_WORKSPACE/packages/create-klin/dist/index.js
+          mkdir -p /tmp/t && cd /tmp/t
+          node $KLIN app --preset minimal --pm pnpm --yes --no-banner
+          cd app
+          node $KLIN generate resource project name:string --yes
+          node $KLIN add organizations email --yes
+          pnpm turbo run typecheck lint build
+          node $KLIN remove email --yes
+          pnpm turbo run typecheck lint build
+          ! grep -rn "<<<<<<<" --include=*.ts --include=*.tsx --include=*.prisma apps packages
