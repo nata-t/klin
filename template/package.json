@@ -1,0 +1,53 @@
+{
+  "name": "klin-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "start": "turbo run start",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:e2e": "pnpm --dir apps/web run test:e2e",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:up": "docker compose up -d --wait",
+    "db:down": "docker compose down",
+    "db:generate": "turbo run db:generate",
+    "db:migrate": "pnpm --dir packages/db run db:migrate",
+    "db:deploy": "pnpm --dir packages/db run db:deploy",
+    "db:push": "pnpm --dir packages/db run db:push",
+    "db:reset": "pnpm --dir packages/db run db:reset",
+    "db:studio": "pnpm --dir packages/db run db:studio",
+    "db:seed": "pnpm --dir apps/api run db:seed",
+    "email:dev": "pnpm --dir packages/email run dev",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^21.2.3",
+    "@commitlint/config-conventional": "^21.2.3",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0",
+    "prettier": "^3.9.9",
+    "prettier-plugin-tailwindcss": "^0.8.1",
+    "turbo": "^2.11.7",
+    "typescript": "~6.0.3"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "trustedDependencies": [
+    "@prisma/engines",
+    "@swc/core",
+    "better-sqlite3",
+    "esbuild",
+    "msgpackr-extract",
+    "prisma"
+  ],
+  "packageManager": "pnpm@11.20.0",
+  "engines": {
+    "node": ">=22.12"
+  }
+}

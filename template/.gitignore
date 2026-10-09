@@ -1,0 +1,35 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Env — commit .env.example, never .env
+.env
+.env.*
+!.env.example
+
+# Build output
+dist
+build
+*.tsbuildinfo
+
+# Turborepo
+.turbo
+
+# Prisma
+packages/db/src/generated
+packages/db/data/*.db
+packages/db/data/*.db-journal
+
+# Testing
+coverage
+playwright-report
+test-results
+blob-report
+
+# Misc
+.DS_Store
+*.pem
+*.log
+.vercel
+.idea

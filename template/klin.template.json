@@ -1,0 +1,343 @@
+{
+  "name": "klin",
+  "description": "NestJS + Better Auth + Prisma + TanStack (Router, Query, Form) + shadcn/ui, in a Turborepo with shared Zod validators.",
+  "tokens": {
+    "klin-app": "slug",
+    "klin_app": "snake",
+    "Klin App": "title"
+  },
+  "questions": [
+    {
+      "id": "auth",
+      "type": "multiselect",
+      "flag": "auth",
+      "message": "How should people sign in?",
+      "options": ["password", "google", "github", "magic-link", "two-factor", "passkey"],
+      "default": ["password"],
+      "required": true
+    },
+    {
+      "id": "plugins",
+      "type": "multiselect",
+      "flag": "plugins",
+      "message": "Any Better Auth power-ups?",
+      "options": ["organizations", "admin", "api-keys"],
+      "default": []
+    },
+    {
+      "id": "database",
+      "type": "select",
+      "flag": "db",
+      "message": "Where should your data live?",
+      "options": ["postgres", "mysql", "sqlite"],
+      "default": "postgres"
+    },
+    {
+      "id": "extras",
+      "type": "multiselect",
+      "flag": "extras",
+      "message": "Extras for the toolbox?",
+      "options": ["email", "uploads", "queues", "i18n", "docker", "ci"],
+      "default": ["docker", "ci"]
+    },
+    {
+      "id": "accent",
+      "type": "select",
+      "flag": "accent",
+      "message": "Pick a vibe for the UI",
+      "options": ["violet", "blue", "emerald", "rose", "amber", "neutral"],
+      "default": "violet",
+      "flagPrefix": "accent-"
+    }
+  ],
+  "options": {
+    "password": {
+      "label": "Email & password",
+      "hint": "sign up, reset & verify flows"
+    },
+    "google": {
+      "label": "Google",
+      "hint": "OAuth",
+      "note": "Add GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET to .env to switch on Google sign-in"
+    },
+    "github": {
+      "label": "GitHub",
+      "hint": "OAuth",
+      "note": "Add GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET to .env to switch on GitHub sign-in"
+    },
+    "magic-link": {
+      "label": "Magic link",
+      "hint": "passwordless email links"
+    },
+    "two-factor": {
+      "label": "Two-factor (TOTP)",
+      "hint": "authenticator apps + backup codes",
+      "requires": ["password"],
+      "remove": [
+        "apps/web/src/routes/_auth/two-factor.tsx",
+        "apps/web/src/features/auth/two-factor-*.tsx",
+        "apps/web/src/features/settings/two-factor-card.tsx"
+      ],
+      "json": {
+        "apps/web/package.json": {
+          "dependencies": ["react-qr-code"]
+        }
+      }
+    },
+    "passkey": {
+      "label": "Passkeys",
+      "hint": "Face ID, Touch ID, security keys",
+      "remove": ["apps/web/src/features/settings/passkeys-card.tsx"],
+      "json": {
+        "packages/auth/package.json": {
+          "dependencies": ["@better-auth/passkey"]
+        },
+        "apps/api/package.json": {
+          "dependencies": ["@better-auth/passkey"]
+        }
+      }
+    },
+    "organizations": {
+      "label": "Organizations & RBAC",
+      "hint": "teams, invites, roles, permissions",
+      "remove": [
+        "apps/api/src/modules/organization/**",
+        "apps/web/src/features/organizations/**",
+        "apps/web/src/routes/_app/settings/organization.tsx",
+        "apps/web/src/routes/accept-invitation.$invitationId.tsx",
+        "packages/docs/organizations.md"
+      ]
+    },
+    "admin": {
+      "label": "Admin dashboard",
+      "hint": "manage users, ban, impersonate",
+      "remove": [
+        "apps/api/src/modules/admin/**",
+        "apps/web/src/features/admin/**",
+        "apps/web/src/routes/_app/admin.tsx",
+        "apps/web/src/routes/_app/admin/**"
+      ]
+    },
+    "api-keys": {
+      "label": "API keys",
+      "hint": "let users call your API from scripts",
+      "remove": ["apps/web/src/features/api-keys/**", "apps/web/src/routes/_app/settings/api-keys.tsx"],
+      "json": {
+        "packages/auth/package.json": {
+          "dependencies": ["@better-auth/api-key"]
+        },
+        "apps/api/package.json": {
+          "dependencies": ["@better-auth/api-key"]
+        }
+      }
+    },
+    "postgres": {
+      "label": "PostgreSQL",
+      "hint": "recommended",
+      "json": {
+        "packages/db/package.json": {
+          "dependencies": ["@prisma/adapter-pg"]
+        },
+        "apps/api/package.json": {
+          "dependencies": ["@prisma/adapter-pg"]
+        }
+      }
+    },
+    "mysql": {
+      "label": "MySQL",
+      "hint": "or MariaDB",
+      "json": {
+        "packages/db/package.json": {
+          "dependencies": ["@prisma/adapter-mariadb"]
+        },
+        "apps/api/package.json": {
+          "dependencies": ["@prisma/adapter-mariadb"]
+        }
+      }
+    },
+    "sqlite": {
+      "label": "SQLite",
+      "hint": "zero setup, a file on disk",
+      "remove": ["packages/db/data/.gitkeep"],
+      "json": {
+        "packages/db/package.json": {
+          "dependencies": ["@prisma/adapter-better-sqlite3"]
+        },
+        "apps/api/package.json": {
+          "dependencies": ["@prisma/adapter-better-sqlite3"]
+        }
+      }
+    },
+    "email": {
+      "label": "Transactional email",
+      "hint": "Resend + React Email",
+      "remove": ["packages/email/**", "packages/docs/email.md"],
+      "json": {
+        "package.json": {
+          "scripts": ["email:dev"]
+        },
+        "packages/auth/package.json": {
+          "dependencies": ["@repo/email"],
+          "devDependencies": ["@types/react", "react"]
+        },
+        "apps/api/package.json": {
+          "dependencies": [
+            "@repo/email",
+            "@react-email/components",
+            "@react-email/render",
+            "react",
+            "react-dom",
+            "resend"
+          ]
+        }
+      }
+    },
+    "uploads": {
+      "label": "File uploads",
+      "hint": "S3 / R2 presigned URLs",
+      "remove": [
+        "apps/api/src/modules/uploads/**",
+        "apps/web/src/features/uploads/**",
+        "packages/docs/uploads.md"
+      ],
+      "json": {
+        "apps/api/package.json": {
+          "dependencies": ["@aws-sdk/client-s3", "@aws-sdk/s3-request-presigner"]
+        }
+      }
+    },
+    "queues": {
+      "label": "Background jobs",
+      "hint": "BullMQ + Redis",
+      "remove": ["apps/api/src/modules/jobs/**", "packages/docs/background-jobs.md"],
+      "json": {
+        "apps/api/package.json": {
+          "dependencies": ["@nestjs/bullmq", "bullmq", "ioredis"]
+        }
+      }
+    },
+    "i18n": {
+      "label": "Internationalization",
+      "hint": "i18next, English + Amharic to start",
+      "remove": ["apps/web/src/i18n/**", "apps/web/src/components/language-switcher.tsx"],
+      "json": {
+        "apps/web/package.json": {
+          "dependencies": ["i18next", "react-i18next"]
+        }
+      }
+    },
+    "docker": {
+      "label": "Docker",
+      "hint": "compose for local services + production images",
+      "remove": [
+        "**/Dockerfile",
+        "**/docker-entrypoint.sh",
+        "apps/web/nginx/**",
+        ".dockerignore",
+        "docker-compose.prod.yml"
+      ]
+    },
+    "ci": {
+      "label": "GitHub Actions + Renovate",
+      "hint": "lint, typecheck, test, build, e2e",
+      "remove": [".github/**", "renovate.json"]
+    },
+    "violet": {
+      "label": "Violet"
+    },
+    "blue": {
+      "label": "Blue"
+    },
+    "emerald": {
+      "label": "Emerald"
+    },
+    "rose": {
+      "label": "Rose"
+    },
+    "amber": {
+      "label": "Amber"
+    },
+    "neutral": {
+      "label": "Neutral"
+    }
+  },
+  "flags": {
+    "oauth": "google || github",
+    "sends-auth-email": "password || magic-link || organizations",
+    "compose": "docker && (postgres || mysql || queues || uploads)",
+    "settings-security": "password || two-factor || passkey"
+  },
+  "rules": [
+    {
+      "when": "!pnpm",
+      "remove": ["pnpm-workspace.yaml"]
+    },
+    {
+      "when": "pnpm",
+      "json": {
+        "package.json": {
+          "workspaces": true
+        }
+      }
+    },
+    {
+      "when": "!bun",
+      "json": {
+        "package.json": {
+          "trustedDependencies": true
+        }
+      }
+    },
+    {
+      "when": "!compose",
+      "remove": ["docker-compose.yml"],
+      "json": {
+        "package.json": {
+          "scripts": ["db:up", "db:down"]
+        }
+      }
+    }
+  ],
+  "presets": {
+    "recommended": {
+      "label": "Recommended",
+      "hint": "email & password, Postgres, Docker, CI",
+      "answers": {}
+    },
+    "saas": {
+      "label": "SaaS starter",
+      "hint": "OAuth, 2FA, teams, admin, email, uploads, jobs",
+      "answers": {
+        "auth": ["password", "google", "github", "two-factor"],
+        "plugins": ["organizations", "admin"],
+        "extras": ["email", "uploads", "queues", "docker", "ci"]
+      }
+    },
+    "minimal": {
+      "label": "Featherweight",
+      "hint": "email & password on SQLite \u2014 no Docker needed",
+      "answers": {
+        "auth": ["password"],
+        "database": "sqlite",
+        "extras": []
+      }
+    },
+    "everything": {
+      "label": "Kitchen sink",
+      "hint": "every module, so you can see it all",
+      "answers": {
+        "auth": ["password", "google", "github", "magic-link", "two-factor", "passkey"],
+        "plugins": ["organizations", "admin", "api-keys"],
+        "extras": ["email", "uploads", "queues", "i18n", "docker", "ci"]
+      }
+    }
+  },
+  "env": {
+    "generate": {
+      "BETTER_AUTH_SECRET": "secret",
+      "POSTGRES_PASSWORD": "password",
+      "MYSQL_ROOT_PASSWORD": "password",
+      "S3_SECRET_ACCESS_KEY": "password"
+    }
+  }
+}

@@ -1,0 +1,3 @@
+{
+  "*.{ts,tsx,js,mjs,cjs,json,jsonc,css,md,mdx,yml,yaml,html}": "prettier --write --ignore-unknown"
+}

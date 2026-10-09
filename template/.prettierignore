@@ -1,0 +1,12 @@
+node_modules
+dist
+.turbo
+coverage
+pnpm-lock.yaml
+bun.lock
+package-lock.json
+**/src/generated
+**/routeTree.gen.ts
+**/migrations/**/*.sql
+playwright-report
+test-results
