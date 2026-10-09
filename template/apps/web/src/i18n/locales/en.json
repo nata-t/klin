@@ -1,0 +1,29 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "notes": "Notes",
+    "settings": "Settings",
+    "admin": "Admin"
+  },
+  "menu": {
+    "settings": "Settings",
+    "security": "Security",
+    "signOut": "Sign out"
+  },
+  "landing": {
+    "nav": { "features": "Features", "stack": "Stack" },
+    "badge": "Auth, API and UI — already wired",
+    "title": "Ship the product, not the plumbing.",
+    "subtitle": "A full-stack TypeScript foundation with authentication, a typed API, shared validation and a polished UI. Start where most projects end up after their first month.",
+    "cta": {
+      "getStarted": "Get started",
+      "signIn": "Sign in",
+      "dashboard": "Dashboard",
+      "docs": "See what's inside"
+    }
+  },
+  "dashboard": {
+    "greeting": "Welcome back, {{name}}",
+    "subtitle": "Here's what's happening in your workspace."
+  }
+}
