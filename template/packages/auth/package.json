@@ -1,0 +1,32 @@
+{
+  "name": "@repo/auth",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./client": "./src/client.ts",
+    "./permissions": "./src/permissions.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@better-auth/api-key": "^1.7.7",
+    "@better-auth/passkey": "^1.7.7",
+    "@repo/db": "workspace:*",
+    "@repo/email": "workspace:*",
+    "@repo/env": "workspace:*",
+    "better-auth": "^1.7.7"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "^24.10.0",
+    "@types/react": "^19.3.0",
+    "eslint": "^10.12.0",
+    "react": "^19.3.0",
+    "typescript": "~6.0.3"
+  }
+}
