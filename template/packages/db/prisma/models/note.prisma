@@ -1,0 +1,18 @@
+// Example resource — see packages/validators/src/note.ts for the full map.
+model Note {
+  id        String   @id @default(cuid())
+  title     String
+  // klin:if mysql
+  //? content   String   @db.Text
+  // klin:else
+  content   String
+  // klin:endif
+  pinned    Boolean  @default(false)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("note")
+}

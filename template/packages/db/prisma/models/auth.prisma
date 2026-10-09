@@ -1,0 +1,435 @@
+// Better Auth tables (user, session, account, verification + plugin tables).
+// Generated from Better Auth's own schema output for the plugins you picked;
+// regenerate with `pnpm dlx auth@latest generate` if you add plugins by hand.
+//
+// Add relations from User to your own models at the anchor in `model User`
+// (`klin generate resource` does this for you).
+
+// klin:if mysql
+// MySQL: long values need TEXT columns (VARCHAR(191) is the default).
+//? model User {
+//?   id               String       @id
+//?   name             String       @db.Text
+//?   email            String
+//?   emailVerified    Boolean      @default(false)
+//?   image            String?      @db.Text
+//?   createdAt        DateTime     @default(now())
+//?   updatedAt        DateTime     @updatedAt
+  // klin:if two-factor
+//?   twoFactorEnabled Boolean?     @default(false)
+  // klin:endif
+//?   role             String?      @db.Text
+  // klin:if admin
+//?   banned           Boolean?     @default(false)
+//?   banReason        String?      @db.Text
+//?   banExpires       DateTime?
+  // klin:endif
+//?   sessions         Session[]
+//?   accounts         Account[]
+  // klin:if two-factor
+//?   twofactors       TwoFactor[]
+  // klin:endif
+  // klin:if organizations
+//?   members          Member[]
+//?   invitations      Invitation[]
+  // klin:endif
+  // klin:if passkey
+//?   passkeys         Passkey[]
+  // klin:endif
+//?   notes            Note[]
+  // klin-anchor:user-relations
+
+//?   @@unique([email])
+//?   @@map("user")
+//? }
+
+//? model Session {
+//?   id                   String   @id
+//?   expiresAt            DateTime
+//?   token                String
+//?   createdAt            DateTime @default(now())
+//?   updatedAt            DateTime @updatedAt
+//?   ipAddress            String?  @db.Text
+//?   userAgent            String?  @db.Text
+//?   userId               String
+//?   user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // klin:if organizations
+//?   activeOrganizationId String?  @db.Text
+  // klin:endif
+  // klin:if admin
+//?   impersonatedBy       String?  @db.Text
+  // klin:endif
+
+//?   @@unique([token])
+//?   @@index([userId(length: 191)])
+//?   @@map("session")
+//? }
+
+//? model Account {
+//?   id                    String    @id
+//?   accountId             String    @db.Text
+//?   providerId            String    @db.Text
+//?   userId                String
+//?   user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+//?   accessToken           String?   @db.Text
+//?   refreshToken          String?   @db.Text
+//?   idToken               String?   @db.Text
+//?   accessTokenExpiresAt  DateTime?
+//?   refreshTokenExpiresAt DateTime?
+//?   scope                 String?   @db.Text
+//?   password              String?   @db.Text
+//?   createdAt             DateTime  @default(now())
+//?   updatedAt             DateTime  @updatedAt
+
+//?   @@index([userId(length: 191)])
+//?   @@map("account")
+//? }
+
+//? model Verification {
+//?   id         String   @id
+//?   identifier String   @db.Text
+//?   value      String   @db.Text
+//?   expiresAt  DateTime
+//?   createdAt  DateTime @default(now())
+//?   updatedAt  DateTime @updatedAt
+
+//?   @@index([identifier(length: 191)])
+//?   @@map("verification")
+//? }
+
+// klin:if two-factor
+//? model TwoFactor {
+//?   id                      String    @id
+//?   secret                  String    @db.Text
+//?   backupCodes             String    @db.Text
+//?   userId                  String
+//?   user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+//?   verified                Boolean?  @default(true)
+//?   failedVerificationCount Int?      @default(0)
+//?   lockedUntil             DateTime?
+
+//?   @@index([secret(length: 191)])
+//?   @@index([userId(length: 191)])
+//?   @@map("twoFactor")
+//? }
+// klin:endif
+
+// klin:if organizations
+//? model Organization {
+//?   id          String       @id
+//?   name        String       @db.Text
+//?   slug        String
+//?   logo        String?      @db.Text
+//?   createdAt   DateTime
+//?   metadata    String?      @db.Text
+//?   members     Member[]
+//?   invitations Invitation[]
+  // klin-anchor:organization-relations
+
+//?   @@unique([slug])
+//?   @@map("organization")
+//? }
+// klin:endif
+
+// klin:if organizations
+//? model Member {
+//?   id             String       @id
+//?   organizationId String
+//?   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+//?   userId         String
+//?   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+//?   role           String       @db.Text
+//?   createdAt      DateTime
+
+//?   @@index([organizationId(length: 191)])
+//?   @@index([userId(length: 191)])
+//?   @@map("member")
+//? }
+// klin:endif
+
+// klin:if organizations
+//? model Invitation {
+//?   id             String       @id
+//?   organizationId String
+//?   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+//?   email          String       @db.Text
+//?   role           String?      @db.Text
+//?   status         String       @db.Text
+//?   expiresAt      DateTime
+//?   createdAt      DateTime     @default(now())
+//?   inviterId      String
+//?   user           User         @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+
+//?   @@index([organizationId(length: 191)])
+//?   @@index([email(length: 191)])
+//?   @@map("invitation")
+//? }
+// klin:endif
+
+// klin:if passkey
+//? model Passkey {
+//?   id           String    @id
+//?   name         String?   @db.Text
+//?   publicKey    String    @db.Text
+//?   userId       String
+//?   user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+//?   credentialID String    @db.Text
+//?   counter      Int
+//?   deviceType   String    @db.Text
+//?   backedUp     Boolean
+//?   transports   String?   @db.Text
+//?   createdAt    DateTime?
+//?   aaguid       String?   @db.Text
+
+//?   @@index([userId(length: 191)])
+//?   @@index([credentialID(length: 191)])
+//?   @@map("passkey")
+//? }
+// klin:endif
+
+// klin:if api-keys
+//? model Apikey {
+//?   id                  String    @id
+//?   configId            String    @db.Text
+//?   name                String?   @db.Text
+//?   start               String?   @db.Text
+//?   referenceId         String    @db.Text
+//?   prefix              String?   @db.Text
+//?   key                 String    @db.Text
+//?   refillInterval      Int?
+//?   refillAmount        Int?
+//?   lastRefillAt        DateTime?
+//?   enabled             Boolean?  @default(true)
+//?   rateLimitEnabled    Boolean?  @default(true)
+//?   rateLimitTimeWindow Int?      @default(86400000)
+//?   rateLimitMax        Int?      @default(10)
+//?   requestCount        Int?      @default(0)
+//?   remaining           Int?
+//?   lastRequest         DateTime?
+//?   expiresAt           DateTime?
+//?   createdAt           DateTime
+//?   updatedAt           DateTime
+//?   permissions         String?   @db.Text
+//?   metadata            String?   @db.Text
+
+//?   @@index([configId(length: 191)])
+//?   @@index([referenceId(length: 191)])
+//?   @@index([key(length: 191)])
+//?   @@map("apikey")
+//? }
+// klin:endif
+
+// klin:else
+model User {
+  id               String       @id
+  name             String
+  email            String
+  emailVerified    Boolean      @default(false)
+  image            String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  // klin:if two-factor
+  twoFactorEnabled Boolean?     @default(false)
+  // klin:endif
+  role             String?
+  // klin:if admin
+  banned           Boolean?     @default(false)
+  banReason        String?
+  banExpires       DateTime?
+  // klin:endif
+  sessions         Session[]
+  accounts         Account[]
+  // klin:if two-factor
+  twofactors       TwoFactor[]
+  // klin:endif
+  // klin:if organizations
+  members          Member[]
+  invitations      Invitation[]
+  // klin:endif
+  // klin:if passkey
+  passkeys         Passkey[]
+  // klin:endif
+  notes            Note[]
+  // klin-anchor:user-relations
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id                   String   @id
+  expiresAt            DateTime
+  token                String
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  ipAddress            String?
+  userAgent            String?
+  userId               String
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // klin:if organizations
+  activeOrganizationId String?
+  // klin:endif
+  // klin:if admin
+  impersonatedBy       String?
+  // klin:endif
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+// klin:if two-factor
+model TwoFactor {
+  id                      String    @id
+  secret                  String
+  backupCodes             String
+  userId                  String
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verified                Boolean?  @default(true)
+  failedVerificationCount Int?      @default(0)
+  lockedUntil             DateTime?
+
+  @@index([secret])
+  @@index([userId])
+  @@map("twoFactor")
+}
+// klin:endif
+
+// klin:if organizations
+model Organization {
+  id          String       @id
+  name        String
+  slug        String
+  logo        String?
+  createdAt   DateTime
+  metadata    String?
+  members     Member[]
+  invitations Invitation[]
+  // klin-anchor:organization-relations
+
+  @@unique([slug])
+  @@map("organization")
+}
+// klin:endif
+
+// klin:if organizations
+model Member {
+  id             String       @id
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           String       @default("member")
+  createdAt      DateTime
+
+  @@index([organizationId])
+  @@index([userId])
+  @@map("member")
+}
+// klin:endif
+
+// klin:if organizations
+model Invitation {
+  id             String       @id
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  email          String
+  role           String?
+  status         String       @default("pending")
+  expiresAt      DateTime
+  createdAt      DateTime     @default(now())
+  inviterId      String
+  user           User         @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([email])
+  @@map("invitation")
+}
+// klin:endif
+
+// klin:if passkey
+model Passkey {
+  id           String    @id
+  name         String?
+  publicKey    String
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credentialID String
+  counter      Int
+  deviceType   String
+  backedUp     Boolean
+  transports   String?
+  createdAt    DateTime?
+  aaguid       String?
+
+  @@index([userId])
+  @@index([credentialID])
+  @@map("passkey")
+}
+// klin:endif
+
+// klin:if api-keys
+model Apikey {
+  id                  String    @id
+  configId            String    @default("default")
+  name                String?
+  start               String?
+  referenceId         String
+  prefix              String?
+  key                 String
+  refillInterval      Int?
+  refillAmount        Int?
+  lastRefillAt        DateTime?
+  enabled             Boolean?  @default(true)
+  rateLimitEnabled    Boolean?  @default(true)
+  rateLimitTimeWindow Int?      @default(86400000)
+  rateLimitMax        Int?      @default(10)
+  requestCount        Int?      @default(0)
+  remaining           Int?
+  lastRequest         DateTime?
+  expiresAt           DateTime?
+  createdAt           DateTime
+  updatedAt           DateTime
+  permissions         String?
+  metadata            String?
+
+  @@index([configId])
+  @@index([referenceId])
+  @@index([key])
+  @@map("apikey")
+}
+// klin:endif
+
+// klin:endif

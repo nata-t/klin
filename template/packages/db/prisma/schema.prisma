@@ -1,0 +1,18 @@
+// Prisma schema root. Models live in ./models/*.prisma — one file per domain.
+// After editing a model: `pnpm db:migrate` (creates + applies a migration and
+// regenerates the client).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  // klin:if postgres
+  provider = "postgresql"
+  // klin:elif mysql
+  //? provider = "mysql"
+  // klin:elif sqlite
+  //? provider = "sqlite"
+  // klin:endif
+}
