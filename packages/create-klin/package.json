@@ -1,0 +1,58 @@
+{
+  "name": "create-klin",
+  "version": "0.1.0",
+  "description": "Scaffold a spotless full-stack TypeScript monorepo: NestJS + Better Auth + Prisma + TanStack + shadcn, wired end to end.",
+  "type": "module",
+  "license": "MIT",
+  "homepage": "https://github.com/klin-dev/klin#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/klin-dev/klin.git",
+    "directory": "packages/create-klin"
+  },
+  "bugs": "https://github.com/klin-dev/klin/issues",
+  "bin": {
+    "create-klin": "./dist/index.js",
+    "klin": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "template"
+  ],
+  "keywords": [
+    "create",
+    "starter",
+    "monorepo",
+    "nestjs",
+    "better-auth",
+    "prisma",
+    "tanstack",
+    "shadcn",
+    "turborepo"
+  ],
+  "scripts": {
+    "build": "tsup && node scripts/copy-template.mjs",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "prepack": "pnpm build"
+  },
+  "engines": {
+    "node": ">=22.12"
+  },
+  "devDependencies": {
+    "@clack/prompts": "^1.8.1",
+    "@types/node": "^26.6.4",
+    "@types/picomatch": "^4.0.3",
+    "mri": "^1.2.0",
+    "node-diff3": "^3.2.1",
+    "picocolors": "^1.1.1",
+    "picomatch": "^4.0.7",
+    "sisteransi": "^2.0.0",
+    "tinyglobby": "^0.2.17",
+    "tsup": "^8.5.1",
+    "tsx": "^4.23.15",
+    "typescript": "6.0.3",
+    "vitest": "^5.0.3"
+  }
+}
