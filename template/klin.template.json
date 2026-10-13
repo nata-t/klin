@@ -336,7 +336,7 @@
     },
     "i18n": {
       "label": "Internationalization",
-      "hint": "i18next, English + Amharic to start",
+      "hint": "i18next, English to start",
       "remove": ["apps/web/src/i18n/**", "apps/web/src/components/language-switcher.tsx"],
       "json": {
         "apps/web/package.json": {

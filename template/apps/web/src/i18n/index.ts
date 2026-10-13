@@ -1,16 +1,22 @@
 import i18n from "i18next"
 import { initReactI18next } from "react-i18next"
-import am from "./locales/am.json"
 import en from "./locales/en.json"
 
 /**
- * Translations live in ./locales/<lang>.json. Add a language: create the file,
- * add it to `resources` and to LANGUAGES. Missing keys fall back to English.
+ * Translations live in ./locales/<lang>.json, starting with English.
+ *
+ * Add a language:
+ *   1. copy locales/en.json to locales/<code>.json and translate the values
+ *   2. import it below and add it to `resources` and LANGUAGES
+ *
+ * The language switcher in the headers shows up as soon as LANGUAGES has more
+ * than one entry. Keys missing from a language fall back to English.
  */
-export const LANGUAGES = [
-  { code: "en", label: "English" },
-  { code: "am", label: "አማርኛ" },
-] as const
+export const LANGUAGES = [{ code: "en", label: "English" }] as const
+
+const resources = {
+  en: { translation: en },
+}
 
 const STORAGE_KEY = "language"
 
@@ -26,7 +32,7 @@ function initialLanguage() {
 }
 
 void i18n.use(initReactI18next).init({
-  resources: { en: { translation: en }, am: { translation: am } },
+  resources,
   lng: initialLanguage(),
   fallbackLng: "en",
   interpolation: { escapeValue: false },
