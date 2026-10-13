@@ -11,7 +11,7 @@ pnpm db:migrate       # create the database tables
 <!-- klin:if password -->
 pnpm db:seed          # optional: demo admin + sample notes
 <!-- klin:endif -->
-pnpm dev              # web on :5173, API on :3000
+pnpm dev              # web on :5173, API on :3000, Prisma Studio on :5555
 ```
 
 Open <http://localhost:5173>.
@@ -27,9 +27,18 @@ Sign up, or use the seeded account `demo@example.com` / `demo-password-123`.
 
 ```
 apps/
-  api/            NestJS API — modules, guards, the Better Auth mount
-  web/            Vite + React — TanStack Router/Query/Form, shadcn/ui
+<!-- klin:if nest -->
+  api/            NestJS API — modules, nestjs-zod DTOs, guards, the Better Auth mount
+<!-- klin:elif express -->
+  api/            Express API — routes, services, auth middleware, the Better Auth mount
+<!-- klin:else -->
+  api/            Fastify API — route plugins, services, auth hooks, the Better Auth mount
+<!-- klin:endif -->
+  web/            Vite + React — TanStack Router/Query/Form
 packages/
+<!-- klin:if packages-ui -->
+  ui/             shadcn/ui components, theme and global styles (@repo/ui)
+<!-- klin:endif -->
   validators/     Zod schemas shared by the API and the web app
   db/             Prisma schema (prisma/models/*.prisma) and client
   auth/           Better Auth server config + typed client
@@ -45,12 +54,12 @@ packages/
 
 | Command | Does |
 | --- | --- |
-| `pnpm dev` | Runs everything in watch mode |
+| `pnpm dev` | Runs everything in watch mode, in Turborepo's split view: the Prisma client is generated first, then the web app, the API and Prisma Studio start side by side |
 | `pnpm build` | Production builds (cached by Turborepo) |
 | `pnpm lint` · `pnpm typecheck` · `pnpm test` | Quality checks |
 | `pnpm test:e2e` | Playwright against production builds (`pnpm build` first) |
 | `pnpm db:migrate` | Create + apply a migration after editing `prisma/models` |
-| `pnpm db:studio` | Browse the database |
+| `pnpm db:studio` | Browse the database on its own (it also runs inside `pnpm dev`) |
 | `pnpm db:seed` | Load demo data |
 <!-- klin:if compose -->
 | `pnpm db:up` · `pnpm db:down` | Start / stop local Docker services |

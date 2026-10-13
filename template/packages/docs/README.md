@@ -8,6 +8,7 @@ Everything you need to work on this codebase. Start at the top.
 | [Architecture](./architecture.md) | How the apps and packages fit together, request lifecycle, auth, errors |
 | [How the shared validators flow](./validators-flow.md) | One Zod schema → form, request, response, types |
 | [Add a feature](./add-a-feature.md) | Walkthrough: from `klin generate resource` to a finished page |
+| [UI & theming](./ui.md) | shadcn/ui components, `pnpm ui:add`, themes and colors |
 | [Testing](./testing.md) | Vitest unit tests, Playwright end-to-end tests |
 | [Deployment](./deployment.md) | Docker, PaaS, VPS, environment checklist, cookies across origins |
 | [Upgrading & modules](./upgrading.md) | `klin add` / `remove` / `upgrade`, keeping dependencies fresh |

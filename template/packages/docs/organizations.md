@@ -29,6 +29,7 @@ export const member = ac.newRole({ ...memberAc.statements, project: ["create", "
 
 ## Guarding API routes
 
+<!-- klin:if nest -->
 ```ts
 @Controller("organization")
 @RequireActiveOrg()                     // 403 unless an org is active
@@ -44,6 +45,28 @@ export class OrganizationController {
 ```
 
 Read the active organization in a handler with `@ActiveOrganizationId()`.
+<!-- klin:elif express -->
+```ts
+// src/routes/organization.ts
+organizationRouter.use(requireAuth, requireActiveOrg)                 // 403 unless an org is active
+organizationRouter.get("/billing", requireOrgRole("owner", "admin"), …) // by role
+organizationRouter.delete("/projects/:id", requirePermission({ project: ["delete"] }), …) // by permission
+```
+
+Read the active organization in a handler from
+`res.locals.auth.session.activeOrganizationId`.
+<!-- klin:else -->
+```ts
+// src/routes/organization.ts
+app.addHook("preHandler", requireAuth)
+app.addHook("preHandler", requireActiveOrg)                              // 403 unless an org is active
+app.get("/billing", { preHandler: requireOrgRole("owner", "admin") }, …) // by role
+app.delete("/projects/:id", { preHandler: requirePermission({ project: ["delete"] }) }, …) // by permission
+```
+
+Read the active organization in a handler from
+`request.auth.session.activeOrganizationId`.
+<!-- klin:endif -->
 Generate org-owned resources with
 `pnpm klin generate resource project name:string --scope org`.
 

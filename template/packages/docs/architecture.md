@@ -9,7 +9,15 @@ flowchart LR
   end
   subgraph Server
     proxy["/api proxy<br/>(Vite in dev, nginx in prod)"]
-    api["apps/api<br/>NestJS"]
+    <!-- klin:if nest-express -->
+    api["apps/api<br/>NestJS on Express"]
+    <!-- klin:elif nest-fastify -->
+    api["apps/api<br/>NestJS on Fastify"]
+    <!-- klin:elif express -->
+    api["apps/api<br/>Express"]
+    <!-- klin:else -->
+    api["apps/api<br/>Fastify"]
+    <!-- klin:endif -->
     ba["Better Auth<br/>/api/auth/*"]
   end
   db[("Database<br/>Prisma")]
@@ -26,7 +34,7 @@ flowchart LR
   dbpkg["packages/db<br/>Prisma client"] -.-> api
 ```
 
-- **The browser only talks to its own origin.** `/api/*` is forwarded to Nest
+- **The browser only talks to its own origin.** `/api/*` is forwarded to the API
   (Vite's dev server does it locally, nginx in the production image), so auth
   cookies are first-party and there's no CORS dance.
 - **Workspace packages ship TypeScript source.** Vite compiles them for the web
@@ -37,37 +45,70 @@ flowchart LR
 
 ## A request, start to finish
 
+<!-- klin:if nest -->
 ```mermaid
 sequenceDiagram
   participant B as Browser
   participant G as AuthGuard
-  participant P as Validation pipe
+  participant P as ZodValidationPipe
   participant C as Controller → Service
-  participant S as Response schema
+  participant S as ZodSerializerInterceptor
   participant E as Envelope / errors
 
   B->>G: GET /api/notes?page=2 (session cookie)
   G->>G: Better Auth session? (401 if not)
-  G->>P: @Query({ schema: noteListQuerySchema })
+  G->>P: @Query() query: NoteListQueryDto
   P->>P: coerce + validate (422 + field details if invalid)
   P->>C: typed query
   C->>S: Prisma rows
-  S->>S: @ResponseSchema(noteListSchema) strips private fields, Dates → ISO
+  S->>S: @ZodSerializerDto(NoteListDto) strips private fields, Dates → ISO
   S->>E: { items, pagination }
   E->>B: { success: true, data, meta }
 ```
 
 Errors take the same route in reverse: `ApiExceptionFilter` turns anything
-thrown (HttpExceptions, validation failures, Prisma unique/not-found errors,
-bugs) into `{ success: false, error: { code, message, details? }, meta }`. The
-web client (`apps/web/src/lib/api-client.ts`) unwraps successes and throws an
+thrown (HttpExceptions, nestjs-zod validation failures, Prisma unique/not-found
+errors, bugs) into `{ success: false, error: { code, message, details? }, meta }`.
+<!-- klin:else -->
+```mermaid
+sequenceDiagram
+  participant B as Browser
+  participant A as requireAuth
+  participant R as Route handler
+  participant S as Service
+  participant E as Envelope / errors
+
+  B->>A: GET /api/notes?page=2 (session cookie)
+  A->>A: Better Auth session? (401 if not)
+  A->>R: request with the session attached
+  R->>R: noteListQuerySchema validates the query (422 + field details if invalid)
+  R->>S: typed query
+  S->>R: Prisma rows
+  R->>R: noteListSchema.parse() strips private fields, Dates → ISO
+  R->>B: ok(request, data) → { success: true, data, meta }
+```
+
+Errors take the same route in reverse: the error handler (`lib/http.ts`'s
+`toErrorShape`) turns anything thrown (`HttpError`s, Zod validation failures,
+Prisma unique/not-found errors, bugs) into
+`{ success: false, error: { code, message, details? }, meta }`.
+<!-- klin:endif -->
+
+The web client (`apps/web/src/lib/api-client.ts`) unwraps successes and throws an
 `ApiError` for failures, which React Query toasts automatically.
 
 ## Auth
 
 - **Server:** `packages/auth/src/auth.ts` configures Better Auth (providers,
   plugins, session lifetime, cookie attributes). The API mounts it at
+  <!-- klin:if nest -->
   `/api/auth/*` through `@thallesp/nestjs-better-auth`.
+  <!-- klin:elif express -->
+  `/api/auth/*` with `toNodeHandler(auth)` (before the JSON body parser).
+  <!-- klin:else -->
+  `/api/auth/*` as a Fastify route that hands requests to `auth.handler`.
+  <!-- klin:endif -->
+<!-- klin:if nest -->
 - **Guards:** every API route needs a session by default. Opt out or tighten it
   per route or controller:
 
@@ -84,6 +125,38 @@ web client (`apps/web/src/lib/api-client.ts`) unwraps successes and throws an
 
   Read the user with `@CurrentUser()` (or `@CurrentUser("id")`), or the whole
   session with `@CurrentSession()`.
+<!-- klin:else -->
+- **Guards:** routes opt in to auth with the helpers in
+  <!-- klin:if express -->
+  `src/middleware/auth.ts` — plain Express middleware:
+
+  ```ts
+  router.use(requireAuth)                  // 401 without a session
+  router.use(requireAuth, requireRole("admin"))
+  <!-- klin:if organizations -->
+  router.use(requireActiveOrg)             // an organization must be active
+  router.get("/billing", requireOrgRole("owner", "admin"), …)
+  router.get("/projects", requirePermission({ project: ["read"] }), …)
+  <!-- klin:endif -->
+  ```
+
+  After `requireAuth`, the session is `res.locals.auth` (`.user`, `.session`).
+  <!-- klin:else -->
+  `src/hooks/auth.ts` — Fastify hooks:
+
+  ```ts
+  app.addHook("preHandler", requireAuth)   // 401 without a session
+  app.addHook("preHandler", requireRole("admin"))
+  <!-- klin:if organizations -->
+  app.addHook("preHandler", requireActiveOrg)
+  app.get("/billing", { preHandler: requireOrgRole("owner", "admin") }, …)
+  app.get("/projects", { preHandler: requirePermission({ project: ["read"] }) }, …)
+  <!-- klin:endif -->
+  ```
+
+  After `requireAuth`, the session is `request.auth` (`.user`, `.session`).
+  <!-- klin:endif -->
+<!-- klin:endif -->
 - **Web:** the session lives in React Query (`lib/session.ts`). Route guards
   are plain `beforeLoad` functions: `_app.tsx` sends signed-out visitors to
   `/sign-in?redirect=…`; `_auth.tsx` sends signed-in users to the dashboard.
@@ -99,18 +172,55 @@ web client (`apps/web/src/lib/api-client.ts`) unwraps successes and throws an
 | Feature code | `src/features/<feature>/` | `api.ts` (query keys + hooks), components, pages |
 | Query keys | `features/*/api.ts` | `noteKeys.all / lists() / list(q) / detail(id)` — invalidate by prefix |
 | Forms | `src/components/form` | `useAppForm` + a schema from `@repo/validators` + `field.TextField` etc. |
-| UI kit | `src/components/ui` | shadcn/ui (Base UI). Add more with `pnpm dlx shadcn@latest add …` in `apps/web` |
+<!-- klin:if packages-ui -->
+| UI kit | `packages/ui` (`@repo/ui/components/*`) | shadcn/ui (Base UI). Add more with `pnpm ui:add <name>` — see [UI & theming](./ui.md) |
+<!-- klin:else -->
+| UI kit | `src/components/ui` | shadcn/ui (Base UI). Add more with `pnpm ui:add <name>` — see [UI & theming](./ui.md) |
+<!-- klin:endif -->
 | Errors / 404 / loading | `src/components` | Router defaults: `RouteError`, `NotFound`, `PageLoader` |
 | Page titles | route `staticData: { title }` | Shown in the header and the browser tab |
 
 ## API conventions
 
+<!-- klin:if nest -->
 | Thing | Where |
 | --- | --- |
-| Feature modules | `src/modules/<feature>/{module,controller,service}.ts` |
-| Cross-cutting | `src/common` — auth decorators, pagination helpers, filter, interceptor, pipe |
+| Feature modules | `src/modules/<feature>/{module,dto,controller,service}.ts` |
+| DTOs | `createZodDto(schema)` from nestjs-zod, with schemas from `@repo/validators` |
+| Cross-cutting | `src/common` — auth decorators, pagination helpers, exception filter, response interceptor |
 | Database access | inject `PrismaService` (it *is* the shared Prisma client) |
 | Logging | pino via nestjs-pino. `new Logger(Context)` as usual; every request gets an `x-request-id` |
+<!-- klin:if rate-limit -->
 | Rate limiting | `@nestjs/throttler`, 120 req/min/IP globally; tune with `@Throttle()` / `@SkipThrottle()` |
-| Security headers | helmet |
+<!-- klin:endif -->
+<!-- klin:if helmet -->
+| Security headers | helmet (`app.use(helmet())` / `@fastify/helmet`) in `src/main.ts` |
+<!-- klin:endif -->
+<!-- klin:if cors -->
+| CORS | only `WEB_URL`, with credentials — `app.enableCors()` in `src/main.ts` |
+<!-- klin:endif -->
 | Health | `GET /api/health` checks the database |
+<!-- klin:else -->
+| Thing | Where |
+| --- | --- |
+| App setup | `src/app.ts` — plugins/middleware in order, routes, the error handler |
+| Routes | `src/routes/<feature>.ts` — validate with shared schemas, call a service, respond with `ok()` |
+| Services | `src/services/<feature>.ts` — plain functions over `prisma` from `@repo/db` |
+| Errors & envelope | `src/lib/http.ts` — `HttpError`, `notFound()`…, `ok()`, `toErrorShape()` |
+| Database access | `import { prisma } from "@repo/db"` |
+| Logging | pino (`src/lib/logger.ts`); every request gets an `x-request-id` |
+<!-- klin:if rate-limit -->
+<!-- klin:if express -->
+| Rate limiting | express-rate-limit, 120 req/min/IP on `/api` (health is skipped) |
+<!-- klin:else -->
+| Rate limiting | @fastify/rate-limit, 120 req/min/IP; opt a route out with `config: { rateLimit: false }` |
+<!-- klin:endif -->
+<!-- klin:endif -->
+<!-- klin:if helmet -->
+| Security headers | helmet / @fastify/helmet in `src/app.ts` |
+<!-- klin:endif -->
+<!-- klin:if cors -->
+| CORS | only `WEB_URL`, with credentials — in `src/app.ts` |
+<!-- klin:endif -->
+| Health | `GET /api/health` checks the database |
+<!-- klin:endif -->
