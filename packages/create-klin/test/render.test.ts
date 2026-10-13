@@ -1,6 +1,8 @@
-import { resolve } from "node:path"
+import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { dirname, join, resolve } from "node:path"
 import { describe, expect, it } from "vitest"
-import { loadManifest, normalizeAnswers, type PackageManager } from "../src/engine/manifest"
+import { loadManifest, type Manifest, normalizeAnswers, type PackageManager } from "../src/engine/manifest"
 import { render } from "../src/engine/render"
 import { generateEnv, mergeEnv, parseEnv } from "../src/utils/env-file"
 
@@ -28,6 +30,109 @@ describe("template rendering", () => {
     }
   })
 
+  it("renders every backend × server × security combination cleanly", async () => {
+    for (const backend of ["nest", "plain"]) {
+      for (const server of ["express", "fastify"]) {
+        for (const security of [["cors", "helmet", "rate-limit"], []]) {
+          for (const components of ["apps-web", "packages-ui"]) {
+            const label = `${backend}/${server}/${security.length ? "secure" : "bare"}/${components}`
+            const files = await renderPreset("everything", "pnpm", { backend, server, security, components })
+            for (const [path, file] of files) {
+              if (Buffer.isBuffer(file.content)) continue
+              expect(file.content, `${label}: ${path}`).not.toMatch(/klin:(if|elif|else|endif|file|only)\b/)
+              expect(file.content, `${label}: ${path}`).not.toMatch(/^\s*(\/\/|#)\? /m)
+              expect(path, label).not.toMatch(/^(variants\/|apps\/api\/plain)/)
+            }
+            expect(files.has("apps/api/src/main.ts"), label).toBe(true)
+            expect(files.has("apps/api/src/seed.ts"), label).toBe(true)
+          }
+        }
+      }
+    }
+  })
+
+  it("wires NestJS with nestjs-zod on the chosen HTTP server", async () => {
+    for (const server of ["express", "fastify"] as const) {
+      const files = await renderPreset("recommended", "pnpm", { server })
+      const api = JSON.parse(text(files, "apps/api/package.json"))
+      expect(api.dependencies).toHaveProperty("nestjs-zod")
+      expect(api.dependencies).toHaveProperty(`@nestjs/platform-${server}`)
+      expect(api.dependencies).not.toHaveProperty(`@nestjs/platform-${server === "express" ? "fastify" : "express"}`)
+      expect(api.dependencies).not.toHaveProperty("express-rate-limit")
+      expect(text(files, "apps/api/src/app.module.ts")).toContain("ZodValidationPipe")
+      expect(text(files, "apps/api/src/modules/notes/notes.dto.ts")).toContain("createZodDto(createNoteSchema)")
+      expect(text(files, "apps/api/src/main.ts")).toContain(server === "fastify" ? "FastifyAdapter" : "NestExpressApplication")
+    }
+  })
+
+  it("builds plain Express and Fastify APIs from the shared code", async () => {
+    const express = await renderPreset("recommended", "pnpm", { backend: "plain", server: "express" })
+    const fastify = await renderPreset("recommended", "pnpm", { backend: "plain", server: "fastify" })
+    for (const files of [express, fastify]) {
+      const api = JSON.parse(text(files, "apps/api/package.json"))
+      expect(Object.keys(api.dependencies).filter((d) => d.startsWith("@nestjs/") || d.includes("nestjs"))).toEqual([])
+      expect(files.has("apps/api/src/services/notes.ts")).toBe(true)
+      expect(files.has("apps/api/src/app.module.ts")).toBe(false)
+      expect(text(files, "apps/api/tsconfig.json")).toContain("node.json")
+    }
+    expect(JSON.parse(text(express, "apps/api/package.json")).dependencies).toHaveProperty("express")
+    expect(text(express, "apps/api/src/app.ts")).toContain("toNodeHandler(auth)")
+    expect(JSON.parse(text(fastify, "apps/api/package.json")).dependencies).toHaveProperty("fastify")
+    expect(text(fastify, "apps/api/src/routes/notes.ts")).toContain("schema: { body: createNoteSchema }")
+  })
+
+  it("switches CORS, Helmet and rate limiting on and off", async () => {
+    for (const [backend, server] of [["nest", "express"], ["nest", "fastify"], ["plain", "express"], ["plain", "fastify"]]) {
+      const off = await renderPreset("recommended", "pnpm", { backend, server, security: [] })
+      const entry = backend === "nest" ? "apps/api/src/main.ts" : "apps/api/src/app.ts"
+      expect(text(off, entry)).not.toMatch(/helmet|Helmet|enableCors|cors\(|RateLimit|rateLimit/)
+      expect(text(off, "apps/api/package.json")).not.toMatch(/"helmet"|@fastify\/helmet|@nestjs\/throttler|express-rate-limit|@fastify\/rate-limit/)
+      const on = await renderPreset("recommended", "pnpm", { backend, server })
+      expect(text(on, entry)).toMatch(/helmet|Helmet/)
+    }
+  })
+
+  it("moves shadcn/ui into packages/ui and rewrites imports", async () => {
+    for (const pm of ["pnpm", "npm"] as const) {
+      const files = await renderPreset("everything", pm, { components: "packages-ui" })
+      expect(files.has("packages/ui/src/components/button.tsx")).toBe(true)
+      expect(files.has("packages/ui/src/styles/globals.css")).toBe(true)
+      expect([...files.keys()].some((path) => path.startsWith("apps/web/src/components/ui/"))).toBe(false)
+      for (const [path, file] of files) {
+        if (!/^(apps\/web|packages\/ui)\/.*\.tsx?$/.test(path)) continue
+        expect(file.content.toString(), path).not.toMatch(/"@\/components\/ui\/|"@\/lib\/utils"|"@\/hooks\/use-mobile"|"\.\/theme-provider"/)
+      }
+      const web = JSON.parse(text(files, "apps/web/package.json"))
+      expect(web.dependencies["@repo/ui"]).toBe(pm === "npm" ? "*" : "workspace:*")
+      expect(JSON.parse(text(files, "apps/web/components.json")).aliases.ui).toBe("@repo/ui/components")
+      expect(JSON.parse(text(files, "packages/ui/components.json")).aliases.utils).toBe("@repo/ui/lib/utils")
+      expect(text(files, "apps/web/src/main.tsx")).toContain('import "@repo/ui/globals.css"')
+    }
+  })
+
+  it("themes with shadcn's colors, Turborepo's TUI and English-only i18n", async () => {
+    const files = await renderPreset("everything", "pnpm", { accent: "blue" })
+    expect(text(files, "apps/web/src/styles.css")).toContain("--brand: oklch(0.488 0.243 264.376);")
+    expect(text(files, "apps/web/src/styles.css")).toContain("--brand: oklch(0.424 0.199 265.638);")
+    expect(JSON.parse(text(files, "turbo.json")).ui).toBe("tui")
+    expect([...files.keys()].filter((path) => path.includes("i18n/locales/"))).toEqual(["apps/web/src/i18n/locales/en.json"])
+    expect(manifest.questions.find((q) => q.id === "accent")!.options[0]).toBe("neutral")
+  })
+
+  it("starts Prisma Studio with `turbo run dev` without ever failing it", async () => {
+    const files = await renderPreset("recommended")
+    const studio = JSON.parse(text(files, "packages/db/package.json")).scripts.dev as string
+    expect(studio).toMatch(/^prisma studio --port 5555 --browser none \|\| prisma studio --browser none \|\| /)
+    expect(JSON.parse(text(files, "turbo.json")).tasks["db:studio"]).toEqual({ cache: false, persistent: true })
+    expect(files.has("packages/db/data/.gitkeep")).toBe(false)
+  })
+
+  it("adds the nestjs-zod override for npm only", async () => {
+    expect(JSON.parse(text(await renderPreset("recommended", "npm"), "package.json")).overrides).toHaveProperty("nestjs-zod")
+    expect(JSON.parse(text(await renderPreset("recommended", "pnpm"), "package.json")).overrides).toBeUndefined()
+    expect(JSON.parse(text(await renderPreset("recommended", "npm", { backend: "plain" }), "package.json")).overrides).toBeUndefined()
+  })
+
   it("replaces project tokens", async () => {
     const files = await renderPreset("recommended")
     expect(JSON.parse(text(files, "package.json")).name).toBe("test-app")
@@ -46,6 +151,7 @@ describe("template rendering", () => {
     expect(api.dependencies).not.toHaveProperty("@prisma/adapter-pg")
     expect(api.dependencies).toHaveProperty("@prisma/adapter-better-sqlite3")
     expect(text(files, "packages/db/prisma/schema.prisma")).toContain('provider = "sqlite"')
+    expect(files.has("packages/db/data/.gitkeep")).toBe(true)
     expect(text(files, "packages/auth/src/auth.ts")).not.toContain("organization(")
   })
 
@@ -73,6 +179,54 @@ describe("template rendering", () => {
       expect(text(files, "packages/db/prisma/schema.prisma")).toContain(`provider = "${provider}"`)
       expect(text(files, "packages/db/src/client.ts")).toContain(adapter)
     }
+  })
+})
+
+describe("rules: move, replace, merge", () => {
+  function fakeTemplate(files: Record<string, string>, rules: Manifest["rules"]) {
+    const dir = mkdtempSync(join(tmpdir(), "klin-test-"))
+    for (const [path, content] of Object.entries(files)) {
+      mkdirSync(dirname(join(dir, path)), { recursive: true })
+      writeFileSync(join(dir, path), content)
+    }
+    const fake: Manifest = {
+      name: "fake",
+      tokens: {},
+      questions: [{ id: "mode", type: "select", options: ["a", "b"], default: "a", message: "?" }],
+      options: { a: { label: "A" }, b: { label: "B" } },
+      rules,
+    }
+    writeFileSync(join(dir, "klin.template.json"), JSON.stringify(fake))
+    return { dir, fake }
+  }
+
+  it("moves folders and files, rewrites text and merges JSON", async () => {
+    const { dir, fake } = fakeTemplate(
+      {
+        "src/a.ts": 'import x from "@/old/x"\n',
+        "alt/b.ts": "b\n",
+        "pkg/package.json": '{ "name": "pkg", "dependencies": { "z": "1" } }\n',
+      },
+      [
+        {
+          when: "b",
+          move: { "alt/": "src/", "src/a.ts": "lib/a.ts" },
+          replace: [{ files: "lib/**", from: '"@/old/', to: '"@new/' }],
+          merge: { "pkg/package.json": { dependencies: { a: "2" } } },
+        },
+      ]
+    )
+    const files = await render({ templateDir: dir, manifest: fake, answers: { mode: "b" }, pm: "pnpm", pmVersion: "1", name: "x" })
+    expect([...files.keys()].sort()).toEqual(["lib/a.ts", "pkg/package.json", "src/b.ts"])
+    expect(text(files, "lib/a.ts")).toBe('import x from "@new/x"\n')
+    expect(Object.keys(JSON.parse(text(files, "pkg/package.json")).dependencies)).toEqual(["a", "z"])
+  })
+
+  it("refuses two files rendering to the same path", async () => {
+    const { dir, fake } = fakeTemplate({ "src/a.ts": "1\n", "alt/a.ts": "2\n" }, [{ when: "b", move: { "alt/": "src/" } }])
+    await expect(
+      render({ templateDir: dir, manifest: fake, answers: { mode: "b" }, pm: "pnpm", pmVersion: "1", name: "x" })
+    ).rejects.toThrow(/both render to src\/a\.ts/)
   })
 })
 
