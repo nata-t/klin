@@ -10,11 +10,11 @@ import {
   selectedOptions,
   stepsFor,
 } from "../engine/manifest"
-import { type ChipField, type Field, Form, type InputField, type Page, type ProgressField } from "../ui/form"
+import { type ChipField, type Field, Form, type InputField, type Page, type ProgressField, type Tone } from "../ui/form"
 import { CANCEL, type Cancel } from "../ui/prompts"
 import { setTaskReporter, type TaskReporter } from "../ui/task"
 import { screen } from "../ui/term"
-import { parseColor } from "../ui/theme"
+import { parseColor, sym } from "../ui/theme"
 import { isEmptyDir } from "../utils/fs"
 import { isValidPackageName, toSlug } from "../utils/names"
 
@@ -162,7 +162,13 @@ export async function wizard(input: WizardInput): Promise<WizardResult | Cancel>
           multi: q.type === "multiselect",
           items: group.options.map((id) => {
             const option = manifest.options[id]!
-            return { id, label: option.label, about: option.about ?? option.hint, swatch: option.swatch ? parseColor(option.swatch) : undefined }
+            return {
+              id,
+              label: option.label,
+              about: option.about ?? option.hint,
+              swatch: option.swatch ? parseColor(option.swatch) : undefined,
+              warning: option.warnOff,
+            }
           }),
           isOn,
           toggle,
@@ -230,6 +236,13 @@ export async function wizard(input: WizardInput): Promise<WizardResult | Cancel>
       const ids = Array.isArray(value) ? value : value ? [value] : []
       return ids.length ? ids.map(label).join(", ") : "none"
     }
+    /** A list row, flagged in amber when parts that carry a warning were left off. */
+    const listRow = (title: string, qid: string): [string, string, Tone?] => {
+      const picked = [answers[qid] ?? []].flat()
+      const off = (manifest.questions.find((q) => q.id === qid)?.options ?? []).filter((id) => manifest.options[id]?.warnOff && !picked.includes(id))
+      if (!off.length) return [title, list(qid)]
+      return [title, `${list(qid)} ${sym.dot} ${sym.warn} ${off.map(label).join(", ")} off`, "warn"]
+    }
     const dir = relative(input.cwd, targetDir()) || "."
     const does = [
       "writes the files",
@@ -250,10 +263,10 @@ export async function wizard(input: WizardInput): Promise<WizardResult | Cancel>
           rows: [
             ["name", slug()],
             ["stack", `${label(answers.backend as string)} on ${label(answers.server as string)} · ${label(answers.database as string)}`],
-            ["sign-in", list("auth")],
-            ["power-ups", list("plugins")],
-            ["security", list("security")],
-            ["extras", list("extras")],
+            listRow("sign-in", "auth"),
+            listRow("power-ups", "plugins"),
+            listRow("security", "security"),
+            listRow("extras", "extras"),
             ["ui", `${label(answers.components as string)} · ${label(answers.accent as string)}`],
             ["tooling", `${state.pm} ${input.pmVersions[state.pm] ?? ""}`.trim()],
           ],

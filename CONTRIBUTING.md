@@ -92,7 +92,8 @@ render-matrix tests — rather than in place.
 - Each question can have a `title` (its chip-group label) and `groups` to split
   a long option list visually. Each option and preset can have `about` — two or
   three sentences shown while it's highlighted (say what it is and how it gets
-  set up) — and options a `swatch` color.
+  set up) — and options a `swatch` color and a `warnOff` warning, shown in amber
+  while the option is switched off (what you give up without it).
 - `presets`: named answer sets.
 - `tokens`: strings replaced with the project name (`klin-app`, `klin_app`, `Klin App`).
 - `env.generate`: `.env` keys that get random values (other occurrences of the

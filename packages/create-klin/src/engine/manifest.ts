@@ -44,6 +44,11 @@ export interface OptionSpec {
   about?: string
   /** A CSS color (hex or oklch) the CLI previews next to the option. */
   swatch?: string
+  /**
+   * A warning the interactive CLI shows (in amber) while the option is
+   * switched off: what you give up without it.
+   */
+  warnOff?: string
 }
 
 export interface QuestionSpec {

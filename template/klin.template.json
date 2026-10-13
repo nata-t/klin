@@ -329,17 +329,20 @@
     "cors": {
       "label": "CORS",
       "hint": "only your web app may call the API",
-      "about": "Browsers may only call the API from your web app's origin (WEB_URL), with cookies allowed. In development the Vite proxy keeps requests same-origin anyway."
+      "about": "Browsers may only call the API from your web app's origin (WEB_URL), with cookies allowed. In development the Vite proxy keeps requests same-origin anyway.",
+      "warnOff": "Without it the API sends no CORS headers, so browsers block calls from any other origin. Fine only if the web app and the API share one domain in production."
     },
     "helmet": {
       "label": "Helmet",
       "hint": "secure HTTP headers",
-      "about": "Secure HTTP headers on every API response: no MIME sniffing, no framing, a strict referrer policy and more. Uses helmet on Express and @fastify/helmet on Fastify."
+      "about": "Secure HTTP headers on every API response: no MIME sniffing, no framing, a strict referrer policy and more. Uses helmet on Express and @fastify/helmet on Fastify.",
+      "warnOff": "API responses go out without security headers, so browsers may sniff content types and other sites can frame your pages. Set the headers at your proxy if you skip it."
     },
     "rate-limit": {
       "label": "Rate limiting",
       "hint": "120 requests / minute / IP",
-      "about": "Caps each IP at 120 requests a minute so one client can't flood the API; health checks are exempt. Uses @nestjs/throttler, express-rate-limit or @fastify/rate-limit, tuned in one place."
+      "about": "Caps each IP at 120 requests a minute so one client can't flood the API; health checks are exempt. Uses @nestjs/throttler, express-rate-limit or @fastify/rate-limit, tuned in one place.",
+      "warnOff": "Nothing stops one client from flooding the API or hammering sign-in with password guesses. Put a limit at your proxy or CDN if you skip it."
     },
     "email": {
       "label": "Transactional email",
