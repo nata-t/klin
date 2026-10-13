@@ -15,6 +15,16 @@ export const PACKAGE_MANAGERS: PackageManager[] = ["pnpm", "bun", "npm"]
 /** `{ "apps/api/package.json": { "dependencies": ["bullmq"], "trustedDependencies": true } }` */
 export type JsonStrip = Record<string, Record<string, true | string[]>>
 
+/** `{ "apps/web/package.json": { "dependencies": { "@repo/ui": "workspace:*" } } }` — deep-merged in. */
+export type JsonMerge = Record<string, Record<string, unknown>>
+
+/** Literal text replaced in rendered files whose output path matches `files`. */
+export interface ReplaceSpec {
+  files: string | string[]
+  from: string
+  to: string
+}
+
 export interface OptionSpec {
   label: string
   hint?: string
@@ -26,6 +36,13 @@ export interface OptionSpec {
   json?: JsonStrip
   /** A short line shown in the summary/next steps when this option is on. */
   note?: string
+  /**
+   * Two or three sentences shown while the option is highlighted in the
+   * interactive CLI: what it is and how it gets set up.
+   */
+  about?: string
+  /** A CSS color (hex or oklch) the CLI previews next to the option. */
+  swatch?: string
 }
 
 export interface QuestionSpec {
@@ -42,17 +59,41 @@ export interface QuestionSpec {
   flagPrefix?: string
   /** Skip in the interactive flow unless the user opts into "customize". */
   advanced?: boolean
+  /** Short label for the option group in the interactive CLI ("Database"). */
+  title?: string
+  /** Optional visual sub-groups for a long option list (same options, split up). */
+  groups?: Array<{ title: string; options: string[] }>
 }
 
 export interface RuleSpec {
   when: string
   remove?: string[]
   json?: JsonStrip
+  /** Keys deep-merged into JSON files (package.json, components.json, …). */
+  merge?: JsonMerge
+  /**
+   * Output path remaps, applied after `remove`: `{ "apps/api/plain/": "apps/api/src/" }`
+   * moves a folder (keys ending in "/"), `{ "a/b.ts": "c/d.ts" }` moves a file.
+   */
+  move?: Record<string, string>
+  /** Text replacements in the rendered files, matched by output path. */
+  replace?: ReplaceSpec[]
+}
+
+/** A page of the interactive CLI: a heading plus the questions shown on it. */
+export interface StepSpec {
+  id: string
+  title: string
+  heading: string
+  subtitle?: string
+  questions: string[]
 }
 
 export interface PresetSpec {
   label: string
   hint?: string
+  /** Shown while the preset is highlighted in the interactive CLI. */
+  about?: string
   answers: Answers
 }
 
@@ -65,6 +106,8 @@ export interface Manifest {
   options: Record<string, OptionSpec>
   flags?: Record<string, string>
   rules?: RuleSpec[]
+  /** How the interactive CLI groups questions into pages (defaults to one per question). */
+  steps?: StepSpec[]
   presets?: Record<string, PresetSpec>
   env?: {
     /** Keys whose example value is replaced by a random one in the generated `.env`. */
@@ -114,6 +157,33 @@ export function validateManifest(m: Manifest) {
   }
   for (const [name, expr] of Object.entries(m.flags ?? {})) checkExpr(expr, `flag "${name}"`)
   for (const rule of m.rules ?? []) checkExpr(rule.when, `rule "${rule.when}"`)
+  for (const q of m.questions) {
+    for (const group of q.groups ?? []) {
+      for (const o of group.options) {
+        if (!q.options.includes(o)) fail(`question "${q.id}" groups option "${o}" that isn't one of its options`)
+      }
+    }
+  }
+  if (m.steps) {
+    const placed = new Set<string>()
+    for (const step of m.steps) {
+      for (const id of step.questions) {
+        if (!m.questions.some((q) => q.id === id)) fail(`step "${step.id}" lists unknown question "${id}"`)
+        if (placed.has(id)) fail(`question "${id}" appears in more than one step`)
+        placed.add(id)
+      }
+    }
+    const missing = m.questions.filter((q) => !placed.has(q.id)).map((q) => q.id)
+    if (missing.length) fail(`questions missing from steps: ${missing.join(", ")}`)
+  }
+}
+
+/** The interactive pages: the manifest's own, or one page per question. */
+export function stepsFor(m: Manifest): StepSpec[] {
+  return (
+    m.steps ??
+    m.questions.map((q) => ({ id: q.id, title: q.title ?? q.id, heading: q.message, questions: [q.id] }))
+  )
 }
 
 /** The flag name an option produces (select questions may prefix it). */

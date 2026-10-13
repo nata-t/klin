@@ -7,10 +7,12 @@ import { evaluate } from "./expr"
 import {
   flagFor,
   type Answers,
+  type JsonMerge,
   type JsonStrip,
   type Manifest,
   type PackageManager,
   MANIFEST_FILE,
+  type ReplaceSpec,
   resolveFlags,
 } from "./manifest"
 import { processMarkers } from "./markers"
@@ -121,10 +123,24 @@ function mergeStrip(into: JsonStrip, from: JsonStrip | undefined) {
   }
 }
 
-/** Collects the strip rules that apply for this set of flags. */
+function mergeJson(target: Record<string, unknown>, patch: Record<string, unknown>) {
+  for (const [key, value] of Object.entries(patch)) {
+    const existing = target[key]
+    if (value && typeof value === "object" && !Array.isArray(value) && existing && typeof existing === "object" && !Array.isArray(existing)) {
+      mergeJson(existing as Record<string, unknown>, value as Record<string, unknown>)
+    } else {
+      target[key] = structuredClone(value)
+    }
+  }
+}
+
+/** Collects the strip, merge, move and replace rules that apply for this set of flags. */
 function collectRules(manifest: Manifest, flags: FlagSet) {
   const remove: string[] = []
   const json: JsonStrip = {}
+  const merge: JsonMerge = {}
+  const moves: Array<[string, string]> = []
+  const replace: ReplaceSpec[] = []
   for (const [id, spec] of Object.entries(manifest.options)) {
     if (flags.on.has(flagFor(manifest, id))) continue
     remove.push(...(spec.remove ?? []))
@@ -134,8 +150,39 @@ function collectRules(manifest: Manifest, flags: FlagSet) {
     if (!evaluate(rule.when, flags)) continue
     remove.push(...(rule.remove ?? []))
     mergeStrip(json, rule.json)
+    for (const [file, patch] of Object.entries(rule.merge ?? {})) mergeJson((merge[file] ??= {}), patch)
+    moves.push(...Object.entries(rule.move ?? {}))
+    replace.push(...(rule.replace ?? []))
   }
-  return { remove, json }
+  // Most specific first, so "a/b/" wins over "a/".
+  moves.sort(([a], [b]) => b.length - a.length)
+  return { remove, json, merge, moves, replace }
+}
+
+function sortDependencies(pkg: Record<string, unknown>) {
+  for (const field of ["dependencies", "devDependencies", "peerDependencies"]) {
+    const deps = pkg[field] as Record<string, string> | undefined
+    if (deps) pkg[field] = Object.fromEntries(Object.entries(deps).sort(([a], [b]) => a.localeCompare(b)))
+  }
+}
+
+/** Applies the first matching move: folder prefixes end in "/", anything else is a single file. */
+function movePath(path: string, moves: Array<[string, string]>) {
+  for (const [from, to] of moves) {
+    if (from.endsWith("/") ? path.startsWith(from) : path === from) return to + path.slice(from.length)
+  }
+  return path
+}
+
+async function listTemplate(templateDir: string, manifest: Manifest) {
+  const paths = await glob("**/*", {
+    cwd: templateDir,
+    dot: true,
+    onlyFiles: true,
+    ignore: [...DEFAULT_IGNORE, ...(manifest.ignore ?? [])],
+    expandDirectories: false,
+  })
+  return paths.sort()
 }
 
 function transformPackageJson(
@@ -177,31 +224,30 @@ export async function render(input: RenderInput): Promise<FileMap> {
   const flags = resolveFlags(manifest, input.answers, input.pm)
   const rules = collectRules(manifest, flags)
   const isRemoved = picomatch(rules.remove.length ? rules.remove : ["\0never"], { dot: true })
+  const replacements = rules.replace.map((spec) => ({ ...spec, matches: picomatch(spec.files, { dot: true }) }))
   const tokens = projectTokens(manifest, input.name)
-
-  const paths = await glob("**/*", {
-    cwd: templateDir,
-    dot: true,
-    onlyFiles: true,
-    ignore: [...DEFAULT_IGNORE, ...(manifest.ignore ?? [])],
-    expandDirectories: false,
-  })
-  paths.sort()
+  const paths = await listTemplate(templateDir, manifest)
 
   const files: FileMap = new Map()
+  const origin = new Map<string, string>()
 
   for (const sourcePath of paths) {
-    const outPath = sourcePath
+    const renamed = sourcePath
       .split("/")
       .map((segment) => RENAMES[segment] ?? segment)
       .join("/")
-    if (isRemoved(outPath) || isRemoved(sourcePath)) continue
+    if (isRemoved(renamed) || isRemoved(sourcePath)) continue
+
+    const outPath = movePath(renamed, rules.moves)
+    const clash = origin.get(outPath)
+    if (clash) throw new Error(`Template files ${clash} and ${sourcePath} both render to ${outPath}`)
 
     const abs = join(templateDir, sourcePath)
     const { mode } = await stat(abs)
 
     if (BINARY.test(outPath)) {
       files.set(outPath, { content: await readFile(abs), mode })
+      origin.set(outPath, sourcePath)
       continue
     }
 
@@ -210,6 +256,9 @@ export async function render(input: RenderInput): Promise<FileMap> {
     if (text === null || text.trim() === "") continue
 
     text = applyTokens(text, tokens)
+    for (const { matches, from, to } of replacements) {
+      if (matches(outPath) && text.includes(from)) text = text.split(from).join(to)
+    }
 
     const name = basename(outPath)
     if (outPath.endsWith(".md") || outPath.endsWith(".mdx")) {
@@ -219,14 +268,20 @@ export async function render(input: RenderInput): Promise<FileMap> {
     }
 
     const strip = rules.json[outPath]
-    if (name === "package.json" || strip) {
+    const patch = rules.merge[outPath]
+    if (name === "package.json" || strip || patch) {
       let obj = JSON.parse(text) as Record<string, unknown>
+      if (patch) {
+        mergeJson(obj, patch)
+        if (name === "package.json") sortDependencies(obj)
+      }
       if (strip) stripJson(obj, strip)
       if (name === "package.json") obj = transformPackageJson(obj, outPath, input)
       text = `${JSON.stringify(obj, null, 2)}\n`
     }
 
     files.set(outPath, { content: text, mode })
+    origin.set(outPath, sourcePath)
   }
 
   return files
