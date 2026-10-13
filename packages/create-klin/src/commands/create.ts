@@ -18,7 +18,7 @@ import { cancel, intro, log, outro } from "../ui/log"
 import { isCancel } from "../ui/prompts"
 import { INSTALL_QUIPS, setTaskReporter, task } from "../ui/task"
 import { interactive } from "../ui/term"
-import { c, pick, shimmer, swatch, sym } from "../ui/theme"
+import { c, padEnd, pick, shimmer, swatch, sym, width, wrap } from "../ui/theme"
 import { fileTree } from "../ui/tree"
 import { generateEnv } from "../utils/env-file"
 import { run } from "../utils/exec"
@@ -341,8 +341,30 @@ function nextSteps({
   if (has("password")) steps.push([run("db:seed"), "add a demo admin + notes"])
   steps.push([run("dev"), "web :5173 · api :3000 · studio :5555"])
 
-  const width = Math.max(...steps.map(([cmd]) => cmd.length))
-  const lines = steps.map(([cmd, why]) => `${c.dim(sym.arrow)} ${cmd.startsWith("#") ? c.dim(cmd.padEnd(width)) : c.white(cmd.padEnd(width))}  ${c.dim(why)}`)
+  // The box never gets wider than the terminal: explanations move under their
+  // command when they don't fit beside it.
+  const maxW = Math.max(40, Math.min(76, (process.stdout.columns || 100) - 8))
+  const lines = [c.white("run it"), ...commandLines(steps, maxW)]
+
+  if (has("docker")) {
+    const prod = "docker compose -f docker-compose.prod.yml"
+    const services = ["web", "API", sqlite ? "SQLite (in a volume)" : dbName, ...(has("queues") ? ["Redis"] : [])]
+    const what = `${services.slice(0, -1).join(", ")} and ${services.at(-1)}`
+    lines.push("", c.white("run the production images"))
+    lines.push(
+      ...commandLines(
+        [
+          [`${prod} up --build -d`, `${what} → http://localhost:8080`],
+          [`${prod} logs -f api`, "follow the API"],
+          [`${prod} down`, "stop everything"],
+        ],
+        maxW
+      )
+    )
+    const note = `Builds both images and reads secrets from .env. The API applies your migrations (from ${run("db:migrate")}) as it starts. For a real domain, set PUBLIC_URL in .env — see packages/docs/deployment.md.`
+    lines.push(...wrap(note, maxW - 2).map((line) => `  ${c.dim(line)}`))
+  }
+
   lines.push("")
   const extras: Array<[string, string]> = []
   if (has("password")) extras.push(["demo login", `demo@example.com ${c.dim("/")} demo-password-123`])
@@ -351,6 +373,18 @@ function nextSteps({
   extras.push(["health check", run("klin doctor")])
   lines.push(...table(extras, 2))
   return box(lines, { title: installFailed ? "almost there — next steps" : "spotless! next steps" })
+}
+
+/** `→ command  why`, aligned — or the why on its own line when it won't fit. */
+function commandLines(rows: Array<[string, string]>, maxW: number): string[] {
+  const cmdW = Math.max(...rows.map(([cmd]) => width(cmd)))
+  const inline = rows.every(([, why]) => !why || 2 + cmdW + 2 + width(why) <= maxW)
+  return rows.flatMap(([cmd, why]) => {
+    const command = cmd.startsWith("#") ? c.dim(cmd) : c.white(cmd)
+    if (!why) return [`${c.dim(sym.arrow)} ${command}`]
+    if (inline) return [`${c.dim(sym.arrow)} ${padEnd(command, cmdW)}  ${c.dim(why)}`]
+    return [`${c.dim(sym.arrow)} ${command}`, `    ${c.dim(why)}`]
+  })
 }
 
 /** Exposed for `klin doctor` / tests. */
