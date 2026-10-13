@@ -46,6 +46,14 @@ export function centered(lines: string[]) {
   process.stdout.write(`${lines.map(pad).join("\n")}\n`)
 }
 
+/** Lines moved right together, so a tree or a table sits centered and keeps its own alignment. */
+export function centeredBlock(lines: string[]) {
+  screen.close()
+  const columns = process.stdout.columns || 80
+  const pad = " ".repeat(Math.max(0, Math.floor((columns - Math.max(0, ...lines.map(width))) / 2)))
+  process.stdout.write(`${lines.map((line) => (line ? pad + line : "")).join("\n")}\n`)
+}
+
 export function outro(message: string) {
   screen.close()
   process.stdout.write(`${c.faint(rail)}\n${c.faint(end)}  ${message}\n\n`)

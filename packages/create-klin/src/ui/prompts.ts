@@ -45,7 +45,21 @@ function ask<T>(form: Form, onAction: (action: ReturnType<Form["key"]>, finish: 
   })
 }
 
-const echo = (message: string, answer: string) => screen.remember(`${c.faint("│")}\n${c.bright(sym.diamond)}  ${message}  ${c.muted(answer)}`)
+let echoing = true
+
+/** Echo answers to the scrollback — off for flows that close with their own centered summary. */
+export function setPromptEcho(on: boolean) {
+  echoing = on
+}
+
+/** `◆ question  answer` in the scrollback — what every prompt writes unless echo is off. */
+export function echoAnswer(message: string, answer: string) {
+  screen.remember(`${c.faint("│")}\n${c.bright(sym.diamond)}  ${message}  ${c.muted(answer)}`)
+}
+
+const echo = (message: string, answer: string) => {
+  if (echoing) echoAnswer(message, answer)
+}
 
 const toItems = <T extends string>(options: Option<T>[]): ChipItem[] =>
   options.map((o) => ({

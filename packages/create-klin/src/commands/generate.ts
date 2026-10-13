@@ -5,7 +5,7 @@ import { pathsFor } from "../generators/paths"
 import { type Plan, PlanError, planGenerate, type Project, type Reader } from "../generators/plan"
 import { type GenKind, KIND_LABELS, parseTarget, resolveKind, type Target } from "../generators/target"
 import { box } from "../ui/box"
-import { intro, log, outro } from "../ui/log"
+import { centered, centeredBlock, intro, log, outro } from "../ui/log"
 import * as prompts from "../ui/prompts"
 import { task } from "../ui/task"
 import { c, padEnd, shimmer, sym, width } from "../ui/theme"
@@ -41,7 +41,12 @@ export async function generateCommand(flags: Flags) {
   let kind = rawKind ? resolveKind(rawKind) : undefined
   if (rawKind && !kind) bail(`There's no "${rawKind}" generator — pick resource, backend or frontend.\n  ${USAGE}`)
 
-  intro("klin generate", c.dim(config.name))
+  // After the full-screen questions the result is centered, like the wizard's
+  // last page; a one-line command reads as a log down the rail.
+  const ask = interactive && (!kind || !rawName)
+  const out = printer(ask)
+  if (ask) prompts.setPromptEcho(false)
+  else intro("klin generate", c.dim(config.name))
   prompts.setPromptContext(`klin generate · ${config.name}`)
 
   if (!kind) {
@@ -71,13 +76,12 @@ export async function generateCommand(flags: Flags) {
 
   /* ─── Show & write ─────────────────────────────────────────────────── */
 
-  log.step(`${KIND_LABELS[kind]} ${c.bold(target.path)}`)
-  console.log(fileTree(plan.edits.map(({ path, kind, note }) => ({ path, kind, note }))))
-  console.log()
-  for (const warning of plan.warnings) log.warn(warning)
+  out.heading(kind, target, config.name)
+  out.tree(plan.edits.map(({ path, kind, note }) => ({ path, kind, note })))
+  for (const warning of plan.warnings) out.warn(warning)
 
   if (flags["dry-run"]) {
-    outro(c.dim("Dry run — nothing was written."))
+    out.end(c.dim("Dry run — nothing was written."))
     return
   }
 
@@ -87,7 +91,7 @@ export async function generateCommand(flags: Flags) {
       await mkdir(dirname(join(root, edit.path)), { recursive: true })
       await writeFile(join(root, edit.path), edit.content!)
     }
-  }, { done: () => `Wrote ${writes.length} files` })
+  }, { done: () => `Wrote ${writes.length} files`, center: ask })
 
   // Keep types in sync right away: the Prisma client and TanStack's route tree.
   const { pm } = project
@@ -100,17 +104,39 @@ export async function generateCommand(flags: Flags) {
         const [bin, ...args] = pmCommands(pm).exec("tsr generate").split(" ")
         await run(bin!, args, { cwd: join(root, "apps/web") })
       }
-    }, { done: () => (prismaClient ? "Prisma client and route tree are up to date" : "Route tree is up to date") }).catch(() => {
-      log.warn("Couldn't regenerate types automatically — they'll update on the next `dev`.")
+    }, { done: () => (prismaClient ? "Prisma client and route tree are up to date" : "Route tree is up to date"), center: ask }).catch(() => {
+      out.warn("Couldn't regenerate types automatically — they'll update on the next `dev`.")
     })
   }
 
-  console.log(nextSteps(kind, target, project, config))
-  outro(shimmer(OUTROS[kind]))
+  console.log(nextSteps(kind, target, project, config, ask))
+  out.end(shimmer(ask ? `${sym.star} ${OUTROS[kind]}` : OUTROS[kind]))
+}
+
+/** The result, either centered (after the full-screen questions) or down the rail. */
+function printer(center: boolean) {
+  return {
+    heading(kind: GenKind, target: Target, project: string) {
+      if (!center) return log.step(`${KIND_LABELS[kind]} ${c.bold(target.path)}`)
+      centered(["", `${c.badge("klin generate")}  ${c.muted(`${KIND_LABELS[kind]} · ${target.path} · ${project}`)}`, ""])
+    },
+    tree(entries: Parameters<typeof fileTree>[0]) {
+      if (center) centeredBlock([...fileTree(entries, "").split("\n"), ""])
+      else console.log(`${fileTree(entries)}\n`)
+    },
+    warn(message: string) {
+      if (center) centeredBlock(`${c.warn(sym.warn)}  ${message}`.split("\n"))
+      else log.warn(message)
+    },
+    end(message: string) {
+      if (center) centered([message, ""])
+      else outro(message)
+    },
+  }
 }
 
 /** What's left for the developer: the files to fill in, then how to see it run. */
-function nextSteps(kind: GenKind, target: Target, project: Project, config: ProjectConfig) {
+function nextSteps(kind: GenKind, target: Target, project: Project, config: ProjectConfig, center: boolean) {
   const paths = pathsFor(target)
   const service = project.backend === "nest" ? paths.nest.service : paths.plain.service
   const todo: Array<[string, string]> =
@@ -135,14 +161,21 @@ function nextSteps(kind: GenKind, target: Target, project: Project, config: Proj
   if (kind === "resource") steps.push([script(`db:migrate --name add-${target.one.kebab}`), "create the table"])
   steps.push([script("dev"), kind === "backend" ? `then call /api/${target.path}` : `then open /${target.path}`])
 
-  const pathW = Math.max(...todo.map(([path]) => width(path)))
-  const stepW = Math.max(...steps.map(([step]) => width(step)))
+  // The box never gets wider than the terminal: a "why" that won't fit beside
+  // its path or command goes under it instead.
+  const maxW = Math.max(40, (process.stdout.columns || 100) - 8)
+  const columns = (rows: Array<[string, string]>) => {
+    const leftW = Math.max(...rows.map(([left]) => width(left)))
+    return rows.every(([, why]) => leftW + 2 + width(why) <= maxW)
+      ? rows.map(([left, why]) => `${padEnd(left, leftW)}  ${c.dim(why)}`)
+      : rows.flatMap(([left, why]) => [left, `  ${c.dim(why)}`])
+  }
   const lines = [
     c.white("fill in"),
-    ...todo.map(([path, why]) => `${c.bright(padEnd(path, pathW))}  ${c.dim(why)}`),
+    ...columns(todo.map(([path, why]) => [c.bright(path), why])),
     "",
     c.white("then"),
-    ...steps.map(([step, why]) => `${c.dim(sym.arrow)} ${padEnd(step, stepW)}  ${c.dim(why)}`),
+    ...columns(steps.map(([step, why]) => [`${c.dim(sym.arrow)} ${step}`, why])),
   ]
   if (kind !== "frontend") {
     lines.push("", `${c.dim("endpoints")}  GET POST /api/${target.path}`, `           GET PATCH DELETE /api/${target.path}/:id`)
@@ -151,7 +184,7 @@ function nextSteps(kind: GenKind, target: Target, project: Project, config: Proj
   if (i18n && kind !== "backend") {
     lines.push("", `${c.dim("i18n")}  add "nav.${target.path.replaceAll("/", "-")}" to apps/web/src/i18n/locales/*.json`)
   }
-  return box(lines, { title: `${sym.star} ${target.path} is wired up` })
+  return box(lines, { title: `${sym.star} ${target.path} is wired up`, center })
 }
 
 /* ─── Questions ────────────────────────────────────────────────────────── */
