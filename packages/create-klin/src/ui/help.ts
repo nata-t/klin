@@ -22,7 +22,8 @@ export function help() {
     ${flag("--db")} ${dim("<name>")}          postgres · mysql · sqlite
     ${flag("--security")} ${dim("<list>")}    cors,helmet,rate-limit ${dim("(or none)")}
     ${flag("--extras")} ${dim("<list>")}      email,uploads,queues,i18n,docker,ci ${dim("(or none)")}
-    ${flag("--accent")} ${dim("<color>")}     violet · blue · emerald · rose · amber · neutral
+    ${flag("--accent")} ${dim("<color>")}     neutral · amber · blue · cyan · emerald · fuchsia · green · indigo · lime
+                         orange · pink · purple · red · rose · sky · teal · violet · yellow
     ${flag("--pm")} ${dim("<name>")}          pnpm · bun · npm
     ${flag("--template")} ${dim("<src>")}     ./folder or github:you/your-template[#branch]
     ${flag("-y, --yes")}            accept defaults, no questions
