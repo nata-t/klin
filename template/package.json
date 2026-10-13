@@ -22,6 +22,7 @@
     "db:studio": "pnpm --dir packages/db run db:studio",
     "db:seed": "pnpm --dir apps/api run db:seed",
     "email:dev": "pnpm --dir packages/email run dev",
+    "ui:add": "pnpm --dir apps/web run ui:add",
     "prepare": "husky"
   },
   "devDependencies": {

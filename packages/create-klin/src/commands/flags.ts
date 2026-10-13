@@ -26,7 +26,7 @@ export interface Flags {
 
 export const FLAG_SPEC = {
   boolean: ["help", "version", "yes", "force", "dry-run", "install", "git", "banner", "ui", "api"],
-  string: ["pm", "preset", "template", "plural", "scope", "from", "cwd", "backend", "server", "auth", "plugins", "db", "security", "extras", "accent"],
+  string: ["pm", "preset", "template", "plural", "scope", "from", "cwd", "backend", "server", "auth", "plugins", "db", "security", "extras", "components", "accent"],
   alias: { h: "help", v: "version", y: "yes", f: "force", t: "template", p: "preset" },
   default: { install: true, git: true, banner: true, ui: true, api: true },
 }

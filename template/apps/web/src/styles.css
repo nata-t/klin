@@ -2,6 +2,11 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/inter";
+/* klin:if packages-ui */
+/* Tailwind scans the folder it runs in (apps/web); point it at the shared components too. */
+/*? @source "../components"; */
+/*? @source "../../../../apps/web/src"; */
+/* klin:endif */
 
 @custom-variant dark (&:is(.dark *));
 

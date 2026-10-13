@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "typecheck": "tsr generate && tsc --noEmit && tsc --noEmit -p tsconfig.node.json",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "ui:add": "shadcn add"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

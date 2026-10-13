@@ -145,10 +145,12 @@ export async function generateCommand(flags: Flags) {
 
   if (withUi) {
     const dir = `apps/web/src/features/${names.plural.kebab}`
+    // With components in packages/ui, shadcn imports come from @repo/ui.
+    const ui = (code: string) => (enabled.has("packages-ui") ? toUiPackageImports(code) : code)
     add(`${dir}/api.ts`, t.webApiFile(spec))
     if (withApi) {
-      add(`${dir}/${names.kebab}-form.tsx`, t.webFormFile(spec))
-      add(`${dir}/${names.plural.kebab}-page.tsx`, t.webPageFile(spec))
+      add(`${dir}/${names.kebab}-form.tsx`, ui(t.webFormFile(spec)))
+      add(`${dir}/${names.plural.kebab}-page.tsx`, ui(t.webPageFile(spec)))
       add(`apps/web/src/routes/_app/${names.plural.kebab}.tsx`, t.webRouteFile(spec))
       const icon = t.iconFor(names.kebab)
       const nav = "apps/web/src/config/nav.ts"
@@ -246,6 +248,14 @@ async function askFields(): Promise<Field[]> {
     }
   }
   return fields
+}
+
+/** Mirrors the template's packages-ui rewrite: `@/components/ui/x` → `@repo/ui/components/x`. */
+function toUiPackageImports(code: string) {
+  return code
+    .replaceAll('"@/components/ui/', '"@repo/ui/components/')
+    .replaceAll('"@/lib/utils"', '"@repo/ui/lib/utils"')
+    .replaceAll('"@/hooks/use-mobile"', '"@repo/ui/hooks/use-mobile"')
 }
 
 function currentText(edits: Edit[], root: string, path: string): string | null {

@@ -65,6 +65,14 @@
       "default": ["docker", "ci"]
     },
     {
+      "id": "components",
+      "type": "select",
+      "flag": "components",
+      "message": "Where should shadcn/ui components live?",
+      "options": ["apps-web", "packages-ui"],
+      "default": "apps-web"
+    },
+    {
       "id": "accent",
       "type": "select",
       "flag": "accent",
@@ -352,6 +360,15 @@
       "hint": "lint, typecheck, test, build, e2e",
       "remove": [".github/**", "renovate.json"]
     },
+    "apps-web": {
+      "label": "apps/web",
+      "hint": "next to your app"
+    },
+    "packages-ui": {
+      "label": "packages/ui",
+      "hint": "a shared @repo/ui package",
+      "remove": ["variants/packages-ui/**"]
+    },
     "neutral": {
       "label": "Neutral",
       "swatch": "oklch(0.922 0 0)"
@@ -574,6 +591,54 @@
       "json": {
         "apps/api/package.json": {
           "dependencies": ["@fastify/rate-limit", "express-rate-limit"]
+        }
+      }
+    },
+    {
+      "when": "packages-ui",
+      "remove": [
+        "apps/web/components.json"
+      ],
+      "move": {
+        "variants/packages-ui/ui/": "packages/ui/",
+        "variants/packages-ui/web/": "apps/web/",
+        "apps/web/src/components/ui/": "packages/ui/src/components/",
+        "apps/web/src/components/theme-provider.tsx": "packages/ui/src/components/theme-provider.tsx",
+        "apps/web/src/lib/utils.ts": "packages/ui/src/lib/utils.ts",
+        "apps/web/src/hooks/use-mobile.ts": "packages/ui/src/hooks/use-mobile.ts",
+        "apps/web/src/styles.css": "packages/ui/src/styles/globals.css"
+      },
+      "replace": [
+        {
+          "files": ["apps/web/**/*.{ts,tsx}", "packages/ui/src/**/*.{ts,tsx}"],
+          "from": "\"@/components/ui/",
+          "to": "\"@repo/ui/components/"
+        },
+        {
+          "files": ["apps/web/**/*.{ts,tsx}", "packages/ui/src/**/*.{ts,tsx}"],
+          "from": "\"@/components/theme-provider\"",
+          "to": "\"@repo/ui/components/theme-provider\""
+        },
+        {
+          "files": ["apps/web/**/*.{ts,tsx}", "packages/ui/src/**/*.{ts,tsx}"],
+          "from": "\"@/lib/utils\"",
+          "to": "\"@repo/ui/lib/utils\""
+        },
+        {
+          "files": ["apps/web/**/*.{ts,tsx}", "packages/ui/src/**/*.{ts,tsx}"],
+          "from": "\"@/hooks/use-mobile\"",
+          "to": "\"@repo/ui/hooks/use-mobile\""
+        }
+      ],
+      "merge": {
+        "apps/web/package.json": {
+          "dependencies": { "@repo/ui": "workspace:*" }
+        }
+      },
+      "json": {
+        "apps/web/package.json": {
+          "dependencies": ["@base-ui/react", "class-variance-authority", "clsx", "tailwind-merge", "@fontsource-variable/inter"],
+          "devDependencies": ["tw-animate-css"]
         }
       }
     }
