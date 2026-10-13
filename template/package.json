@@ -19,7 +19,7 @@
     "db:deploy": "pnpm --dir packages/db run db:deploy",
     "db:push": "pnpm --dir packages/db run db:push",
     "db:reset": "pnpm --dir packages/db run db:reset",
-    "db:studio": "pnpm --dir packages/db run db:studio",
+    "db:studio": "turbo run db:studio",
     "db:seed": "pnpm --dir apps/api run db:seed",
     "email:dev": "pnpm --dir packages/email run dev",
     "ui:add": "pnpm --dir apps/web run ui:add",

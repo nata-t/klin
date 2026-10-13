@@ -251,9 +251,10 @@ export async function render(input: RenderInput): Promise<FileMap> {
       continue
     }
 
-    let text: string | null = await readFile(abs, "utf8")
-    text = processMarkers(text, flags, sourcePath)
-    if (text === null || text.trim() === "") continue
+    const original = await readFile(abs, "utf8")
+    let text = processMarkers(original, flags, sourcePath)
+    // Drop files the markers emptied — but keep ones that are empty on purpose (.gitkeep).
+    if (text === null || (text.trim() === "" && original.trim() !== "")) continue
 
     text = applyTokens(text, tokens)
     for (const { matches, from, to } of replacements) {

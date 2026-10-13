@@ -1,6 +1,6 @@
 {
   "$schema": "https://turborepo.com/schema.json",
-  "ui": "stream",
+  "ui": "tui",
   "globalPassThroughEnv": [
     "API_PORT",
     "CI",
@@ -38,6 +38,10 @@
     "db:generate": {
       "inputs": ["prisma/**", "prisma.config.ts"],
       "outputs": ["src/generated/**"]
+    },
+    "db:studio": {
+      "cache": false,
+      "persistent": true
     }
   }
 }

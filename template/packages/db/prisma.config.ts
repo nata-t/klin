@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs"
-import { dirname, join, resolve } from "node:path"
+import { dirname, isAbsolute, join, resolve } from "node:path"
 import { defineConfig } from "prisma/config"
 
 /**
@@ -22,12 +22,13 @@ if (existsSync(join(root, ".env"))) process.loadEnvFile(join(root, ".env"))
 
 function databaseUrl() {
   const url = process.env.DATABASE_URL
-  if (!url) return undefined
+  if (!url?.startsWith("file:")) return url
   // SQLite: relative file: paths are relative to the repo root, everywhere.
-  if (url.startsWith("file:") && !url.startsWith("file:/")) {
-    return `file:${resolve(root, url.slice("file:".length))}`
-  }
-  return url
+  // The path goes out as file:///absolute/path — Prisma Studio only reads
+  // `file://` URLs (migrate, push and the rest accept either form).
+  const path = url.slice("file:".length).replace(/^\/\/(?=\/)/, "")
+  const absolute = isAbsolute(path) ? path : resolve(root, path)
+  return process.platform === "win32" ? `file:${absolute}` : `file://${absolute}`
 }
 
 const url = databaseUrl()
