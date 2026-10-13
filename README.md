@@ -97,16 +97,21 @@ Presets: `recommended` · `saas` · `minimal` (plain Fastify on SQLite, no Docke
 Inside a project, `pnpm klin` (or `npx create-klin`) gives you:
 
 ```bash
-pnpm klin generate resource project name:string budget:int? due:date? status:enum:draft,active,done
+pnpm klin generate                            # asks what to make and what to call it
+pnpm klin generate resource billing/invoice   # model + schemas + API + page
+pnpm klin generate backend billing/invoice    # controller, service, DTOs, module
+pnpm klin generate frontend billing/invoice   # page, route, query hooks, form
 ```
 
-**One command writes a full vertical slice:** the Zod schemas in
-`packages/validators`, a Prisma model (with the relation to `User` or the
-active organization), a Nest module with nestjs-zod DTOs (or Express/Fastify
-routes and a service), TanStack Query hooks
-with key conventions, a form, a list page with search and pagination, a route,
-and a sidebar entry. Everything is wired, typechecks, and works after
-`pnpm db:migrate`.
+**The files and the wiring, not your schema:** the Zod schemas in
+`packages/validators`, a Prisma model, a Nest module with the five REST
+endpoints and nestjs-zod DTOs (or Express/Fastify routes and a service),
+TanStack Query hooks, a form, a page, a route and a sidebar entry. One example
+field shows where yours go; backend-only services answer 501 until you fill
+them in. Slashes make folders (`billing/invoice` goes in a `billing/` folder in
+every layer). Everything typechecks and lints as generated. Flags like
+`--url`, `--no-model`, `--no-validation`, `--no-route` and `--no-nav` trim or
+redirect what's written — `klin --help` lists them.
 
 ```bash
 pnpm klin add organizations email   # bolt modules on later

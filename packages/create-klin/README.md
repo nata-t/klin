@@ -22,7 +22,7 @@ gets fresh secrets, dependencies are installed and git is initialized.
 Inside a project:
 
 ```bash
-pnpm klin generate resource project name:string budget:int? due:date?
+pnpm klin generate resource billing/invoice
 pnpm klin add organizations email
 pnpm klin remove email
 pnpm klin doctor

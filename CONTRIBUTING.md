@@ -6,7 +6,7 @@
 packages/create-klin/   the CLI (published as `create-klin`, bins: create-klin + klin)
   src/engine/           markers, expressions, manifest, render
   src/commands/         create · add/remove/upgrade (transition) · generate · doctor · list
-  src/generators/       `klin generate resource` templates
+  src/generators/       `klin generate`: name parsing, the planner, and templates per layer
   src/ui/               the grayscale UI kit: canvas, full-screen form, prompts, logs, logo, theme
   test/                 unit tests + the rendering matrix
 template/               the kit: a full monorepo with every module on
@@ -111,8 +111,8 @@ Workspace ranges become `*` for npm. For YAML/Dockerfiles, use markers with
 ### Anchors
 
 `// klin-anchor:*` comments mark insertion points for `klin generate`
-(`exports`, `module-imports`, `modules`, `nav`, `nav-icons`,
-`user-relations`, `organization-relations`). Keep them when editing those files.
+(`exports`, `module-imports`, `modules`, `route-imports`, `routes`, `nav`,
+`nav-icons`). Keep them when editing those files.
 
 ### Dependency floors
 
