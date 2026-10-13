@@ -7,6 +7,7 @@ import { loadManifest } from "../engine/manifest"
 import { intro, outro } from "../ui/log"
 import { spinner } from "../ui/task"
 import { c, shimmer, sym } from "../ui/theme"
+import { dockerFix, dockerState } from "../utils/docker"
 import { parseEnv } from "../utils/env-file"
 import { pmCommands, pmVersion } from "../utils/pm"
 import { findProjectRoot, parsePackageManager, readProject } from "../utils/project"
@@ -144,6 +145,23 @@ export async function doctorCommand(_flags: Flags) {
   }
 
   /* ─── Services ─────────────────────────────────────────────────────── */
+  // Local services run in Docker Compose unless it's SQLite with nothing else to start.
+  const compose = enabled.has("docker") && (config.answers.database !== "sqlite" || enabled.has("queues") || enabled.has("uploads"))
+  if (compose) {
+    const state = await dockerState()
+    if (state === "ready") add({ group: "Services", title: "Docker is running", status: "ok" })
+    else {
+      const fix = dockerFix(state)
+      const commands = fix.steps.filter(([command]) => !command.startsWith("#")).map(([command]) => command)
+      add({
+        group: "Services",
+        title: fix.problem,
+        status: "fail",
+        detail: fix.steps.map(([command, why]) => (command.startsWith("#") ? `${command.slice(2)} — ${why}` : why)).join(" · "),
+        hint: commands.length ? commands.join(" && ") : undefined,
+      })
+    }
+  }
   const databaseUrl = env?.get("DATABASE_URL")
   if (databaseUrl) {
     if (databaseUrl.startsWith("file:")) {

@@ -22,6 +22,25 @@ Sign up, or use the seeded account `demo@example.com` / `demo-password-123`.
 > Something off? `pnpm klin doctor` checks your Node version, `.env`, database
 > connection, generated code and dependency versions, and tells you how to fix
 > what it finds.
+<!-- klin:if compose -->
+
+### Docker says "permission denied"
+
+`pnpm db:up` needs Docker. On Linux, Docker Engine's socket belongs to root and
+the `docker` group, so add yourself to the group once:
+
+```bash
+sudo usermod -aG docker $USER
+newgrp docker          # or log out and back in
+```
+
+Don't run `sudo pnpm db:up` instead — the containers would work, but files and
+caches end up owned by root. Members of the `docker` group can control Docker
+like root; if you'd rather avoid that, use Docker Desktop for Linux or rootless
+Docker. On macOS and Windows, Docker Desktop sets up access when it's installed
+— just make sure it's running (on Windows, your account must be in the
+`docker-users` group).
+<!-- klin:endif -->
 
 ## What's where
 

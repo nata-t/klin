@@ -20,6 +20,7 @@ import { INSTALL_QUIPS, setTaskReporter, task } from "../ui/task"
 import { interactive } from "../ui/term"
 import { c, padEnd, pick, shimmer, swatch, sym, width } from "../ui/theme"
 import { fileTree } from "../ui/tree"
+import { type DockerState, dockerFix, dockerState } from "../utils/docker"
 import { generateEnv } from "../utils/env-file"
 import { run } from "../utils/exec"
 import { isEmptyDir, writeFileMap } from "../utils/fs"
@@ -207,7 +208,9 @@ export async function create(flags: Flags) {
 
   /* ─── Next steps ───────────────────────────────────────────────────── */
   const installFailed = willInstall && !installed
-  const steps = nextSteps({ manifest, answers, targetDir, pm, installed, installFailed, center: ask })
+  // db:up needs Docker: if this user can't reach it yet, the steps say how to fix that first.
+  const docker = usesCompose(answers) ? await dockerState() : "ready"
+  const steps = nextSteps({ manifest, answers, targetDir, pm, installed, installFailed, docker, center: ask })
   const optionNotes = Object.values(answers)
     .flat()
     .map((id) => manifest.options[id]?.note)
@@ -318,6 +321,12 @@ async function installDependencies(dir: string, pm: PackageManager, leaveScreen:
   }
 }
 
+/** Whether the project runs local services (database, Redis, storage) with Docker Compose. */
+function usesCompose(answers: Answers) {
+  const has = (id: string) => Object.values(answers).flat().includes(id)
+  return has("docker") && (answers.database !== "sqlite" || has("queues") || has("uploads"))
+}
+
 function nextSteps({
   manifest,
   answers,
@@ -325,6 +334,7 @@ function nextSteps({
   pm,
   installed,
   installFailed,
+  docker,
   center,
 }: {
   manifest: Manifest
@@ -333,20 +343,22 @@ function nextSteps({
   pm: PackageManager
   installed: boolean
   installFailed: boolean
+  docker: DockerState
   center: boolean
 }) {
   const run = pmCommands(pm).run
   const has = (id: string) => Object.values(answers).flat().includes(id)
   const sqlite = answers.database === "sqlite"
-  const compose = has("docker") && (!sqlite || has("queues") || has("uploads"))
   const dir = relative(process.cwd(), targetDir) || "."
   const dbName = manifest.options[answers.database as string]?.label ?? "the database"
 
-  const steps: Array<[string, string]> = []
+  const steps: Step[] = []
   if (dir !== ".") steps.push([`cd ${dir}`, ""])
   if (!installed) steps.push([pmCommands(pm).install, installFailed ? "retry the install" : "install dependencies"])
-  if (compose) steps.push([run("db:up"), `start ${sqlite ? "local services" : dbName} in Docker`])
-  else if (!sqlite) steps.push(["# point DATABASE_URL in .env at your database", ""])
+  if (usesCompose(answers)) {
+    if (docker !== "ready") for (const [command, why] of dockerFix(docker).steps) steps.push([command, why, true])
+    steps.push([run("db:up"), `start ${sqlite ? "local services" : dbName} in Docker`])
+  } else if (!sqlite) steps.push(["# point DATABASE_URL in .env at your database", ""])
   steps.push([run("db:migrate"), "create the tables"])
   if (has("password")) steps.push([run("db:seed"), "add a demo admin + notes"])
   steps.push([run("dev"), "web :5173 · api :3000 · studio :5555"])
@@ -354,7 +366,9 @@ function nextSteps({
   // The box never gets wider than the terminal: explanations move under their
   // command when they don't fit beside it.
   const maxW = Math.max(40, Math.min(76, (process.stdout.columns || 100) - 8))
-  const lines = [c.white("run it"), ...commandLines(steps, maxW)]
+  const lines = [c.white("run it")]
+  if (docker !== "ready" && usesCompose(answers)) lines.push(c.warn(`${sym.warn} ${dockerFix(docker).problem} — fix it first`))
+  lines.push(...commandLines(steps, maxW))
 
   lines.push("")
   const extras: Array<[string, string]> = []
@@ -369,15 +383,19 @@ function nextSteps({
   return box(lines, { title: installFailed ? "almost there — next steps" : "spotless! next steps", center })
 }
 
+/** A command, why you'd run it, and whether it's a fix to make first (drawn in amber). */
+type Step = [command: string, why: string, fix?: boolean]
+
 /** `→ command  why`, aligned — or the why on its own line when it won't fit. */
-function commandLines(rows: Array<[string, string]>, maxW: number): string[] {
+function commandLines(rows: Step[], maxW: number): string[] {
   const cmdW = Math.max(...rows.map(([cmd]) => width(cmd)))
   const inline = rows.every(([, why]) => !why || 2 + cmdW + 2 + width(why) <= maxW)
-  return rows.flatMap(([cmd, why]) => {
+  return rows.flatMap(([cmd, why, fix]) => {
+    const arrow = fix ? c.warn(sym.arrow) : c.dim(sym.arrow)
     const command = cmd.startsWith("#") ? c.dim(cmd) : c.white(cmd)
-    if (!why) return [`${c.dim(sym.arrow)} ${command}`]
-    if (inline) return [`${c.dim(sym.arrow)} ${padEnd(command, cmdW)}  ${c.dim(why)}`]
-    return [`${c.dim(sym.arrow)} ${command}`, `    ${c.dim(why)}`]
+    if (!why) return [`${arrow} ${command}`]
+    if (inline) return [`${arrow} ${padEnd(command, cmdW)}  ${c.dim(why)}`]
+    return [`${arrow} ${command}`, `    ${c.dim(why)}`]
   })
 }
 
