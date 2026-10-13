@@ -7,10 +7,13 @@ packages/create-klin/   the CLI (published as `create-klin`, bins: create-klin +
   src/engine/           markers, expressions, manifest, render
   src/commands/         create · add/remove/upgrade (transition) · generate · doctor · list
   src/generators/       `klin generate resource` templates
-  src/ui/               banner, boxes, trees, spinner tasks, theme
+  src/ui/               the grayscale UI kit: canvas, full-screen form, prompts, logs, logo, theme
   test/                 unit tests + the rendering matrix
 template/               the kit: a full monorepo with every module on
-  klin.template.json    questions, options, strip rules, presets
+  klin.template.json    questions, options, steps, strip/move rules, presets
+  apps/api/src/         the NestJS API (the default backend)
+  apps/api/plain*/      the plain Express / Fastify APIs, merged into src/ when picked
+  variants/             files that only exist for some answers (e.g. packages/ui)
 scripts/                maintenance (dependency ages, playground)
 demo/                   VHS tape for the README GIF
 ```
@@ -22,6 +25,8 @@ pnpm install
 pnpm --filter create-klin dev        # tsup --watch
 pnpm test
 pnpm playground everything pnpm      # renders + installs into .playground/
+FORCE_COLOR=3 pnpm --filter create-klin exec tsx scripts/preview-ui.ts /tmp/ui 130 42
+                                     # wizard frames as HTML screenshots, no TTY needed
 ```
 
 The CLI finds the template at `../../template` when it runs from a checkout,
@@ -55,6 +60,14 @@ the render with a file:line error, so typos can't silently strip code.
 Use dormant lines for mutually exclusive variants (databases, package
 managers), so the template stays valid with the default variant active.
 
+When a variant is a different *set of files* rather than a few lines, keep it
+in its own folder and `move` it into place with a rule. The plain backends work
+this way: `apps/api/plain/` (shared: services, errors, logger) plus
+`apps/api/plain-express/` or `apps/api/plain-fastify/` are merged into
+`apps/api/src/`, and they import each other by their final paths
+(`../services/notes`). Check them in a rendered project — the playground or the
+render-matrix tests — rather than in place.
+
 ### The manifest (`klin.template.json`)
 
 - `questions`: the prompts, in order. `select` or `multiselect`, with the CLI
@@ -62,8 +75,24 @@ managers), so the template stays valid with the default variant active.
 - `options`: every option's `label`/`hint`, `requires` (auto-enabled
   dependencies), `remove` (globs deleted when the option is **off**) and `json`
   (package.json keys deleted when it's off).
-- `flags`: derived flags as expressions.
-- `rules`: `{ when, remove?, json? }` applied when `when` is true.
+- `flags`: derived flags as expressions. `scaffolded` is always on when
+  rendering, so `klin:if !scaffolded` marks lines that only exist in the
+  template itself.
+- `rules`: `{ when, remove?, json?, merge?, move?, replace? }` applied when
+  `when` is true:
+  - `move` remaps output paths after `remove` (`"apps/api/plain/": "apps/api/src/"`
+    moves a folder, a key without a trailing slash moves one file). Two files
+    landing on the same path fail the render.
+  - `replace` rewrites literal text in rendered files matched by output path
+    (how `packages-ui` turns `@/components/ui/x` into `@repo/ui/components/x`).
+  - `merge` deep-merges keys into JSON files (`json` only removes).
+- `steps`: how the interactive CLI pages the questions (`title`, `heading`,
+  `subtitle`, `questions`). The CLI adds its own first (name, package manager,
+  preset) and last (review & build) steps; keep the total at six or fewer.
+- Each question can have a `title` (its chip-group label) and `groups` to split
+  a long option list visually. Each option and preset can have `about` — two or
+  three sentences shown while it's highlighted (say what it is and how it gets
+  set up) — and options a `swatch` color.
 - `presets`: named answer sets.
 - `tokens`: strings replaced with the project name (`klin-app`, `klin_app`, `Klin App`).
 - `env.generate`: `.env` keys that get random values (other occurrences of the

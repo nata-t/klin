@@ -26,29 +26,59 @@ Ctrl+U
 Type "create-klin my-saas"
 Show
 Enter
-Sleep 2.2s
+Sleep 2.4s
 
-# Preset: SaaS starter
-Down
-Sleep 500ms
-Enter
-Sleep 900ms
-
-# Vibe: emerald
+# 1 Base: the name came from the command line — start from the SaaS preset
 Down
 Sleep 300ms
 Down
 Sleep 400ms
+Left
+Left
+Left
+Right
+Sleep 300ms
+Space
+Sleep 1.2s
 Enter
-Sleep 900ms
+Sleep 1.4s
 
-# Package manager: keep pnpm
+# 2 Stack: NestJS on Fastify
+Down
+Sleep 300ms
+Left
+Right
+Sleep 300ms
+Space
+Sleep 1.2s
 Enter
-Sleep 2.4s
+Sleep 1.2s
 
-# "Looks spotless?"
+# 3 Auth, 4 Toolbox: keep the preset's picks
 Enter
-Sleep 22s
+Sleep 1.2s
+Enter
+Sleep 1.4s
+
+# 5 Looks: emerald
+Down
+Sleep 300ms
+Left
+Left
+Left
+Right
+Right
+Right
+Right
+Sleep 300ms
+Space
+Sleep 1.2s
+Enter
+Sleep 1.6s
+
+# 6 Build
+Enter
+Sleep 24s
 
 Type "cd my-saas && pnpm klin generate resource project name:string 'budget:int?' 'due:date?' --yes"
 Enter

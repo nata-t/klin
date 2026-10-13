@@ -10,7 +10,7 @@
 ```
 
 **A spotless full-stack TypeScript starter.**
-NestJS · Better Auth · Prisma · TanStack Router/Query/Form · shadcn/ui · Turborepo
+NestJS or plain Express/Fastify · Better Auth · Prisma · TanStack Router/Query/Form · shadcn/ui · Turborepo
 
 ```bash
 npm create klin@latest
@@ -30,12 +30,14 @@ already wired together, and then stays useful after day one.
 
 **The opinion:** one Zod schema should describe a piece of data *everywhere*.
 It validates the form, validates the request, shapes the response and gives
-both apps their types. klin is built around that idea. Schemas live in
-`packages/validators`, NestJS 12 consumes them natively (Standard Schema, no DTO
-classes), and the generator writes whole features on top of it.
+both apps their types (`z.infer`). klin is built around that idea. Schemas live
+in `packages/validators`; a NestJS API turns them into DTOs with
+[nestjs-zod](https://github.com/BenLorantfy/nestjs-zod), a plain Express or
+Fastify API parses with them directly, and the generator writes whole features
+on top of it.
 
 **It's a good fit for** SaaS products, internal tools, dashboards and API-backed
-apps where a separate backend (NestJS) is a feature, not overhead.
+apps where a separate backend is a feature, not overhead.
 
 **It's not for** static sites, content-heavy marketing sites that need SSR/SEO,
 or projects that want everything in one Next.js app. Use a framework built for
@@ -46,14 +48,14 @@ that instead.
 | | |
 | --- | --- |
 | **Auth** (Better Auth) | sign up/in/out, verify email, forgot/reset password, sessions page · Google · GitHub · magic links · 2FA (TOTP + backup codes) · passkeys · guarded routes on both sides |
-| **API** (NestJS 12) | global auth guard + `@Public()` `@Roles()` `@CurrentUser()` · Zod validation & response schemas · one error envelope · pino logs with request ids · rate limiting · helmet · health check · seed script |
-| **Web** (Vite + React 19) | public / auth / dashboard layouts · TanStack Router `beforeLoad` guards · typed API client + query-key conventions · TanStack Form + shadcn/ui form kit · dark mode · error, 404 & loading states |
-| **Monorepo** | Turborepo with caching and `db:*` tasks · shared TS/ESLint/Prettier configs · husky + lint-staged + commitlint · Vitest + Playwright |
+| **API** | **NestJS 12** (on Express or Fastify) with a global auth guard, `@Public()` `@Roles()` `@CurrentUser()` and nestjs-zod DTOs — or **plain Express 5 / Fastify 5** with auth middleware and the same schemas · one error envelope · pino logs with request ids · CORS, helmet and rate limiting (each optional) · health check · seed script |
+| **Web** (Vite + React 19) | public / auth / dashboard layouts · TanStack Router `beforeLoad` guards · typed API client + query-key conventions · TanStack Form + shadcn/ui form kit (in `apps/web` or a shared `packages/ui`, `pnpm ui:add <component>`) · 18 shadcn theme colors · dark mode · error, 404 & loading states |
+| **Monorepo** | Turborepo with caching and `db:*` tasks · `dev` in the split-pane TUI: Prisma client generated first, then web, API and Prisma Studio side by side · shared TS/ESLint/Prettier configs · husky + lint-staged + commitlint · Vitest + Playwright |
 | **Ops** | Docker Compose for local services · production Dockerfiles (API + nginx web) · GitHub Actions · Renovate · `.env` with generated secrets |
-| **Optional modules** | organizations & RBAC · admin dashboard · API keys · transactional email (Resend + React Email) · file uploads (S3/R2 presigned) · background jobs (BullMQ) · i18n |
+| **Optional modules** | organizations & RBAC · admin dashboard · API keys · transactional email (Resend + React Email) · file uploads (S3/R2 presigned) · background jobs (BullMQ) · i18n (English to start) |
 | **Docs** | getting started, architecture, the shared-validators flow, add-a-feature walkthrough, testing, deployment, upgrading |
 
-Pick Postgres, MySQL or SQLite, and pnpm, bun or npm. Unused code is stripped,
+Pick Postgres, MySQL or SQLite, and bun (the default), pnpm or npm. Unused code is stripped,
 not left behind as dead flags.
 
 ## The CLI
@@ -61,16 +63,29 @@ not left behind as dead flags.
 ### Create
 
 ```bash
-npm create klin@latest            # interactive: presets or pick everything
-pnpm create klin my-app --preset saas --db postgres --pm pnpm
-bunx create-klin my-app --auth password,google,passkey --plugins organizations --extras email,docker,ci -y
+npm create klin@latest            # interactive
+pnpm create klin my-app --preset saas --backend nest --server fastify --db postgres --pm pnpm
+bunx create-klin my-app --backend plain --server express --auth password,google,passkey --plugins organizations --extras email,docker,ci -y
 ```
 
-It scaffolds the project, strips what you didn't pick, writes `.env` with
-fresh secrets, runs `git init`, installs dependencies, generates the Prisma
-client, commits, and prints your next steps.
+In a terminal, `create-klin` opens a full-screen, grayscale wizard — the KLIN
+logo and a step indicator on top, everything centered — six steps, each a page
+of "chips" you snap on and off:
 
-Presets: `recommended` · `saas` · `minimal` (SQLite, no Docker) · `everything`.
+1. **Base** — name your kit (validated live: `✓ ./my-app is free to use`), package manager (bun by default), a preset to start from
+2. **Stack** — NestJS or plain · Express or Fastify · Postgres, MySQL or SQLite
+3. **Auth** — sign-in methods and Better Auth power-ups
+4. **Toolbox** — CORS, Helmet, rate limiting (on by default), email, uploads, jobs, i18n, Docker, CI
+5. **Looks** — where shadcn/ui lives (`apps/web` or `packages/ui`) and one of shadcn's 18 theme colors
+6. **Build** — review, then build with live progress
+
+The highlighted part is always explained at the bottom, above the key hints.
+Then it scaffolds
+the project, strips what you didn't pick, writes `.env` with fresh secrets,
+runs `git init`, installs dependencies, generates the Prisma client, commits,
+and prints your next steps. With `--yes` (or in CI) it skips the wizard.
+
+Presets: `recommended` · `saas` · `minimal` (plain Fastify on SQLite, no Docker) · `everything`.
 
 ### Grow
 
@@ -82,7 +97,8 @@ pnpm klin generate resource project name:string budget:int? due:date? status:enu
 
 **One command writes a full vertical slice:** the Zod schemas in
 `packages/validators`, a Prisma model (with the relation to `User` or the
-active organization), a Nest module/controller/service, TanStack Query hooks
+active organization), a Nest module with nestjs-zod DTOs (or Express/Fastify
+routes and a service), TanStack Query hooks
 with key conventions, a form, a list page with search and pagination, a route,
 and a sidebar entry. Everything is wired, typechecks, and works after
 `pnpm db:migrate`.

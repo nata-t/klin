@@ -1,0 +1,5 @@
+---
+"create-klin": minor
+---
+
+A new full-screen, grayscale wizard (the KLIN logo with a step indicator, six centered steps of chip pickers, live name validation, and an always-visible explanation of the highlighted option above the key hints) replaces the old prompts, and every other command shares the same look. bun is now the first and default package manager, and the final next steps explain how to run the production Docker images. New choices: NestJS or plain backends on Express or Fastify, optional CORS/Helmet/rate limiting (on by default), shadcn/ui in `apps/web` or a shared `packages/ui`, and shadcn's 18 theme colors (neutral first and default). NestJS projects validate with nestjs-zod DTOs built from the shared schemas; the landing page greets you with a terminal-style "klin"; i18n starts with English only; and `turbo dev` opens Turborepo's split-pane TUI with the Prisma client generated first and Prisma Studio running next to the web app and API (`db:studio` is a Turborepo task too). SQLite projects now include `packages/db/data/`, and their Prisma config writes `file:///` URLs so Prisma Studio can open them.
