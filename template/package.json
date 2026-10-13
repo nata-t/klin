@@ -34,6 +34,11 @@
     "turbo": "^2.11.7",
     "typescript": "~6.0.3"
   },
+  "overrides": {
+    "nestjs-zod": {
+      "@nestjs/common": "^12.1.2"
+    }
+  },
   "workspaces": [
     "apps/*",
     "packages/*"

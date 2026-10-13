@@ -7,8 +7,8 @@ import { booleanish, idSchema, isoDate } from "./common"
  *
  *   packages/validators/src/note.ts          ← you are here
  *   packages/db/prisma/models/note.prisma
- *   apps/api/src/modules/notes/*
- *   apps/web/src/features/notes/*
+ *   apps/api/src/modules/notes/*             (NestJS: nestjs-zod DTOs made from these schemas)
+ *   apps/web/src/features/notes/*            (form validation + z.infer types)
  *   apps/web/src/routes/_app/notes.tsx
  *
  * `klin generate resource <name>` produces this exact shape for a new resource.
@@ -55,11 +55,16 @@ export const noteListSchema = paginatedSchema(noteSchema)
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
 
-export type Note = z.output<typeof noteSchema>
-export type NoteList = z.output<typeof noteListSchema>
+/*
+ * Types come from the schemas, never written by hand:
+ *   z.infer<…>  what a schema produces after parsing (defaults applied, dates as strings)
+ *   z.input<…>  what you may send it (what a form holds before submit)
+ */
+export type Note = z.infer<typeof noteSchema>
+export type NoteList = z.infer<typeof noteListSchema>
 export type CreateNoteInput = z.input<typeof createNoteSchema>
-export type CreateNote = z.output<typeof createNoteSchema>
+export type CreateNote = z.infer<typeof createNoteSchema>
 export type UpdateNoteInput = z.input<typeof updateNoteSchema>
-export type UpdateNote = z.output<typeof updateNoteSchema>
+export type UpdateNote = z.infer<typeof updateNoteSchema>
 export type NoteListQueryInput = z.input<typeof noteListQuerySchema>
-export type NoteListQuery = z.output<typeof noteListQuerySchema>
+export type NoteListQuery = z.infer<typeof noteListQuerySchema>

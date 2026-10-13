@@ -1,60 +1,42 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from "@nestjs/common"
-import {
-  type CreateNote,
-  createNoteSchema,
-  type NoteListQuery,
-  noteListQuerySchema,
-  noteListSchema,
-  noteSchema,
-  type UpdateNote,
-  updateNoteSchema,
-} from "@repo/validators"
-import { CurrentUser, ResponseSchema } from "../../common"
+import { ZodSerializerDto } from "nestjs-zod"
+import { CurrentUser } from "../../common"
+import { CreateNoteDto, NoteDto, NoteListDto, NoteListQueryDto, UpdateNoteDto } from "./notes.dto"
 import { NotesService } from "./notes.service"
 
 /**
  * /api/notes — every route requires a signed-in user (global AuthGuard) and
  * only ever touches that user's notes.
  *
- * Request bodies and queries are validated by the schemas passed to @Body /
- * @Query; responses are shaped by @ResponseSchema. All of them come from
- * @repo/validators, the same schemas the web app's forms use.
+ * Bodies and queries are validated through their nestjs-zod DTOs; responses
+ * are shaped by @ZodSerializerDto. Every DTO is built from a schema in
+ * @repo/validators, the same one the web app's forms and types use.
  */
 @Controller("notes")
 export class NotesController {
   constructor(private readonly notes: NotesService) {}
 
   @Get()
-  @ResponseSchema(noteListSchema)
-  list(
-    @CurrentUser("id") userId: string,
-    @Query({ schema: noteListQuerySchema }) query: NoteListQuery
-  ) {
+  @ZodSerializerDto(NoteListDto)
+  list(@CurrentUser("id") userId: string, @Query() query: NoteListQueryDto) {
     return this.notes.list(userId, query)
   }
 
   @Get(":id")
-  @ResponseSchema(noteSchema)
+  @ZodSerializerDto(NoteDto)
   get(@CurrentUser("id") userId: string, @Param("id") id: string) {
     return this.notes.get(userId, id)
   }
 
   @Post()
-  @ResponseSchema(noteSchema)
-  create(
-    @CurrentUser("id") userId: string,
-    @Body({ schema: createNoteSchema }) input: CreateNote
-  ) {
+  @ZodSerializerDto(NoteDto)
+  create(@CurrentUser("id") userId: string, @Body() input: CreateNoteDto) {
     return this.notes.create(userId, input)
   }
 
   @Patch(":id")
-  @ResponseSchema(noteSchema)
-  update(
-    @CurrentUser("id") userId: string,
-    @Param("id") id: string,
-    @Body({ schema: updateNoteSchema }) input: UpdateNote
-  ) {
+  @ZodSerializerDto(NoteDto)
+  update(@CurrentUser("id") userId: string, @Param("id") id: string, @Body() input: UpdateNoteDto) {
     return this.notes.update(userId, id, input)
   }
 

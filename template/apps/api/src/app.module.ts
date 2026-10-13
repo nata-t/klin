@@ -1,11 +1,11 @@
 import { auth } from "@repo/auth"
-import { Module, StandardSchemaSerializerInterceptor } from "@nestjs/common"
+import { Module } from "@nestjs/common"
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from "@nestjs/core"
 import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler"
 import { AuthModule } from "@thallesp/nestjs-better-auth"
+import { ZodSerializerInterceptor, ZodValidationPipe } from "nestjs-zod"
 import { ApiExceptionFilter } from "./common/filters/api-exception.filter"
 import { ApiResponseInterceptor } from "./common/interceptors/api-response.interceptor"
-import { SchemaValidationPipe } from "./common/pipes/schema-validation.pipe"
 import { HealthModule } from "./health/health.module"
 import { LoggerModule } from "./logger.module"
 import { AdminModule } from "./modules/admin/admin.module" // klin:only admin
@@ -37,12 +37,14 @@ import { PrismaModule } from "./prisma/prisma.module"
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
-    { provide: APP_PIPE, useClass: SchemaValidationPipe },
+    // nestjs-zod: @Body()/@Query() parameters typed with a DTO made by
+    // createZodDto(schema) are validated against that schema (→ 422 on failure).
+    { provide: APP_PIPE, useClass: ZodValidationPipe },
     { provide: APP_FILTER, useClass: ApiExceptionFilter },
-    // Interceptors run outermost-first: wrap in the envelope *after* the
-    // response schema has shaped the data.
+    // Interceptors run outermost-first: wrap in the envelope *after*
+    // @ZodSerializerDto has shaped the data.
     { provide: APP_INTERCEPTOR, useClass: ApiResponseInterceptor },
-    { provide: APP_INTERCEPTOR, useClass: StandardSchemaSerializerInterceptor },
+    { provide: APP_INTERCEPTOR, useClass: ZodSerializerInterceptor },
   ],
 })
 export class AppModule {}

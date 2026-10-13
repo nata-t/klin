@@ -2,9 +2,9 @@
  * @repo/validators — the single source of truth for data shapes.
  *
  * Every schema here is used on both sides of the wire:
- *   • the API validates requests with it   → @Body({ schema: createNoteSchema })
- *   • the API shapes responses with it     → @ResponseSchema(noteSchema)
- *   • the web app validates forms with it  → useAppForm({ validators: { onSubmit: createNoteSchema } })
+ *   • the API validates requests with it    → class CreateNoteDto extends createZodDto(createNoteSchema) {}   (NestJS, nestjs-zod)
+ *   • the API shapes responses with it      → @ZodSerializerDto(NoteDto) · noteSchema.parse(note)
+ *   • the web app validates forms with it   → useAppForm({ validators: { onDynamic: createNoteSchema } })
  *   • TypeScript types are inferred from it → type Note = z.infer<typeof noteSchema>
  *
  * Change a rule once, and both sides agree. `klin generate resource` adds new

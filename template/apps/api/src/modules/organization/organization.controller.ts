@@ -1,15 +1,17 @@
 // klin:file organizations
 import { Controller, Get, NotFoundException } from "@nestjs/common"
 import { organizationOverviewSchema } from "@repo/validators"
+import { createZodDto, ZodSerializerDto } from "nestjs-zod"
 import {
   type AuthSession,
   CurrentSession,
   MemberHasPermission,
   OrgRoles,
   RequireActiveOrg,
-  ResponseSchema,
 } from "../../common"
 import { PrismaService } from "../../prisma/prisma.service"
+
+class OrganizationOverviewDto extends createZodDto(organizationOverviewSchema) {}
 
 /**
  * /api/organization — examples of organization-scoped routes.
@@ -25,7 +27,7 @@ export class OrganizationController {
 
   /** Any member of the active organization. */
   @Get("overview")
-  @ResponseSchema(organizationOverviewSchema)
+  @ZodSerializerDto(OrganizationOverviewDto)
   async overview(@CurrentSession() session: AuthSession) {
     const organizationId = session.session.activeOrganizationId!
     const [organization, members, pendingInvitations, membership] = await Promise.all([

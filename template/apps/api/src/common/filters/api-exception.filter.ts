@@ -6,10 +6,11 @@ import {
   HttpStatus,
   Logger,
 } from "@nestjs/common"
+import { HttpAdapterHost } from "@nestjs/core"
 import { Prisma } from "@repo/db"
 import { isProduction } from "@repo/env"
-import type { ApiErrorResponse, ValidationIssue } from "@repo/validators"
-import type { Request, Response } from "express"
+import { type ApiErrorResponse, toValidationIssues, type ValidationIssue } from "@repo/validators"
+import { ZodSerializationException, ZodValidationException } from "nestjs-zod"
 
 interface ErrorShape {
   status: number
@@ -18,26 +19,30 @@ interface ErrorShape {
   details?: ValidationIssue[]
 }
 
+type ZodLikeError = { issues?: Array<{ path: PropertyKey[]; message: string }>; message?: string }
+
 /**
  * Every error leaves the API in the same shape (`ApiErrorResponse` from
  * @repo/validators), so the web client can handle them in one place.
  *
- *   HttpException (NotFoundException, …)  → its status, code from the status name
- *   Validation failures                   → 422 VALIDATION_ERROR + details[]
- *   Prisma unique / not-found errors      → 409 CONFLICT / 404 NOT_FOUND
- *   Anything else                         → 500, logged, message hidden in prod
+ *   ZodValidationException (nestjs-zod)    → 422 VALIDATION_ERROR + details[]
+ *   ZodSerializationException (nestjs-zod) → 500, logged: a response broke its schema
+ *   HttpException (NotFoundException, …)   → its status, code from the status name
+ *   Prisma unique / not-found errors       → 409 CONFLICT / 404 NOT_FOUND
+ *   Anything else                          → 500, logged, message hidden in prod
+ *
+ * Replies go through Nest's HTTP adapter, so it works on Express and Fastify alike.
  */
 @Catch()
 export class ApiExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger("Exceptions")
 
+  constructor(private readonly adapterHost: HttpAdapterHost) {}
+
   catch(exception: unknown, host: ArgumentsHost) {
+    const { httpAdapter } = this.adapterHost
     const ctx = host.switchToHttp()
-    const response = ctx.getResponse<Response>()
-    const request = ctx.getRequest<Request & { id?: string }>()
-
-    if (response.headersSent) return
-
+    const request = ctx.getRequest<{ id?: unknown }>()
     const error = this.toErrorShape(exception)
 
     if (error.status >= 500) {
@@ -59,16 +64,39 @@ export class ApiExceptionFilter implements ExceptionFilter {
       },
       meta: {
         timestamp: new Date().toISOString(),
-        path: request.url,
-        method: request.method,
-        ...(request.id && { requestId: String(request.id) }),
+        path: String(httpAdapter.getRequestUrl(ctx.getRequest())),
+        method: String(httpAdapter.getRequestMethod(ctx.getRequest())),
+        ...(request.id !== undefined && { requestId: String(request.id) }),
       },
     }
 
-    response.status(error.status).json(body)
+    httpAdapter.reply(ctx.getResponse(), body, error.status)
   }
 
   private toErrorShape(exception: unknown): ErrorShape {
+    // A request body/query that doesn't match its DTO's schema.
+    if (exception instanceof ZodValidationException) {
+      const details = toValidationIssues((exception.getZodError() as ZodLikeError).issues ?? [])
+      return {
+        status: HttpStatus.UNPROCESSABLE_ENTITY,
+        code: "VALIDATION_ERROR",
+        message: details[0] ? `${details[0].field}: ${details[0].message}` : "Validation failed",
+        details,
+      }
+    }
+
+    // A response that doesn't match its @ZodSerializerDto — a bug on our side.
+    if (exception instanceof ZodSerializationException) {
+      const zodError = exception.getZodError() as ZodLikeError
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        code: "INTERNAL_SERVER_ERROR",
+        message: isProduction
+          ? "Something went wrong on our side. Please try again."
+          : `The response didn't match its schema: ${zodError.message ?? "unknown issue"}`,
+      }
+    }
+
     if (exception instanceof HttpException) {
       const status = exception.getStatus()
       const res = exception.getResponse()

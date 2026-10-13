@@ -18,3 +18,8 @@ allowBuilds:
   # sharp ships prebuilt binaries; its install script isn't needed.
   sharp: false
   # klin:endif
+
+# nestjs-zod declares NestJS 10–11 as peers but works with NestJS 12.
+peerDependencyRules:
+  allowedVersions:
+    nestjs-zod>@nestjs/common: "12"

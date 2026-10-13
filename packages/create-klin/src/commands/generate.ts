@@ -121,6 +121,7 @@ export async function generateCommand(flags: Flags) {
   if (withApi) {
     const dir = `apps/api/src/modules/${names.plural.kebab}`
     add(`${dir}/${names.plural.kebab}.module.ts`, t.apiModuleFile(spec))
+    add(`${dir}/${names.plural.kebab}.dto.ts`, t.apiDtoFile(spec))
     add(`${dir}/${names.plural.kebab}.controller.ts`, t.apiControllerFile(spec))
     add(`${dir}/${names.plural.kebab}.service.ts`, t.apiServiceFile(spec))
     const appModule = "apps/api/src/app.module.ts"

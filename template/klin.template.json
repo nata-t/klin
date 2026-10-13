@@ -289,6 +289,14 @@
       }
     },
     {
+      "when": "!npm",
+      "json": {
+        "package.json": {
+          "overrides": true
+        }
+      }
+    },
+    {
       "when": "!compose",
       "remove": ["docker-compose.yml"],
       "json": {

@@ -30,6 +30,19 @@ export interface ValidationIssue {
   message: string
 }
 
+/**
+ * Zod issues → the `details` of a 422 VALIDATION_ERROR response. The API uses
+ * it for failed requests; the web form kit maps `field` back onto inputs.
+ */
+export function toValidationIssues(
+  issues: ReadonlyArray<{ path: ReadonlyArray<PropertyKey>; message: string }>
+): ValidationIssue[] {
+  return issues.map((issue) => ({
+    field: issue.path.map((segment) => String(segment)).join(".") || "root",
+    message: issue.message,
+  }))
+}
+
 export interface ApiErrorResponse {
   success: false
   error: {

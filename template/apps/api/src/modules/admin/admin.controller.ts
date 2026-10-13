@@ -1,8 +1,11 @@
 // klin:file admin
 import { Controller, Get } from "@nestjs/common"
 import { adminStatsSchema } from "@repo/validators"
-import { ResponseSchema, Roles } from "../../common"
+import { createZodDto, ZodSerializerDto } from "nestjs-zod"
+import { Roles } from "../../common"
 import { PrismaService } from "../../prisma/prisma.service"
+
+class AdminStatsDto extends createZodDto(adminStatsSchema) {}
 
 /**
  * /api/admin — only users with role "admin" get in (the whole controller is
@@ -15,7 +18,7 @@ export class AdminController {
   constructor(private readonly prisma: PrismaService) {}
 
   @Get("stats")
-  @ResponseSchema(adminStatsSchema)
+  @ZodSerializerDto(AdminStatsDto)
   async stats() {
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
     const [users, newUsers, activeSessions, banned] = await Promise.all([
