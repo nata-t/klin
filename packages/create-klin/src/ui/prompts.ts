@@ -80,7 +80,7 @@ export async function select<T extends string>(options: {
     },
   }
   const p = page(options.message, options.subtitle, [field], [
-    ["←→", "move"],
+    ["↑↓", "move"],
     ["enter", "choose"],
     ["esc", "cancel"],
   ])

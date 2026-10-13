@@ -1,32 +1,35 @@
-import { Canvas, type Border } from "./canvas"
-import { MINI_LOGO, MINI_LOGO_WIDTH } from "./logo"
+import { Canvas } from "./canvas"
+import { drawLogo, logoSizeFor } from "./logo"
 import type { Key } from "./term"
-import { colorEnabled, depth, type RGB, type Style, sym, truncate, unicode, width, wrap } from "./theme"
+import { colorEnabled, depth, hue, type RGB, type Style, sym, truncate, unicode, width, wrap } from "./theme"
 
 /**
  * One full-screen page of the CLI, centered on a softly vignetted background:
  *
- *                                                                   v0.2.0
- *        ██  ▄█▀ ██      ██ ███▄   ██
- *        ██▀▀█▄  ██      ██ ██ ▀█▄ ██    ✓ 1 BASE ┈┈ ◆ 2 STACK ┈┈ ○ 3 AUTH …
- *        ▀▀   ▀▀ ▀▀▀▀▀▀▀ ▀▀ ▀▀   ▀▀▀▀
+ *                                                                     v0.2.0
+ *             ✓ 1 BASE ┈┈ ◆ 2 STACK ┈┈ ○ 3 AUTH ┈┈ ○ 4 TOOLBOX ┈┈ …
  *
- *                           Pick your engine.
- *              How the API is built and where the data lives.
+ *                     ✦  ██╗  ██╗██╗     ██╗███╗   ██╗  ✦
+ *                        …the KLIN logo, sized to fit…
  *
- *                              FRAMEWORK
- *                     ╭────────────╮  ╭┄┄┄┄┄┄┄┄┄╮
- *                     │ ● NestJS   │  ┆ ○ Plain ┆
- *                     ╰────────────╯  ╰┄┄┄┄┄┄┄┄┄╯
+ *                              Pick your engine.
+ *                 How the API is built and where the data lives.
  *
- *               ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+ *                 FRAMEWORK · pick one        HTTP SERVER · pick one
+ *                 ● NestJS   ○ Plain          ● Express   ○ Fastify
+ *
+ *                              DATABASE · pick one
+ *                     ● PostgreSQL   ○ MySQL   ○ SQLite
+ *
+ *               ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
  *          NestJS · Modules, controllers and dependency injection,
  *               with nestjs-zod turning the shared schemas into DTOs.
  *             space snap   ←↑↓→ move   enter next   esc back
  *
- * Chips: a snapped chip has a solid border, a tinted fill and ✓ (● for
- * pick-one groups); a loose chip has a dashed border and + (○); the chip
- * under the cursor gets a heavy white border. All in grays.
+ * Chips are plain text: ● / ○ for pick-one groups, ◼ / ◻ for pick-any ones,
+ * and a soft highlight under the cursor. Small groups sit side by side in two
+ * columns; an odd one out is centered below them. All grays, except red for
+ * errors and amber for warnings.
  */
 
 export interface ChipItem {
@@ -34,10 +37,12 @@ export interface ChipItem {
   label: string
   /** Shown in the help panel while highlighted. */
   about?: string
-  /** A real color to preview (the only non-gray ink). */
+  /** A real color to preview. */
   swatch?: RGB | null
   /** Why it can't be picked. */
   disabled?: string
+  /** What you give up while it's switched off — shown as a warning. */
+  warning?: string
 }
 
 export interface ChipField {
@@ -71,7 +76,7 @@ export interface InputField {
 export interface SummaryField {
   kind: "summary"
   id: string
-  rows: Array<[label: string, value: string]>
+  rows: Array<[label: string, value: string, tone?: Tone]>
 }
 
 export interface ProgressField {
@@ -83,7 +88,7 @@ export interface ProgressField {
 export type Field = ChipField | InputField | SummaryField | ProgressField
 
 export interface Page {
-  /** Next to the logo when there are no steps ("klin add · my-app"). */
+  /** At the top when there are no steps ("klin add · my-app"). */
   title?: string
   /** Top-right corner. */
   version?: string
@@ -99,12 +104,17 @@ export interface Page {
 
 export type Action = "submit" | "back" | "cancel" | "changed" | "none"
 
+/** Where a chip (or an input box) was drawn, for arrow-key moves. */
 interface Placed {
   field: number
   item: number
   x: number
   y: number
   w: number
+  /** The grid cell its group sits in, [left, right). */
+  cell: [number, number]
+  /** Which row of the page layout it's in (side-by-side groups share one). */
+  band: number
 }
 
 interface Modal {
@@ -118,7 +128,6 @@ const isInteractive = (field: Field | undefined): field is ChipField | InputFiel
 
 const S = {
   bg: { bg: "bg" } satisfies Style,
-  bar: { bg: "bar" } satisfies Style,
   line: { fg: "line" } satisfies Style,
   subtle: { fg: "subtle" } satisfies Style,
   muted: { fg: "muted" } satisfies Style,
@@ -126,6 +135,17 @@ const S = {
   bright: { fg: "bright" } satisfies Style,
   heading: { fg: "white", bold: true } satisfies Style,
 }
+
+/** Red for errors, amber for warnings, quiet gray when all is well. */
+const toneStyle = (tone: Tone | undefined, ok: Style = S.muted): Style =>
+  tone === "error" ? { fg: hue.error, bold: true } : tone === "warn" ? { fg: hue.warn, bold: true } : ok
+
+const toneIcon = (tone: Tone) => (tone === "ok" ? sym.check : tone === "warn" ? sym.warn : sym.cross)
+
+/** Widest the page body gets, the gap between two side-by-side groups, and between chips. */
+const BODY_MAX = 92
+const COLUMN_GAP = 6
+const CHIP_GAP = 1
 
 export class Form {
   cursor = { field: 0, item: 0 }
@@ -140,13 +160,7 @@ export class Form {
 
   /** Moves the cursor to the first field that takes input. */
   focusFirst() {
-    const index = this.page.fields.findIndex(isInteractive)
-    this.cursor = { field: Math.max(0, index), item: 0 }
-    const field = this.page.fields[this.cursor.field]
-    if (field?.kind === "chips") {
-      const on = field.items.findIndex((item) => field.isOn(item.id))
-      if (!field.multi && on >= 0) this.cursor.item = on
-    }
+    this.enter(Math.max(0, this.page.fields.findIndex(isInteractive)))
   }
 
   focus(fieldId: string) {
@@ -162,6 +176,14 @@ export class Form {
     return this.page.fields[this.cursor.field]
   }
 
+  /** Puts the cursor on a field: on its picked chip for pick-one groups, else the first. */
+  private enter(index: number) {
+    const field = this.page.fields[index]
+    let item = 0
+    if (field?.kind === "chips" && !field.multi) item = Math.max(0, field.items.findIndex((i) => field.isOn(i.id)))
+    this.cursor = { field: index, item }
+  }
+
   /* ─── Keys ────────────────────────────────────────────────────────── */
 
   key(key: Key): Action {
@@ -175,17 +197,17 @@ export class Form {
     if (key.name === "tab") return this.moveField(key.shift ? -1 : 1)
 
     if (field?.kind === "input") {
-      if (key.name === "down") return this.moveField(1)
-      if (key.name === "up") return this.moveField(-1)
+      if (key.name === "down") return this.moveRow(1)
+      if (key.name === "up") return this.moveRow(-1)
       return this.edit(field, key)
     }
     if (field?.kind === "chips") {
-      if (key.name === "left") return this.moveItem(field, -1)
-      if (key.name === "right") return this.moveItem(field, 1)
+      if (key.name === "left") return this.moveItem(-1)
+      if (key.name === "right") return this.moveItem(1)
       if (key.name === "up") return this.moveRow(-1)
       if (key.name === "down") return this.moveRow(1)
-      if (key.name === "home") return this.moveItem(field, -Infinity)
-      if (key.name === "end") return this.moveItem(field, Infinity)
+      if (key.name === "home") return this.jump(field, 0)
+      if (key.name === "end") return this.jump(field, field.items.length - 1)
       if (key.name === "space" || key.sequence === " ") {
         const item = field.items[this.cursor.item]
         if (!item) return "none"
@@ -210,49 +232,61 @@ export class Form {
       if (isInteractive(fields[index])) break
     }
     if (!isInteractive(fields[index])) return "none"
-    const field = fields[index]!
-    let item = 0
-    if (field.kind === "chips") {
-      const on = field.items.findIndex((i) => field.isOn(i.id))
-      item = !field.multi && on >= 0 ? on : 0
-    }
-    this.cursor = { field: index, item }
+    this.enter(index)
     return "changed"
   }
 
-  private moveItem(field: ChipField, step: number): Action {
-    const next = Math.min(field.items.length - 1, Math.max(0, this.cursor.item + step))
+  private jump(field: ChipField, item: number): Action {
+    const next = Math.min(field.items.length - 1, Math.max(0, item))
     if (next === this.cursor.item) return "none"
     this.cursor.item = next
     return "changed"
   }
 
-  /** ↑/↓: the nearest chip in the visual row above/below (across groups). */
+  private here(): Placed | undefined {
+    const { field, item } = this.cursor
+    return this.placed.find((p) => p.field === field && p.item === item) ?? this.placed.find((p) => p.field === field)
+  }
+
+  /** ←/→: the next chip along this line of the group; past its edge, into the group beside it. */
+  private moveItem(step: number): Action {
+    const here = this.here()
+    if (!here) return "none"
+    const along = this.placed.filter((p) => p.field === here.field && p.y === here.y && (step > 0 ? p.x > here.x : p.x < here.x))
+    const pool = along.length
+      ? along
+      : this.placed.filter(
+          (p) => p.band === here.band && p.field !== here.field && (step > 0 ? p.cell[0] >= here.cell[1] : p.cell[1] <= here.cell[0])
+        )
+    // The closest line first, then the chip nearest to where we left.
+    const best = pool.sort((a, b) => Math.abs(a.y - here.y) - Math.abs(b.y - here.y) || Math.abs(a.x - here.x) - Math.abs(b.x - here.x))[0]
+    if (!best) return "none"
+    this.cursor = { field: best.field, item: best.item }
+    return "changed"
+  }
+
+  /**
+   * ↑/↓: the next row of the same group; past its edge, the nearest group
+   * above/below in the same column (or spanning it), else the next group.
+   */
   private moveRow(step: number): Action {
-    const here = this.placed.find((p) => p.field === this.cursor.field && p.item === this.cursor.item)
+    const here = this.here()
     if (!here) return this.moveField(step)
-    const rows = [...new Set(this.placed.map((p) => p.y))].sort((a, b) => a - b)
-    const target = rows[rows.indexOf(here.y) + step]
-    if (target === undefined) {
-      // Past the last chip row: hop to an input field, if there is one that way.
-      const input = this.page.fields.findIndex((f, i) => f.kind === "input" && (step < 0 ? i < this.cursor.field : i > this.cursor.field))
-      if (input >= 0) {
-        this.cursor = { field: input, item: 0 }
-        return "changed"
-      }
-      return "none"
-    }
-    const center = here.x + here.w / 2
-    const candidates = this.placed.filter((p) => p.y === target)
-    const best = candidates.sort((a, b) => Math.abs(a.x + a.w / 2 - center) - Math.abs(b.x + b.w / 2 - center))[0]!
-    // Moving up out of the chips into an input field sitting above them.
-    const between = this.page.fields.findIndex(
-      (f, i) => f.kind === "input" && i > Math.min(best.field, this.cursor.field) && i < Math.max(best.field, this.cursor.field)
-    )
-    if (between >= 0) {
-      this.cursor = { field: between, item: 0 }
+    const ahead = (p: Placed) => (step > 0 ? p.y > here.y : p.y < here.y)
+    const overlaps = (p: Placed) => p.cell[0] < here.cell[1] && here.cell[0] < p.cell[1]
+    let pool = this.placed.filter((p) => p.field === here.field && ahead(p))
+    if (!pool.length) pool = this.placed.filter((p) => p.field !== here.field && ahead(p) && overlaps(p))
+    // Nothing in this column that way: on to the next group, as tab would.
+    if (!pool.length) return this.moveField(step)
+    const dy = Math.min(...pool.map((p) => Math.abs(p.y - here.y)))
+    pool = pool.filter((p) => Math.abs(p.y - here.y) === dy)
+    // Out of an input box: into the first group of that row, the way tab goes.
+    if (this.focused?.kind === "input") {
+      this.enter(Math.min(...pool.map((p) => p.field)))
       return "changed"
     }
+    const center = here.x + here.w / 2
+    const best = pool.sort((a, b) => Math.abs(a.x + a.w / 2 - center) - Math.abs(b.x + b.w / 2 - center))[0]!
     this.cursor = { field: best.field, item: best.item }
     return "changed"
   }
@@ -304,74 +338,72 @@ export class Form {
       return canvas
     }
 
-    const top = this.header(canvas, w, h)
+    const top = this.topLine(canvas, w, h)
     const bottom = this.footer(canvas, w, h)
-
-    // The page body, centered both ways in what's left.
     const avail = bottom - top
-    const bodyW = Math.min(w - 4, 92)
+
+    const bodyW = Math.min(w - 4, BODY_MAX)
     const left = Math.floor((w - bodyW) / 2)
-    let boxed = true
-    let blocks = this.layout(bodyW, boxed)
-    if (sum(blocks) > avail) {
-      boxed = false
-      blocks = this.layout(bodyW, boxed)
-    }
+    const blocks = this.layout(bodyW)
     const height = sum(blocks)
-    if (height <= avail) this.scroll = 0
-    else {
-      const [from, to] = this.focusOffset(blocks)
-      if (from - this.scroll < 0) this.scroll = from
-      if (to - this.scroll > avail) this.scroll = to - avail
-      this.scroll = Math.max(0, Math.min(this.scroll, height - avail))
+
+    // The logo and the page are centered together under the steps; the logo
+    // shrinks (full letters → folded → one line) to leave the page room.
+    const size = logoSizeFor(avail - height - 1, w)
+    const logoH = size + 1
+    if (logoH + height <= avail) {
+      this.scroll = 0
+      const y = top + Math.floor((avail - logoH - height) / 2)
+      drawLogo(canvas, 0, w, y, size)
+      this.drawBlocks(canvas, blocks, left, y + logoH, bodyW)
+      return this.finish(canvas, w, h)
     }
-    let y = height <= avail ? top + Math.floor((avail - height) / 2) : top - this.scroll
-    canvas.clip = { top, bottom }
+
+    // Not enough room: the one-line logo stays put and the page scrolls under it.
+    drawLogo(canvas, 0, w, top, 1)
+    const from = top + 2
+    const room = bottom - from
+    const [focusTop, focusBottom] = this.focusOffset(blocks)
+    if (focusTop - this.scroll < 0) this.scroll = focusTop
+    if (focusBottom - this.scroll > room) this.scroll = focusBottom - room
+    this.scroll = Math.max(0, Math.min(this.scroll, height - room))
+    canvas.clip = { top: from, bottom }
+    this.drawBlocks(canvas, blocks, left, from - this.scroll, bodyW)
+    canvas.clip = undefined
+    // Quiet hints that there's more above or below.
+    if (this.scroll > 0) center(canvas, 0, w, from - 1, unicode ? "▴ more" : "^ more", S.line)
+    if (height - this.scroll > room) center(canvas, 0, w, bottom, unicode ? "▾ more" : "v more", S.line)
+    return this.finish(canvas, w, h)
+  }
+
+  private drawBlocks(canvas: Canvas, blocks: Block[], x: number, y: number, w: number) {
     for (const block of blocks) {
-      if (y + block.height > top && y < bottom) block.draw(canvas, left, y, bodyW)
+      block.draw(canvas, x, y, w)
       y += block.height
     }
-    canvas.clip = undefined
+  }
 
+  private finish(canvas: Canvas, w: number, h: number) {
     if (this.modal) this.drawModal(canvas, w, h)
     return canvas
   }
 
   /**
-   * The KLIN logo with the step indicator (or the page title) beside it, or
-   * under it when there isn't room; a one-line wordmark on short terminals.
-   * Returns the first row free for the body.
+   * The step indicator (or the page title) on its own line at the top, the
+   * version in the corner. Returns the first row free below it.
    */
-  private header(canvas: Canvas, w: number, h: number): number {
-    if (this.page.version && w >= 50) canvas.text(w - width(this.page.version) - 2, 0, this.page.version, { fg: "line" })
-    const steps = this.page.steps
-    const title = this.page.title ?? ""
-    const big = h >= 28 && w >= 64
-    const logo = big ? MINI_LOGO : ["K L I N"]
-    const logoW = big ? MINI_LOGO_WIDTH : width(logo[0]!)
-    // A little depth: the letters fade from white at the top to gray at the bottom.
-    const shades: Style[] = [{ fg: "white" }, { fg: [0xdc, 0xdc, 0xdc] }, { fg: [0xa8, 0xa8, 0xa8] }]
-    const drawLogo = (x: number, y: number) =>
-      logo.forEach((line, i) => canvas.text(x, y + i, line, big ? shades[i]! : { fg: "white", bold: true }))
-    const y = 1
-
-    // Beside the logo when it fits there: the full indicator next to the big
-    // logo, any length of it next to the one-line wordmark.
-    const besideRoom = w - 6 - logoW - 4
-    const beside = steps ? stepSegments(steps, besideRoom, big ? 1 : 3) : title ? ([[title, S.muted]] as Segment[]) : []
-    if (beside && segmentsWidth(beside) <= besideRoom) {
-      const groupW = logoW + (beside.length ? 4 + segmentsWidth(beside) : 0)
-      const x = Math.floor((w - groupW) / 2)
-      drawLogo(x, y)
-      drawSegments(canvas, x + logoW + 4, y + Math.floor((logo.length - 1) / 2), beside)
-      return y + logo.length + 1
+  private topLine(canvas: Canvas, w: number, h: number): number {
+    const y = h >= 20 ? 1 : 0
+    const { steps, title, version } = this.page
+    const segments = steps ? (stepSegments(steps, w - 4) ?? []) : title ? ([[truncate(title, w - 4), S.muted]] as Segment[]) : []
+    const x = Math.floor((w - segmentsWidth(segments)) / 2)
+    drawSegments(canvas, x, y, segments)
+    // Above the steps when there's a spare row; beside them only if they don't touch.
+    if (version) {
+      const vx = w - width(version) - 2
+      if (y > 0 || vx > x + segmentsWidth(segments) + 2) canvas.text(vx, 0, version, S.line)
     }
-    // Otherwise stacked: the logo, then the indicator (shortened to fit) under it.
-    drawLogo(Math.floor((w - logoW) / 2), y)
-    const below = steps ? (stepSegments(steps, w - 4, 3) ?? []) : ([[truncate(title, w - 4), S.muted]] as Segment[])
-    const belowY = y + logo.length + (big ? 1 : 0)
-    drawSegments(canvas, Math.floor((w - segmentsWidth(below)) / 2), belowY, below)
-    return belowY + 2
+    return y + 2
   }
 
   /** The help paragraph and the key hints, centered. Returns the row above them. */
@@ -391,22 +423,24 @@ export class Form {
 
     // Help: the highlighted thing's name in bold, then what it does — wrapped and centered.
     const blockW = Math.min(w - 6, 84)
-    const rows = h >= 24 ? 3 : 2
+    const rows = h >= 30 ? 3 : 2
     const helpTop = h - 2 - rows
     const rule = Math.min(blockW, 64)
     canvas.hline(Math.floor((w - rule) / 2), helpTop - 1, rule, S.line, unicode ? "┄" : "-")
     const content = this.helpContent()
     if (content) {
-      const loud = content.tone === "error" || content.tone === "warn"
-      const lines = wrap(content.text ? `${content.title} · ${content.text}` : content.title, blockW)
+      const titleStyle = toneStyle(content.tone, { fg: "bright", bold: true })
+      // A problem (✖ Use letters…) is colored all the way through; help keeps its text quiet.
+      const textStyle: Style = content.notice && content.tone !== "ok" ? { ...toneStyle(content.tone), bold: false } : S.muted
+      const lines = wrap(content.text ? `${content.title}${content.notice ? "" : " ·"} ${content.text}` : content.title, blockW)
       const shown = lines.slice(0, rows)
       if (lines.length > rows) shown[rows - 1] = truncate(`${shown[rows - 1]} …`, blockW)
       shown.forEach((line, i) => {
         const x = Math.floor((w - width(line)) / 2)
         if (i === 0 && line.startsWith(content.title)) {
-          const after = canvas.text(x, helpTop, content.title, { fg: loud ? "white" : "bright", bold: true })
-          canvas.text(after, helpTop, line.slice(content.title.length), S.muted)
-        } else canvas.text(x, helpTop + i, line, S.muted)
+          const after = canvas.text(x, helpTop, content.title, titleStyle)
+          canvas.text(after, helpTop, line.slice(content.title.length), textStyle)
+        } else canvas.text(x, helpTop + i, line, textStyle)
       })
     }
     return helpTop - 2
@@ -422,91 +456,136 @@ export class Form {
     return this.page.keys
   }
 
-  private helpContent(): { title: string; text: string; tone?: Tone } | undefined {
+  private helpContent(): { title: string; text: string; tone?: Tone; notice?: boolean } | undefined {
     if (this.modal) return { title: this.modal.title, text: this.modal.text, tone: "warn" }
     if (this.notice) {
-      const icon = this.notice.tone === "ok" ? sym.check : this.notice.tone === "warn" ? sym.warn : sym.cross
-      return { title: icon, text: this.notice.text, tone: this.notice.tone }
+      return { title: toneIcon(this.notice.tone), text: this.notice.text, tone: this.notice.tone, notice: true }
     }
     const field = this.focused
     if (field?.kind === "chips") {
       const item = field.items[this.cursor.item]
-      if (item) return { title: item.label, text: item.disabled ? `${item.disabled}.` : (item.about ?? "") }
+      if (item?.disabled) return { title: item.label, text: `${item.disabled}.` }
+      if (item?.warning && !field.isOn(item.id)) return { title: `${sym.warn} ${item.label} is off`, text: item.warning, tone: "warn" }
+      if (item) return { title: item.label, text: item.about ?? "" }
     }
     if (field?.kind === "input") return { title: field.label, text: field.about ?? "" }
     if (this.page.help) return this.page.help
     return undefined
   }
 
-  /* Blocks: the page as a vertical list of drawable pieces. */
-  private layout(mainW: number, boxed: boolean): Block[] {
-    const blocks: Block[] = []
+  /**
+   * The page as a vertical list of blocks: the heading, then the fields with
+   * one blank row between them. Chip groups that fit go two to a row.
+   */
+  private layout(bodyW: number): Block[] {
     const page = this.page
-    blocks.push({
-      height: page.subtitle ? 3 : 2,
-      draw: (c, x, y, w) => {
-        center(c, x, w, y, truncate(page.heading, w), S.heading)
-        if (page.subtitle) center(c, x, w, y + 1, truncate(page.subtitle, w), S.muted)
+    const blocks: Block[] = [
+      {
+        height: page.subtitle ? 2 : 1,
+        fields: [],
+        draw: (c, x, y, w) => {
+          center(c, x, w, y, truncate(page.heading, w), S.heading)
+          if (page.subtitle) center(c, x, w, y + 1, truncate(page.subtitle, w), S.muted)
+        },
       },
-    })
-    page.fields.forEach((field, index) => {
-      const focused = index === this.cursor.field
-      if (field.kind === "chips") blocks.push(this.chipBlock(field, index, mainW, boxed, focused))
-      else if (field.kind === "input") blocks.push(inputBlock(field, focused))
+    ]
+    const fields = page.fields
+    for (let index = 0; index < fields.length; index++) {
+      const field = fields[index]!
+      const band = blocks.length + 1
+      blocks.push(gap())
+      if (field.kind === "chips") {
+        const next = fields[index + 1]
+        if (next?.kind === "chips" && sideBySide(field, next, bodyW)) {
+          blocks.push(this.chipRow([field, next], [index, index + 1], bodyW, band))
+          index++
+        } else blocks.push(this.chipRow([field], [index], bodyW, band))
+      } else if (field.kind === "input") blocks.push(this.inputBlock(field, index, band))
       else if (field.kind === "summary") blocks.push(summaryBlock(field))
       else blocks.push(progressBlock(field))
-    })
+    }
     return blocks
   }
 
   /** Where the focused field sits in the laid-out page: [top, bottom). */
   private focusOffset(blocks: Block[]): [number, number] {
-    // Blocks are: the heading, then one per field.
-    const index = this.cursor.field + 1
+    const index = blocks.findIndex((b) => b.fields.includes(this.cursor.field))
+    if (index < 0) return [0, 0]
     const top = sum(blocks.slice(0, index))
-    return [top, top + (blocks[index]?.height ?? 0)]
+    // The first field brings the heading along with it.
+    return [index <= 2 ? 0 : top, top + blocks[index]!.height]
   }
 
-  private chipBlock(field: ChipField, index: number, maxW: number, boxed: boolean, focused: boolean): Block {
-    const gap = boxed ? 2 : 1
-    const chipW = (item: ChipItem) => width(item.label) + (item.swatch ? 2 : 0) + (boxed ? 6 : 4)
-    const rows: ChipItem[][] = [[]]
-    let used = 0
-    for (const item of field.items) {
-      const cw = Math.min(chipW(item), maxW)
-      if (used && used + gap + cw > maxW) {
-        rows.push([])
-        used = 0
-      }
-      rows[rows.length - 1]!.push(item)
-      used += (used ? gap : 0) + cw
-    }
-    const rowH = boxed ? 3 : 1
-    const rowGap = boxed ? 0 : 1
-    const height = 1 + rows.length * rowH + (rows.length - 1) * rowGap + 1 + 1
+  /**
+   * One chip group across the body, or two lists side by side — each column
+   * just wide enough for its group, the pair centered as one.
+   */
+  private chipRow(fields: ChipField[], indexes: number[], maxW: number, band: number): Block {
+    const grids = fields.map((field) => gridFor(field.items, maxW))
+    // Room for every title with its note? If not, the notes go (warnings stay).
+    const notes = fields.length === 1 || pairWidth(fields[0]!, fields[1]!, maxW, true) <= maxW
+    const cells = fields.length === 1 ? [maxW] : fields.map((field, i) => groupHead(field, grids[i]!, maxW, notes).blockW)
+    const heads = fields.map((field, i) => groupHead(field, grids[i]!, cells[i]!, notes))
+    const rowW = cells.reduce((total, cell) => total + cell, 0) + (fields.length - 1) * COLUMN_GAP
     return {
-      height,
+      height: 1 + Math.max(...grids.map((g) => g.rows)),
+      fields: indexes,
       draw: (canvas, x, y, w) => {
-        const title = field.title.toUpperCase()
-        const note = field.note && w - width(title) >= 2 * (width(field.note) + 4) ? `  ${sym.dot} ${field.note}` : ""
-        // The title sits dead center over the chips; the note trails off to its right.
-        const col = x + Math.floor((w - width(title)) / 2)
-        const after = canvas.text(col, y, title, focused ? { fg: "text", bold: true } : { fg: "subtle", bold: true })
-        canvas.text(after, y, note, { fg: "line" })
-        let rowY = y + 1
-        for (const row of rows) {
-          const rowW = row.reduce((sum, item) => sum + Math.min(chipW(item), maxW), 0) + gap * (row.length - 1)
-          let cx = x + Math.floor((w - rowW) / 2)
-          for (const item of row) {
-            const itemIndex = field.items.indexOf(item)
-            const cw = Math.min(chipW(item), maxW)
-            const isCursor = focused && itemIndex === this.cursor.item
-            drawChip(canvas, cx, rowY, cw, item, field.isOn(item.id), field.multi, isCursor, boxed)
-            this.placed.push({ field: index, item: itemIndex, x: cx, y: rowY, w: cw })
-            cx += cw + gap
-          }
-          rowY += rowH + rowGap
+        let cellX = x + Math.floor((w - rowW) / 2)
+        fields.forEach((field, i) => {
+          const head = heads[i]!
+          const focused = indexes[i] === this.cursor.field
+          const after = canvas.text(cellX + head.titleX, y, head.title, focused ? { fg: "text", bold: true } : { fg: "subtle", bold: true })
+          if (head.note) canvas.text(after, y, head.note[0], head.note[1])
+          this.drawChips(canvas, field, indexes[i]!, grids[i]!, cellX + head.gridX, y + 1, [cellX, cellX + cells[i]!], band)
+          cellX += cells[i]! + COLUMN_GAP
+        })
+      },
+    }
+  }
+
+  private drawChips(canvas: Canvas, field: ChipField, index: number, grid: Grid, x: number, y: number, cell: [number, number], band: number) {
+    const focused = index === this.cursor.field
+    field.items.forEach((item, i) => {
+      const at = grid.at(i)
+      const cursor = focused && i === this.cursor.item
+      drawChip(canvas, x + at.x, y + at.row, at.w, item, field.isOn(item.id), field.multi, cursor)
+      this.placed.push({ field: index, item: i, x: x + at.x, y: y + at.row, w: at.w, cell, band })
+    })
+  }
+
+  private inputBlock(field: InputField, index: number, band: number): Block {
+    return {
+      height: 5,
+      fields: [index],
+      draw: (canvas, x, y, w) => {
+        const focused = index === this.cursor.field
+        const boxW = Math.min(w, 58)
+        const bx = x + Math.floor((w - boxW) / 2)
+        const result = field.validate(field.value)
+        // Label, box and verdict all centered on the same axis.
+        const label: Segment[] = [
+          [`${sym.diamond} `, focused ? { fg: "white" } : S.subtle],
+          [field.label, { fg: focused ? "white" : "text", bold: true }],
+          ...(field.hint && width(field.label) + width(field.hint) + 3 <= w ? ([[` ${field.hint}`, S.subtle]] as Segment[]) : []),
+        ]
+        drawSegments(canvas, x + Math.floor((w - segmentsWidth(label)) / 2), y, label)
+        const border: Style = result.tone === "error" ? { fg: hue.error } : focused ? { fg: "muted" } : S.line
+        canvas.box(bx, y + 1, boxW, 3, focused || result.tone === "error" ? "solid" : "dashed", border, { bg: "bar" })
+        const inner = boxW - 6
+        // Keep the caret in view for long values.
+        const start = Math.max(0, field.caret - inner + 1)
+        const visible = field.value.slice(start, start + inner)
+        const col = canvas.text(bx + 2, y + 2, sym.caret, focused ? { fg: "white", bold: true } : S.subtle)
+        if (!field.value && field.placeholder) canvas.text(col + 1, y + 2, field.placeholder, S.subtle, inner)
+        canvas.text(col + 1, y + 2, visible, { fg: "white", bold: true }, inner)
+        if (focused) {
+          // The caret sits on the next character — the placeholder's first one while it's empty.
+          const under = field.value[field.caret] ?? (field.value ? " " : (field.placeholder?.[0] ?? " "))
+          canvas.text(col + 1 + (field.caret - start), y + 2, under, depth >= 256 ? { fg: "bg", bg: "bright" } : { inverse: true })
         }
+        center(canvas, x, w, y + 4, truncate(`${toneIcon(result.tone)} ${result.message}`, w), toneStyle(result.tone))
+        this.placed.push({ field: index, item: 0, x: bx, y: y + 2, w: boxW, cell: [x, x + w], band })
       },
     }
   }
@@ -519,8 +598,8 @@ export class Form {
     const x = Math.floor((w - boxW) / 2)
     const y = Math.floor((h - boxH) / 2)
     canvas.fill(x - 1, y, boxW + 2, boxH, { bg: "bar" })
-    canvas.box(x, y, boxW, boxH, "heavy", { fg: "white" }, { bg: "bar" })
-    canvas.text(x + 3, y + 1, modal.title, { fg: "white", bold: true }, boxW - 6)
+    canvas.box(x, y, boxW, boxH, "heavy", { fg: hue.warn }, { bg: "bar" })
+    canvas.text(x + 3, y + 1, `${sym.warn} ${modal.title}`, toneStyle("warn"), boxW - 6)
     text.forEach((line, i) => canvas.text(x + 3, y + 2 + i, line, S.muted))
     let col = x + 3
     for (const [key, label] of modal.choices) {
@@ -532,100 +611,127 @@ export class Form {
 
 interface Block {
   height: number
+  /** The fields drawn in it, for scrolling the focused one into view. */
+  fields: number[]
   draw(canvas: Canvas, x: number, y: number, w: number): void
 }
 
 const sum = (blocks: Block[]) => blocks.reduce((total, block) => total + block.height, 0)
+const gap = (): Block => ({ height: 1, fields: [], draw: () => {} })
 
-function drawChip(canvas: Canvas, x: number, y: number, w: number, item: ChipItem, on: boolean, multi: boolean, cursor: boolean, boxed: boolean) {
-  const glyph = multi ? (on ? sym.check : "+") : on ? (unicode ? "●" : "*") : unicode ? "○" : "o"
-  const disabled = Boolean(item.disabled)
-  const labelStyle: Style = disabled
-    ? { fg: "line", strike: true }
-    : on
-      ? { fg: "white", bold: true }
-      : cursor
-        ? { fg: "bright" }
-        : { fg: "text" }
-  const glyphStyle: Style = disabled ? { fg: "line" } : on ? { fg: "white", bold: true } : { fg: cursor ? "bright" : "subtle" }
+/* ─── Chips ───────────────────────────────────────────────────────────── */
 
-  if (boxed) {
-    const border: Border = cursor ? "heavy" : on ? "solid" : "dashed"
-    const borderStyle: Style = cursor ? { fg: "white" } : on ? { fg: "muted" } : { fg: "line" }
-    const fill: Style | undefined = on ? { bg: cursor ? "lift" : "tint" } : cursor ? { bg: "tint" } : undefined
-    canvas.box(x, y, w, 3, border, borderStyle, fill)
-    let col = canvas.text(x + 2, y + 1, glyph, glyphStyle)
-    col += 1
-    if (item.swatch) col = canvas.text(col, y + 1, colorEnabled && depth >= 256 ? "■" : sym.block, depth >= 256 ? { fg: item.swatch } : { fg: "bright" }) + 1
-    canvas.text(col, y + 1, item.label, labelStyle, x + w - 2 - col)
-    return
-  }
-  // Compact: one line, the fill does the talking — the cursor is inverted.
-  if (cursor) {
-    const inverted: Style = depth >= 256 ? { fg: "bg", bg: "bright", bold: true } : { inverse: true, bold: true }
-    canvas.fill(x, y, w, 1, inverted)
-    let at = canvas.text(x + 1, y, glyph, inverted) + 1
-    if (item.swatch) at = canvas.text(at, y, "■", depth >= 256 ? { ...inverted, fg: item.swatch } : inverted) + 1
-    canvas.text(at, y, item.label, disabled ? { ...inverted, strike: true } : inverted, x + w - 1 - at)
-    return
-  }
-  const bg: Style = on ? { bg: "tint" } : {}
-  canvas.fill(x, y, w, 1, bg)
-  let col = canvas.text(x + 1, y, glyph, { ...glyphStyle, ...bg })
-  col += 1
-  if (item.swatch) col = canvas.text(col, y, "■", depth >= 256 ? { fg: item.swatch, ...bg } : { fg: "bright", ...bg }) + 1
-  canvas.text(col, y, item.label, { ...labelStyle, ...bg }, x + w - 1 - col)
+/** ` ● Label ` — a column of padding on each side carries the cursor's highlight. */
+const chipWidth = (item: ChipItem) => 3 + (item.swatch ? 2 : 0) + width(item.label) + 1
+
+interface Grid {
+  /** One chip per line (else a grid). */
+  list: boolean
+  rows: number
+  width: number
+  at(i: number): { x: number; row: number; w: number }
 }
 
-function inputBlock(field: InputField, focused: boolean): Block {
+/** Groups up to this long are a single column; longer ones (18 theme colors) become a grid. */
+const LIST_MAX = 8
+
+/**
+ * Lays chips out: one per line for short groups; long ones in an even grid
+ * of equal columns, as many as fit `maxW`.
+ */
+function gridFor(items: ChipItem[], maxW: number): Grid {
+  const colW = Math.min(maxW, Math.max(...items.map(chipWidth)))
+  if (items.length <= LIST_MAX) return { list: true, rows: items.length, width: colW, at: (i) => ({ x: 0, row: i, w: colW }) }
+  const fit = Math.max(1, Math.floor((maxW + CHIP_GAP) / (colW + CHIP_GAP)))
+  const rows = Math.ceil(items.length / fit)
+  // Balance the rows: 18 chips in 7 columns become 6 × 3, not 7 + 7 + 4.
+  const cols = Math.ceil(items.length / rows)
   return {
-    height: 6,
-    draw: (canvas, x, y, w) => {
-      const boxW = Math.min(w, 58)
-      const bx = x + Math.floor((w - boxW) / 2)
-      // Label, box and verdict all centered on the same axis.
-      const label: Segment[] = [
-        [`${sym.diamond} `, focused ? { fg: "white" } : S.subtle],
-        [field.label, { fg: focused ? "white" : "text", bold: true }],
-        ...(field.hint && width(field.label) + width(field.hint) + 3 <= w ? ([[` ${field.hint}`, S.subtle]] as Segment[]) : []),
-      ]
-      drawSegments(canvas, x + Math.floor((w - segmentsWidth(label)) / 2), y, label)
-      canvas.box(bx, y + 1, boxW, 3, focused ? "solid" : "dashed", focused ? { fg: "muted" } : S.line, { bg: "bar" })
-      const inner = boxW - 6
-      // Keep the caret in view for long values.
-      const start = Math.max(0, field.caret - inner + 1)
-      const visible = field.value.slice(start, start + inner)
-      const col = canvas.text(bx + 2, y + 2, sym.caret, focused ? { fg: "white", bold: true } : S.subtle)
-      if (!field.value && field.placeholder) canvas.text(col + 1, y + 2, field.placeholder, S.subtle, inner)
-      canvas.text(col + 1, y + 2, visible, { fg: "white", bold: true }, inner)
-      if (focused) {
-        const under = field.value[field.caret] ?? " "
-        canvas.text(col + 1 + (field.caret - start), y + 2, under, depth >= 256 ? { fg: "bg", bg: "bright" } : { inverse: true })
-      }
-      const result = field.validate(field.value)
-      const icon = result.tone === "ok" ? sym.check : result.tone === "warn" ? sym.warn : sym.cross
-      center(canvas, x, w, y + 4, truncate(`${icon} ${result.message}`, w), result.tone === "ok" ? S.muted : { fg: "white", bold: true })
-    },
+    list: false,
+    rows,
+    width: cols * colW + (cols - 1) * CHIP_GAP,
+    at: (i) => ({ x: (i % cols) * (colW + CHIP_GAP), row: Math.floor(i / cols), w: colW }),
   }
 }
+
+/** Columns two groups need side by side (with or without their notes). */
+function pairWidth(a: ChipField, b: ChipField, maxW: number, notes: boolean) {
+  const blockW = (field: ChipField) => groupHead(field, gridFor(field.items, maxW), maxW, notes).blockW
+  return blockW(a) + COLUMN_GAP + blockW(b)
+}
+
+/** Two lists share a row when they fit side by side — notes or not. */
+function sideBySide(a: ChipField, b: ChipField, maxW: number) {
+  return gridFor(a.items, maxW).list && gridFor(b.items, maxW).list && pairWidth(a, b, maxW, false) <= maxW
+}
+
+/**
+ * A group's title line, laid out in a cell `w` wide, with a note ("· pick
+ * one") trailing it: a list's title heads its column, a grid's is centered
+ * over it. When parts that carry a warning are switched off, the note becomes
+ * an amber "▲ CORS is off" (shown even when `notes` is false).
+ */
+function groupHead(field: ChipField, grid: Grid, w: number, notes: boolean) {
+  const title = truncate(field.title.toUpperCase(), w)
+  const off = field.items.filter((item) => item.warning && !field.isOn(item.id))
+  const note: Segment | undefined = off.length
+    ? [`  ${sym.warn} ${off.length === 1 ? `${off[0]!.label} is` : `${off.length} are`} off`, { fg: hue.warn }]
+    : notes && field.note
+      ? [`  ${sym.dot} ${field.note}`, S.line]
+      : undefined
+  const lineW = width(title) + (note ? width(note[0]) : 0)
+  const blockW = Math.max(grid.width, lineW)
+  const left = Math.max(0, Math.floor((w - blockW) / 2))
+  // A list's chips start one column in (the cursor's padding), so the title lines up with the glyphs.
+  const indent = grid.list ? 1 : 0
+  return {
+    title,
+    note: note && lineW <= w ? note : undefined,
+    titleX: grid.list ? left + indent : left + Math.floor((blockW - lineW) / 2),
+    gridX: grid.list ? left : left + Math.floor((blockW - grid.width) / 2),
+    blockW: blockW + indent,
+  }
+}
+
+function drawChip(canvas: Canvas, x: number, y: number, w: number, item: ChipItem, on: boolean, multi: boolean, cursor: boolean) {
+  const glyph = multi ? (on ? (unicode ? "◼" : "x") : unicode ? "◻" : "-") : on ? (unicode ? "●" : "*") : unicode ? "○" : "o"
+  const disabled = Boolean(item.disabled)
+  const warned = Boolean(item.warning) && !on
+  let label: Style = disabled ? { fg: "line", strike: true } : on ? { fg: "bright", bold: true } : { fg: "muted" }
+  let mark: Style = disabled ? { fg: "line" } : warned ? { fg: hue.warn } : on ? { fg: "white", bold: true } : { fg: "subtle" }
+  if (cursor) {
+    // The highlight: a soft lifted bar where there's a background to paint, inverse where there isn't.
+    const bar: Style = depth >= 256 ? { bg: "lift" } : { inverse: true }
+    canvas.fill(x, y, w, 1, bar)
+    label = { ...label, ...bar, fg: disabled ? "subtle" : "white" }
+    mark = { ...mark, ...bar, ...(warned || disabled ? {} : { fg: "white" }) }
+    if (!colorEnabled) canvas.text(x, y, sym.caret, {})
+  }
+  let col = canvas.text(x + 1, y, glyph, mark) + 1
+  if (item.swatch) col = canvas.text(col, y, colorEnabled && depth >= 256 ? "■" : sym.block, depth >= 256 ? { fg: item.swatch } : S.bright) + 1
+  canvas.text(col, y, item.label, label, x + w - 1 - col)
+}
+
+/* ─── Summary and progress ────────────────────────────────────────────── */
 
 function summaryBlock(field: SummaryField): Block {
   // Long values wrap onto extra lines instead of being cut off.
   const layoutRows = (w: number) => {
     const labelW = Math.max(...field.rows.map(([label]) => width(label)))
     const valueW = Math.max(12, Math.min(w - labelW - 3, 60))
-    const lines = field.rows.flatMap(([label, value]) => wrap(value, valueW).map((part, i) => [i ? "" : label, part] as const))
+    const lines = field.rows.flatMap(([label, value, tone]) => wrap(value, valueW).map((part, i) => [i ? "" : label, part, tone] as const))
     const blockW = labelW + 3 + Math.max(...lines.map(([, part]) => width(part)))
     return { labelW, lines, blockW }
   }
   return {
-    height: layoutRows(92).lines.length + 1,
+    height: layoutRows(BODY_MAX).lines.length,
+    fields: [],
     draw: (canvas, x, y, w) => {
       const { labelW, lines, blockW } = layoutRows(w)
       const startX = x + Math.max(0, Math.floor((w - blockW) / 2))
-      lines.forEach(([label, value], i) => {
+      lines.forEach(([label, value, tone], i) => {
         canvas.text(startX + labelW - width(label), y + i, label, S.subtle)
-        canvas.text(startX + labelW + 3, y + i, value, S.bright)
+        canvas.text(startX + labelW + 3, y + i, value, tone && tone !== "ok" ? { ...toneStyle(tone), bold: false } : S.bright)
       })
     },
   }
@@ -635,7 +741,8 @@ const SPIN = unicode ? ["◐", "◓", "◑", "◒"] : ["-", "\\", "|", "/"]
 
 function progressBlock(field: ProgressField): Block {
   return {
-    height: field.rows.length + 1,
+    height: field.rows.length,
+    fields: [],
     draw: (canvas, x, y, w) => {
       const rowW = Math.min(w, 70)
       const startX = x + Math.floor((w - rowW) / 2)
@@ -643,7 +750,13 @@ function progressBlock(field: ProgressField): Block {
       field.rows.forEach((row, i) => {
         const icon = row.status === "done" ? sym.check : row.status === "failed" ? sym.cross : row.status === "running" ? frame : sym.ring
         const style: Style =
-          row.status === "running" ? { fg: "white", bold: true } : row.status === "pending" ? { fg: "line" } : row.status === "failed" ? { fg: "white", bold: true } : { fg: "text" }
+          row.status === "running"
+            ? { fg: "white", bold: true }
+            : row.status === "pending"
+              ? { fg: "line" }
+              : row.status === "failed"
+                ? toneStyle("error")
+                : { fg: "text" }
         let col = canvas.text(startX, y + i, icon, row.status === "done" ? S.bright : style)
         col = canvas.text(col + 2, y + i, row.title, style, rowW - 12)
         if (row.detail) canvas.text(col + 1, y + i, row.detail, S.subtle, startX + rowW - 8 - col)
@@ -652,6 +765,8 @@ function progressBlock(field: ProgressField): Block {
     },
   }
 }
+
+/* ─── Text helpers ────────────────────────────────────────────────────── */
 
 type Segment = [text: string, style: Style]
 
@@ -669,10 +784,10 @@ function center(canvas: Canvas, x: number, w: number, y: number, text: string, s
 
 /**
  * ✓ 1 BASE ┈┈ ◆ 2 STACK ┈┈ ○ 3 AUTH … as styled segments: the widest form
- * that fits `maxW`, trying forms 0…`shortest` (0 and 1 name every step, 2
- * numbers them, 3 is just glyphs and the current label). Null if none fit.
+ * that fits `maxW` (0 and 1 name every step, 2 numbers them, 3 is just glyphs
+ * and the current label). Null if none fit.
  */
-function stepSegments(steps: { labels: string[]; current: number }, maxW: number, shortest = 3): Segment[] | null {
+function stepSegments(steps: { labels: string[]; current: number }, maxW: number): Segment[] | null {
   const { labels, current } = steps
   const glyph = (i: number) => (i < current ? sym.check : i === current ? sym.diamond : sym.ring)
   const label = (i: number) => labels[i]!.toUpperCase()
@@ -682,7 +797,7 @@ function stepSegments(steps: { labels: string[]; current: number }, maxW: number
     { text: (i) => (i === current ? `${glyph(i)} ${i + 1} ${label(i)}` : `${glyph(i)} ${i + 1}`), dashes: 1 },
     { text: (i) => (i === current ? `${glyph(i)} ${label(i)}` : glyph(i)), dashes: 0 },
   ]
-  for (const variant of variants.slice(0, shortest + 1)) {
+  for (const variant of variants) {
     const segments: Segment[] = []
     labels.forEach((_, i) => {
       const style: Style = i < current ? { fg: "muted" } : i === current ? { fg: "white", bold: true } : { fg: "line" }

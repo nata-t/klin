@@ -3,9 +3,9 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { describe, expect, it } from "vitest"
 import { describeName } from "../src/commands/wizard"
-import { type ChipField, Form, type InputField, type Page } from "../src/ui/form"
+import { type ChipField, type ChipItem, Form, type InputField, type Page } from "../src/ui/form"
 import type { Key } from "../src/ui/term"
-import { parseColor, width, wrap } from "../src/ui/theme"
+import { hue, parseColor, width, wrap } from "../src/ui/theme"
 
 const key = (name: string, sequence = name.length === 1 ? name : ""): Key => ({ name, sequence, ctrl: false, shift: false, meta: false })
 
@@ -47,8 +47,8 @@ describe("full-screen form", () => {
       const text = form.render(w, h).toString()
       if (w < 40 || h < 12) expect(text).toContain("more room")
       else {
-        // The header (logo + steps) stays put even when the body scrolls.
-        expect(text).toMatch(/K L I N|▄█▀/)
+        // The header (steps + logo) stays put even when the body scrolls.
+        expect(text).toMatch(/K L I N|▄█▀|██╗/)
         expect(text).toContain("TOOLBOX")
         if (h >= 24) expect(text).toContain("Fill the toolbox.")
         if (h >= 24) expect(text).toContain("SECURITY")
@@ -73,13 +73,126 @@ describe("full-screen form", () => {
     expect(input.value).toBe("my-app")
     expect(form.render(120, 40).toString()).toContain("./my-app is free to use")
     form.key(key("down"))
-    form.key(key("right"))
+    form.key(key("down"))
     form.key(key("space", " "))
     expect(picked.has("helmet")).toBe(true)
     expect(form.render(120, 40).toString()).toContain("About helmet")
     expect(form.key(key("return"))).toBe("submit")
     expect(form.key(key("escape"))).toBe("back")
     expect(form.key({ ...key("c"), ctrl: true })).toBe("cancel")
+  })
+})
+
+/** A page of small pick-one groups: three of them, so two pair up and one sits below. */
+function grid() {
+  const picked: Record<string, string> = { framework: "nest", server: "express", database: "postgres" }
+  const group = (id: string, items: string[]): ChipField => ({
+    kind: "chips",
+    id,
+    title: id,
+    note: "pick one",
+    multi: false,
+    items: items.map((item): ChipItem => ({ id: item, label: item })),
+    isOn: (item) => picked[id] === item,
+    toggle: (item) => void (picked[id] = item),
+  })
+  const input: InputField = { kind: "input", id: "name", label: "Name", value: "app", caret: 3, validate: () => ({ tone: "ok", message: "fine" }) }
+  const p: Page = {
+    steps: { labels: ["Base", "Stack", "Build"], current: 1 },
+    heading: "Pick your engine.",
+    fields: [input, group("framework", ["nest", "plain"]), group("server", ["express", "fastify"]), group("database", ["postgres", "mysql", "sqlite"])],
+    keys: [["space", "snap"]],
+  }
+  return { p, picked }
+}
+
+const rowOf = (text: string, needle: string) => text.split("\n").findIndex((line) => line.includes(needle))
+
+describe("full-screen layout", () => {
+  it("puts the logo under the step indicator and shrinks it to fit", () => {
+    const form = new Form(page().p)
+    const big = form.render(120, 40).toString()
+    expect(rowOf(big, "TOOLBOX")).toBeLessThan(rowOf(big, "██╗"))
+    expect(big).not.toMatch(/TOOLBOX.*██/)
+    expect(form.render(80, 28).toString()).toContain("▄█▀")
+    expect(form.render(60, 20).toString()).toContain("K L I N")
+  })
+
+  it("lists each group in one column, two side by side, the odd one out centered below", () => {
+    const text = new Form(grid().p).render(120, 40).toString()
+    expect(rowOf(text, "FRAMEWORK")).toBe(rowOf(text, "SERVER"))
+    expect(rowOf(text, "plain")).toBe(rowOf(text, "nest") + 1)
+    expect(rowOf(text, "sqlite")).toBe(rowOf(text, "postgres") + 2)
+    const below = text.split("\n")[rowOf(text, "DATABASE")]!
+    expect(rowOf(text, "DATABASE")).toBeGreaterThan(rowOf(text, "FRAMEWORK"))
+    const title = below.indexOf("DATABASE")
+    const end = title + width("DATABASE  · pick one")
+    expect(Math.abs(title - (120 - end))).toBeLessThanOrEqual(2)
+  })
+
+  it("stacks the groups when two columns don't fit", () => {
+    const { p } = grid()
+    for (const field of p.fields) if (field.kind === "chips") field.items[0]!.label = "a rather long option name"
+    const narrow = new Form(p).render(50, 60).toString()
+    expect(rowOf(narrow, "SERVER")).toBeGreaterThan(rowOf(narrow, "FRAMEWORK"))
+    const wide = new Form(p).render(120, 60).toString()
+    expect(rowOf(wide, "SERVER")).toBe(rowOf(wide, "FRAMEWORK"))
+  })
+
+  it("moves through the grid with the arrow keys", () => {
+    const { p, picked } = grid()
+    const form = new Form(p)
+    const press = (name: string) => {
+      form.key(key(name, name === "space" ? " " : ""))
+      form.render(120, 40)
+    }
+    form.render(120, 40)
+    press("down") // input → the first group of the row below
+    expect(form.cursor).toEqual({ field: 1, item: 0 })
+    press("right") // into "server" beside it, on the same line
+    expect(form.cursor).toEqual({ field: 2, item: 0 })
+    press("left")
+    press("down")
+    expect(form.cursor).toEqual({ field: 1, item: 1 })
+    press("down") // past the end of the list: the centered group below
+    expect(form.cursor.field).toBe(3)
+    press("up")
+    press("up")
+    press("up")
+    expect(form.cursor.field).toBe(0)
+    press("tab")
+    press("tab")
+    press("down")
+    press("space")
+    expect(picked.server).toBe("fastify")
+  })
+
+  it("colors validation errors red", () => {
+    const { p, input } = page()
+    const form = new Form(p)
+    input.value = ""
+    const canvas = form.render(120, 40)
+    const row = rowOf(canvas.toString(), "Give your kit a name")
+    const col = canvas.toString().split("\n")[row]!.indexOf("Give")
+    expect(canvas.cells[row * 120 + col]!.style.fg).toEqual(hue.error)
+  })
+
+  it("warns in amber while a part with a warning is switched off", () => {
+    const { p, picked } = page()
+    const chips = p.fields[1] as ChipField
+    chips.items[0]!.warning = "Browsers block calls from other origins."
+    const form = new Form(p)
+    form.focus("security")
+    expect(form.render(120, 40).toString()).not.toContain("is off")
+    form.key(key("space", " "))
+    expect(picked.has("cors")).toBe(false)
+    const canvas = form.render(120, 40)
+    const text = canvas.toString()
+    expect(text).toContain("▲ CORS is off")
+    expect(text).toContain("Browsers block calls from other origins.")
+    const row = rowOf(text, "SECURITY")
+    const col = text.split("\n")[row]!.indexOf("▲")
+    expect(canvas.cells[row * 120 + col]!.style.fg).toEqual(hue.warn)
   })
 })
 
