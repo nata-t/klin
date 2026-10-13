@@ -11,8 +11,10 @@
     "signOut": "Sign out"
   },
   "landing": {
-    "nav": { "features": "Features", "stack": "Stack" },
-    "badge": "Auth, API and UI — already wired",
+    "nav": {
+      "features": "Features",
+      "stack": "Stack"
+    },
     "title": "Ship the product, not the plumbing.",
     "subtitle": "A full-stack TypeScript foundation with authentication, a typed API, shared validation and a polished UI. Start where most projects end up after their first month.",
     "cta": {

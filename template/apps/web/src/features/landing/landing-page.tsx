@@ -7,12 +7,12 @@ import {
   KeyRoundIcon,
   PaletteIcon,
   RocketIcon,
-  SparklesIcon,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useT } from "@/lib/i18n"
 import { useSession } from "@/lib/session"
+import { TerminalHero } from "./terminal-hero"
 
 const FEATURES = [
   {
@@ -28,7 +28,11 @@ const FEATURES = [
   {
     icon: DatabaseIcon,
     title: "Typed data layer",
+    // klin:if nest
     body: "Prisma models, a Nest service, and a TanStack Query hook — generated as one slice.",
+    // klin:else
+    //? body: "Prisma models, a typed route, and a TanStack Query hook — generated as one slice.",
+    // klin:endif
   },
   {
     icon: PaletteIcon,
@@ -43,11 +47,32 @@ const FEATURES = [
   {
     icon: RocketIcon,
     title: "Ready to ship",
-    body: "Docker images, CI, rate limiting, structured logs and health checks included.",
+    body: "Docker images, CI, security headers, rate limiting, structured logs and health checks.",
   },
 ]
 
-const STACK = ["NestJS", "Better Auth", "Prisma", "TanStack Router", "TanStack Query", "TanStack Form", "Zod", "Tailwind CSS", "shadcn/ui", "Turborepo"]
+const STACK = [
+  // klin:if nest-express
+  "NestJS",
+  "Express",
+  // klin:elif nest-fastify
+  //? "NestJS",
+  //? "Fastify",
+  // klin:elif express
+  //? "Express",
+  // klin:else
+  //? "Fastify",
+  // klin:endif
+  "Better Auth",
+  "Prisma",
+  "TanStack Router",
+  "TanStack Query",
+  "TanStack Form",
+  "Zod",
+  "Tailwind CSS",
+  "shadcn/ui",
+  "Turborepo",
+]
 
 export function LandingPage() {
   const { data: session } = useSession()
@@ -57,12 +82,9 @@ export function LandingPage() {
     <>
       <section className="relative overflow-hidden">
         <div className="bg-glow pointer-events-none absolute inset-0" />
-        <div className="relative mx-auto max-w-4xl px-4 pt-24 pb-20 text-center sm:px-6 sm:pt-32">
-          <span className="inline-flex items-center gap-2 rounded-full border bg-background/60 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur">
-            <SparklesIcon className="size-3.5 text-brand" />
-            {t("landing.badge", "Auth, API and UI — already wired")}
-          </span>
-          <h1 className="mt-6 text-4xl font-semibold tracking-tight text-balance sm:text-6xl">
+        <div className="relative mx-auto max-w-4xl px-4 pt-16 pb-20 text-center sm:px-6 sm:pt-24">
+          <TerminalHero />
+          <h1 className="mt-12 text-4xl font-semibold tracking-tight text-balance sm:text-6xl">
             {t("landing.title", "Ship the product, not the plumbing.")}
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-balance text-muted-foreground">
