@@ -1,7 +1,9 @@
 /**
- * The klin look: grayscale only — white to black — with hierarchy carried by
- * brightness, weight, fills and glyphs instead of hue. The one exception is a
- * theme-color swatch, which previews the actual color you'll get.
+ * The klin look: grayscale — white to black — with hierarchy carried by
+ * brightness, weight and glyphs instead of hue. The exceptions are a
+ * theme-color swatch, which previews the actual color you'll get, and the two
+ * status colors: red for errors and amber for warnings, so problems read at a
+ * glance.
  *
  * Everything degrades: truecolor → 256 colors (the gray ramp) → 16 colors →
  * plain text (NO_COLOR, pipes, CI logs).
@@ -38,11 +40,11 @@ export type RGB = readonly [number, number, number]
 export const gray = {
   /** the background (a soft vignette around it in truecolor) */
   bg: 0x14,
-  /** title and bottom bars */
+  /** the input box and the modal */
   bar: 0x1c,
-  /** a snapped chip's tinted fill */
+  /** step connectors that are still ahead */
   tint: 0x24,
-  /** the chip under the cursor */
+  /** the highlight under the cursor */
   lift: 0x30,
   /** dashed borders, tree branches, separators */
   line: 0x44,
@@ -59,6 +61,14 @@ export const gray = {
 
 export type GrayName = keyof typeof gray
 export type Color = GrayName | RGB
+
+/** The status colors — the only hues besides theme swatches. */
+export const hue = {
+  /** validation errors and failures */
+  error: [0xf8, 0x71, 0x71],
+  /** risky choices and things that need a look */
+  warn: [0xfb, 0xbf, 0x24],
+} as const satisfies Record<string, RGB>
 
 export interface Style {
   fg?: Color
@@ -86,10 +96,18 @@ function ansi256(rgb: RGB): number {
   return 16 + 36 * q(r) + 6 * q(g) + q(b)
 }
 
-/** 16-color terminals get four grays: black, bright black, white and bright white. */
+/**
+ * 16-color terminals get four grays (black, bright black, white and bright
+ * white), and the nearest bright color for anything with a hue.
+ */
 function ansi16(rgb: RGB, background: boolean): number {
-  const level = (rgb[0] + rgb[1] + rgb[2]) / 3
-  const code = level < 0x30 ? 30 : level < 0xa0 ? 90 : level < 0xe0 ? 37 : 97
+  const [r, g, b] = rgb
+  const level = (r + g + b) / 3
+  let code = level < 0x30 ? 30 : level < 0xa0 ? 90 : level < 0xe0 ? 37 : 97
+  if (Math.max(r, g, b) - Math.min(r, g, b) > 60) {
+    const on = (v: number) => (v > Math.max(r, g, b) * 0.6 ? 1 : 0)
+    code = 90 + on(r) + 2 * on(g) + 4 * on(b)
+  }
   return background ? code + 10 : code
 }
 
@@ -125,7 +143,7 @@ export function paint(text: string, style: Style): string {
 
 /**
  * Semantic styles for line output (logs, boxes, help). Meaning comes from
- * brightness and weight, never hue.
+ * brightness and weight — and red/amber for errors and warnings.
  */
 export const c = {
   bold: (s: string) => paint(s, { bold: true }),
@@ -139,8 +157,8 @@ export const c = {
   code: (s: string) => paint(s, { fg: "white", underline: false, bold: true }),
   ok: (s: string) => paint(s, { fg: "bright" }),
   info: (s: string) => paint(s, { fg: "muted" }),
-  warn: (s: string) => paint(s, { fg: "bright", bold: true }),
-  error: (s: string) => paint(s, { fg: "white", bold: true }),
+  warn: (s: string) => paint(s, { fg: hue.warn, bold: true }),
+  error: (s: string) => paint(s, { fg: hue.error, bold: true }),
   /** a little inverted label: ` klin ` */
   badge: (s: string) =>
     depth >= 256 ? paint(` ${s.trim()} `, { fg: "bg", bg: "bright", bold: true }) : paint(` ${s.trim()} `, { inverse: true, bold: true }),
@@ -194,9 +212,9 @@ export function parseColor(css: string): RGB | null {
   if (!ok) return null
   const l = Number(ok[1]) / (ok[2] ? 100 : 1)
   const chroma = Number(ok[3])
-  const hue = (Number(ok[4]) * Math.PI) / 180
-  const a = chroma * Math.cos(hue)
-  const b = chroma * Math.sin(hue)
+  const angle = (Number(ok[4]) * Math.PI) / 180
+  const a = chroma * Math.cos(angle)
+  const b = chroma * Math.sin(angle)
   // OKLab → LMS → linear sRGB → sRGB
   const l_ = (l + 0.3963377774 * a + 0.2158037573 * b) ** 3
   const m_ = (l - 0.1055613458 * a - 0.0638541728 * b) ** 3
