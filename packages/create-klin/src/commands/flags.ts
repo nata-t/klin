@@ -13,26 +13,20 @@ export interface Flags {
   install?: boolean
   git?: boolean
   banner?: boolean
-  ui?: boolean
-  api?: boolean
   pm?: string
   preset?: string
   template?: string
-  plural?: string
-  scope?: string
   from?: string
   cwd?: string
   [key: string]: unknown
 }
 
 export const FLAG_SPEC = {
-  boolean: ["help", "version", "yes", "force", "dry-run", "install", "git", "banner", "ui", "api"],
+  boolean: ["help", "version", "yes", "force", "dry-run", "install", "git", "banner"],
   string: [
     "pm",
     "preset",
     "template",
-    "plural",
-    "scope",
     "from",
     "cwd",
     "backend",
@@ -46,7 +40,7 @@ export const FLAG_SPEC = {
     "accent",
   ],
   alias: { h: "help", v: "version", y: "yes", f: "force", t: "template", p: "preset" },
-  default: { install: true, git: true, banner: true, ui: true, api: true },
+  default: { install: true, git: true, banner: true },
 }
 
 /** `--auth google,github --db sqlite --extras none` → answers. */

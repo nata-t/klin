@@ -1,0 +1,191 @@
+import type { PackageManager } from "../engine/manifest"
+import type { ChangeKind } from "../ui/tree"
+import { rewriteCommand } from "../utils/pm"
+import { importPath, pathsFor, type TemplateContext } from "./paths"
+import { commandFor, type GenKind, type Target } from "./target"
+import * as api from "./templates/api"
+import { prismaFile, schemaExports, validatorsFile } from "./templates/schema"
+import * as web from "./templates/web"
+
+/** What generation needs to know about the project (from klin.json). */
+export interface Project {
+  backend: "nest" | "plain"
+  server: "express" | "fastify"
+  /** shadcn components live in packages/ui (`@repo/ui/components/*`). */
+  packagesUi: boolean
+  pm: PackageManager
+}
+
+/** Read access to the project, relative to its root — the disk, or a rendered template in tests. */
+export interface Reader {
+  read(path: string): string | null
+  exists(path: string): boolean
+  /** Every file under `dir`, recursively, as root-relative paths. */
+  files(dir: string): string[]
+}
+
+export interface Edit {
+  path: string
+  kind: ChangeKind
+  /** Absent for files that are kept as they are. */
+  content?: string
+  note?: string
+}
+
+export interface Plan {
+  edits: Edit[]
+  warnings: string[]
+}
+
+/** A problem with the request itself (taken name, existing files) — shown as-is. */
+export class PlanError extends Error {}
+
+/**
+ * Every file `klin generate <kind> <path>` writes or touches. Nothing is
+ * written here; a clash anywhere throws a PlanError before any file changes.
+ */
+export function planGenerate(kind: GenKind, target: Target, project: Project, fs: Reader, options: { force?: boolean } = {}): Plan {
+  const paths = pathsFor(target)
+  const ctx: TemplateContext = { target, kind, paths, command: commandFor(kind, target), withModel: kind === "resource" }
+  const edits: Edit[] = []
+  const warnings: string[] = []
+
+  const current = (path: string) => edits.findLast((e) => e.path === path)?.content ?? fs.read(path)
+
+  const write = (path: string, content: string) => {
+    const exists = fs.exists(path)
+    if (exists && !options.force) throw new PlanError(`${path} already exists — use --force to overwrite it`)
+    edits.push({ path, kind: exists ? "update" : "create", content })
+  }
+
+  /** Puts `line` right above `anchor`, indented like it. A missing anchor becomes a warning. */
+  const insert = (path: string, anchor: string, line: string) => {
+    const text = current(path)
+    if (text === null) {
+      warnings.push(`${path} is missing — add this yourself:\n  ${line}`)
+      return
+    }
+    if (text.includes(line)) return
+    const lines = text.split("\n")
+    // Exact match: "klin-anchor:nav" must not match "klin-anchor:nav-icons".
+    const pattern = new RegExp(`${escape(anchor)}(?![\\w-])`)
+    const at = lines.findIndex((l) => pattern.test(l))
+    if (at === -1) {
+      warnings.push(`Couldn't find "${anchor}" in ${path} — add this yourself:\n  ${line}`)
+      return
+    }
+    lines.splice(at, 0, `${/^\s*/.exec(lines[at]!)![0]}${line}`)
+    const existing = edits.find((e) => e.path === path)
+    if (existing) existing.content = lines.join("\n")
+    else edits.push({ path, kind: "update", content: lines.join("\n") })
+  }
+
+  /** Two `import { PaymentModule }` from different folders would collide. */
+  const claim = (path: string, name: string, line: string) => {
+    const text = current(path)
+    if (text && new RegExp(`\\b${name}\\b`).test(text) && !text.includes(line)) {
+      throw new PlanError(`${path} already uses the name ${name} — pick another name${suggestion(target)}`)
+    }
+  }
+
+  /* ─── packages/validators — shared, so it's reused when it's there ───── */
+
+  const names = schemaExports(target)
+  if (fs.exists(paths.validators)) {
+    edits.push({ path: paths.validators, kind: "keep", note: "already there — reused" })
+    const text = fs.read(paths.validators) ?? ""
+    const missing = names.filter((name) => !exportsName(text, name))
+    if (missing.length) warnings.push(`${paths.validators} doesn't export ${missing.join(", ")} — the generated code imports them`)
+  } else {
+    for (const file of fs.files("packages/validators/src")) {
+      if (!/\.ts$/.test(file) || /\.test\.ts$/.test(file)) continue
+      const text = fs.read(file) ?? ""
+      const taken = names.find((name) => exportsName(text, name))
+      if (taken) throw new PlanError(`${file} already exports ${taken} — pick another name${suggestion(target)}`)
+    }
+    edits.push({ path: paths.validators, kind: "create", content: validatorsFile(ctx) })
+  }
+  const index = "packages/validators/src/index.ts"
+  insert(index, "// klin-anchor:exports", `export * from "${importPath(index, paths.validators)}"`)
+
+  /* ─── packages/db ─────────────────────────────────────────────────────── */
+
+  if (kind === "resource") {
+    const model = target.one.pascal
+    for (const file of fs.files("packages/db/prisma")) {
+      if (!file.endsWith(".prisma") || file === paths.prisma) continue
+      if (new RegExp(`^\\s*(model|enum|view|type)\\s+${model}\\s*\\{`, "m").test(fs.read(file) ?? "")) {
+        throw new PlanError(`${file} already has a ${model} model — pick another name${suggestion(target)}`)
+      }
+    }
+    write(paths.prisma, prismaFile(ctx, rewriteCommand(`pnpm db:migrate --name add-${target.one.kebab}`, project.pm)))
+  }
+
+  /* ─── apps/api ────────────────────────────────────────────────────────── */
+
+  if (kind !== "frontend" && project.backend === "nest") {
+    const appModule = "apps/api/src/app.module.ts"
+    const name = `${target.leaf.pascal}Module`
+    const line = `import { ${name} } from "${importPath(appModule, paths.nest.module)}"`
+    claim(appModule, name, line)
+    write(paths.nest.module, api.nestModuleFile(ctx))
+    write(paths.nest.dto, api.nestDtoFile(ctx))
+    write(paths.nest.controller, api.nestControllerFile(ctx))
+    write(paths.nest.service, api.nestServiceFile(ctx))
+    insert(appModule, "// klin-anchor:module-imports", line)
+    insert(appModule, "// klin-anchor:modules", `${name},`)
+  } else if (kind !== "frontend") {
+    const app = "apps/api/src/app.ts"
+    const fastify = project.server === "fastify"
+    const name = fastify ? `${target.leaf.camel}Routes` : `${target.leaf.camel}Router`
+    const line = `import { ${name} } from "${importPath(app, paths.plain.routes)}"`
+    claim(app, name, line)
+    write(paths.plain.service, api.plainServiceFile(ctx))
+    write(paths.plain.routes, fastify ? api.fastifyRoutesFile(ctx) : api.expressRoutesFile(ctx))
+    insert(app, "// klin-anchor:route-imports", line)
+    insert(
+      app,
+      "// klin-anchor:routes",
+      fastify ? `await app.register(${name}, { prefix: "/api/${target.path}" })` : `app.use("/api/${target.path}", ${name})`
+    )
+  }
+
+  /* ─── apps/web ────────────────────────────────────────────────────────── */
+
+  if (kind !== "backend") {
+    // With components in packages/ui, shadcn imports come from @repo/ui.
+    const ui = (code: string) => (project.packagesUi ? web.toUiPackageImports(code) : code)
+    write(paths.web.api, web.webApiFile(ctx))
+    write(paths.web.form, ui(web.webFormFile(ctx)))
+    write(paths.web.page, ui(web.webPageFile(ctx)))
+    write(paths.web.route, web.webRouteFile(ctx))
+
+    const parentRoute = `apps/web/src/routes/_app/${target.folders.join("/")}.tsx`
+    if (target.folders.length && fs.exists(parentRoute)) {
+      warnings.push(`${parentRoute} exists, so /${target.path} renders inside it — make sure its component renders <Outlet />`)
+    }
+
+    const nav = "apps/web/src/config/nav.ts"
+    const navText = current(nav)
+    const id = target.path.replaceAll("/", "-")
+    if (navText !== null && !navText.includes(`id: "${id}"`)) {
+      const icon = web.iconFor(target.one.kebab)
+      if (!new RegExp(`\\b${icon}\\b`).test(navText)) insert(nav, "// klin-anchor:nav-icons", `${icon},`)
+      insert(nav, "// klin-anchor:nav", `{ id: "${id}", title: "${target.many.title}", to: "/${target.path}", icon: ${icon} },`)
+    }
+  }
+
+  return { edits, warnings }
+}
+
+function exportsName(text: string, name: string) {
+  return new RegExp(`export\\s+(?:declare\\s+)?(?:const|let|var|function|class|type|interface|enum)\\s+${name}\\b`).test(text)
+}
+
+/** " (e.g. blog/blog-post)" — prefixing the leaf with its folder usually makes it unique. */
+function suggestion(target: Target) {
+  const parent = target.folders.at(-1)
+  return parent ? ` (e.g. ${[...target.folders, `${parent}-${target.leaf.kebab}`].join("/")})` : ""
+}
+
+const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")

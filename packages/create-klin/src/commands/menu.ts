@@ -18,7 +18,7 @@ export async function menu(flags: Flags) {
       subtitle: config.name,
       title: "Commands",
       options: [
-        { value: "generate", label: "Generate a resource", about: "Schema, model, API, query hooks and a page for a new resource — one command, every layer." },
+        { value: "generate", label: "Generate code", about: "A full-stack resource, a backend module or a frontend feature: the files and the wiring, ready for you to fill in." },
         { value: "add", label: "Add a module", about: "Bolt on organizations, email, uploads, a different database… klin merges it into your code." },
         { value: "remove", label: "Remove a module", about: "Take a module out again. Files you edited are kept and listed." },
         { value: "doctor", label: "Run a health check", about: "Checks Node, your package manager, .env, the database and services, and drifting versions." },
@@ -31,7 +31,7 @@ export async function menu(flags: Flags) {
   switch (action) {
     case "generate": {
       const { generateCommand } = await import("./generate")
-      return generateCommand({ ...flags, _: ["resource"] })
+      return generateCommand(flags)
     }
     case "add":
     case "remove": {

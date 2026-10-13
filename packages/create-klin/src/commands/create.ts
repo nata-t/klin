@@ -373,7 +373,7 @@ function nextSteps({
   lines.push("")
   const extras: Array<[string, string]> = []
   if (has("password")) extras.push(["demo login", `demo@example.com ${c.dim("/")} demo-password-123`])
-  extras.push(["new feature", run("klin generate resource project name:string")])
+  extras.push(["new feature", run("klin generate")])
   extras.push(["add a component", run("ui:add dialog")])
   extras.push(["health check", run("klin doctor")])
   // Same rule as the commands: a value that won't fit beside its label goes under it.

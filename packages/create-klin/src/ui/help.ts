@@ -34,14 +34,16 @@ export function help() {
   ${c.bold("Inside a project")} ${dim("(pnpm klin … · npx create-klin …)")}
     ${cmd("klin add")} ${dim("<module…>")}            bolt on a module later      ${dim("klin add organizations email")}
     ${cmd("klin remove")} ${dim("<module…>")}         take one out again
-    ${cmd("klin generate resource")} ${dim("<name> [field:type…]")}
-                                     schema + model + API + hook + page
-                                     ${dim("klin g resource project name:string budget:int? due:date?")}
+    ${cmd("klin generate")}                 pick what to make, then name it
+    ${cmd("klin generate resource")} ${dim("<name>")} model + schemas + API + page
+    ${cmd("klin generate backend")} ${dim("<name>")}  controller, service, DTOs, module
+    ${cmd("klin generate frontend")} ${dim("<name>")} page, route, query hooks, form
+                                  ${dim("slashes make folders: klin g resource blog/post · aliases r, b, f")}
     ${cmd("klin list")}                     modules and what's switched on
     ${cmd("klin doctor")}                   check env, database, services & versions
     ${cmd("klin upgrade")} ${dim("[--from <dir>]")}   merge template improvements in ${dim("(experimental)")}
 
-  ${dim(`Field types: string text int float boolean date datetime enum:a,b,c — end with ? for optional.
+  ${dim(`Generated code has the schemas, endpoints and wiring; you add the fields and the logic.
   Docs: packages/docs in your project · https://github.com/klin-dev/klin`)}
 `)
 }

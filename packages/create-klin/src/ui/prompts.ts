@@ -154,6 +154,8 @@ export async function text(options: {
   defaultValue?: string
   about?: string
   validate?: (value: string) => string | undefined
+  /** Refuse an empty answer with this message — but only on enter, not while it's still empty. */
+  required?: string
   /** What a valid value means, e.g. "./my-app is free to use". */
   describe?: (value: string) => { tone: Tone; message: string } | undefined
 }): Promise<string | Cancel> {
@@ -183,7 +185,7 @@ export async function text(options: {
     if (action === "back") return finish(CANCEL)
     if (action !== "submit") return
     const value = input.value || options.defaultValue || ""
-    const error = options.validate?.(value)
+    const error = !value && options.required ? options.required : options.validate?.(value)
     if (error) return form.say("error", error)
     finish(value)
   })
