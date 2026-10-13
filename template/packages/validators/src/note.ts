@@ -8,6 +8,7 @@ import { booleanish, idSchema, isoDate } from "./common"
  *   packages/validators/src/note.ts          ← you are here
  *   packages/db/prisma/models/note.prisma
  *   apps/api/src/modules/notes/*             (NestJS: nestjs-zod DTOs made from these schemas)
+ *   apps/api/src/routes/notes.ts             (plain Express / Fastify: the schemas, parsed directly)
  *   apps/web/src/features/notes/*            (form validation + z.infer types)
  *   apps/web/src/routes/_app/notes.tsx
  *

@@ -5,7 +5,9 @@ packages:
 # pnpm only runs install scripts for packages you allow.
 allowBuilds:
   "@prisma/engines": true
+  # klin:if nest
   "@swc/core": true
+  # klin:endif
   # klin:if sqlite
   better-sqlite3: true
   # klin:endif
@@ -18,8 +20,10 @@ allowBuilds:
   # sharp ships prebuilt binaries; its install script isn't needed.
   sharp: false
   # klin:endif
+# klin:if nest
 
 # nestjs-zod declares NestJS 10–11 as peers but works with NestJS 12.
 peerDependencyRules:
   allowedVersions:
     nestjs-zod>@nestjs/common: "12"
+# klin:endif

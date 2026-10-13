@@ -15,9 +15,12 @@ export function help() {
     ${dim("also:")} ${cmd("pnpm create klin")} ${dim("·")} ${cmd("bun create klin")} ${dim("·")} ${cmd("npx create-klin")}
 
     ${flag("--preset")} ${dim("<id>")}        recommended · saas · minimal · everything
+    ${flag("--backend")} ${dim("<name>")}     nest · plain
+    ${flag("--server")} ${dim("<name>")}      express · fastify
     ${flag("--auth")} ${dim("<list>")}        password,google,github,magic-link,two-factor,passkey
     ${flag("--plugins")} ${dim("<list>")}     organizations,admin,api-keys ${dim("(or none)")}
     ${flag("--db")} ${dim("<name>")}          postgres · mysql · sqlite
+    ${flag("--security")} ${dim("<list>")}    cors,helmet,rate-limit ${dim("(or none)")}
     ${flag("--extras")} ${dim("<list>")}      email,uploads,queues,i18n,docker,ci ${dim("(or none)")}
     ${flag("--accent")} ${dim("<color>")}     violet · blue · emerald · rose · amber · neutral
     ${flag("--pm")} ${dim("<name>")}          pnpm · bun · npm

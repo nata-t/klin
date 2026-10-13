@@ -225,7 +225,7 @@ export async function doctorCommand(_flags: Flags) {
   const lockstep: Array<[string, RegExp]> = [
     ["Prisma", /^(prisma|@prisma\/)/],
     ["Better Auth", /^(better-auth|@better-auth\/)/],
-    ["NestJS core", /^@nestjs\/(core|common|platform-express)$/],
+    ["NestJS core", /^@nestjs\/(core|common|platform-express|platform-fastify)$/],
     ["React", /^(react|react-dom|@types\/react|@types\/react-dom)$/],
   ]
   for (const [label, pattern] of lockstep) {

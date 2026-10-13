@@ -1,12 +1,12 @@
 import { Controller, Get, ServiceUnavailableException } from "@nestjs/common"
-import { SkipThrottle } from "@nestjs/throttler"
+import { SkipThrottle } from "@nestjs/throttler" // klin:only rate-limit
 import { Public } from "../common"
 import { PrismaService } from "../prisma/prisma.service"
 
 /** GET /api/health — for load balancers, uptime checks and `klin doctor`. */
 @Controller("health")
 @Public()
-@SkipThrottle()
+@SkipThrottle() // klin:only rate-limit
 export class HealthController {
   constructor(private readonly prisma: PrismaService) {}
 

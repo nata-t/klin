@@ -3,6 +3,7 @@
  *
  * Every schema here is used on both sides of the wire:
  *   • the API validates requests with it    → class CreateNoteDto extends createZodDto(createNoteSchema) {}   (NestJS, nestjs-zod)
+ *                                              createNoteSchema.parse(req.body)                             (plain Express / Fastify)
  *   • the API shapes responses with it      → @ZodSerializerDto(NoteDto) · noteSchema.parse(note)
  *   • the web app validates forms with it   → useAppForm({ validators: { onDynamic: createNoteSchema } })
  *   • TypeScript types are inferred from it → type Note = z.infer<typeof noteSchema>

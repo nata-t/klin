@@ -1,5 +1,9 @@
 {
+  // klin:if nest
   "extends": "@repo/typescript-config/nest.json",
+  // klin:else
+  //? "extends": "@repo/typescript-config/node.json",
+  // klin:endif
   "compilerOptions": {
     "jsx": "react-jsx"
   },

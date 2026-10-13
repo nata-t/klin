@@ -17,11 +17,13 @@ export class UploadsController {
   }
 
   /** GET /api/uploads/file/<key> → 302 to a short-lived signed URL. Public so <img> tags work. */
-  @Get("file/*key")
+  @Get("file/*key") // klin:only express
+  //? @Get("file/*") // klin:only fastify
   @Public()
   @Header("Cache-Control", "private, max-age=3000")
   @Redirect()
-  async file(@Param("key") key: string | string[]) {
+  async file(@Param("key") key: string | string[]) { // klin:only express
+  //? async file(@Param("*") key: string | string[]) { // klin:only fastify
     const objectKey = Array.isArray(key) ? key.join("/") : key
     return { url: await this.uploads.readUrl(objectKey), statusCode: 302 }
   }

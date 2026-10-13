@@ -26,8 +26,15 @@ import { LoggerModule as PinoLoggerModule } from "nestjs-pino"
             }
           : undefined,
         genReqId: (req, res) => {
+          // On Fastify the request already carries Fastify's id; reuse it.
+          const existing = (req as { id?: unknown }).id
           const header = req.headers["x-request-id"]
-          const id = typeof header === "string" && header ? header : randomUUID()
+          const id =
+            typeof existing === "string" && existing
+              ? existing
+              : typeof header === "string" && header
+                ? header
+                : randomUUID()
           res.setHeader("x-request-id", id)
           return id
         },
@@ -39,7 +46,7 @@ import { LoggerModule as PinoLoggerModule } from "nestjs-pino"
         customSuccessMessage: (req, res) => `${req.method} ${req.url} → ${res.statusCode}`,
         customErrorMessage: (req, res) => `${req.method} ${req.url} → ${res.statusCode}`,
         autoLogging: {
-          ignore: (req) => req.url === "/api/health",
+          ignore: (req) => ((req as { originalUrl?: string }).originalUrl ?? req.url) === "/api/health",
         },
         redact: {
           paths: [

@@ -14,8 +14,8 @@ import { ac, roles } from "./permissions" // klin:only organizations
 const APP_NAME = "Klin App"
 
 /**
- * Better Auth — the whole auth server. Mounted by the API at /api/auth/* via
- * @thallesp/nestjs-better-auth. Docs: https://www.better-auth.com/docs
+ * Better Auth — the whole auth server. Mounted by the API at /api/auth/*
+ * (via @thallesp/nestjs-better-auth on NestJS). Docs: https://www.better-auth.com/docs
  *
  * Cookies: the web app reaches the API through a same-origin /api proxy (Vite
  * in dev, nginx in prod), so session cookies are first-party everywhere and
@@ -128,7 +128,11 @@ export const auth = betterAuth({
   },
 
   // klin:if queues
+  // klin:if nest
   // Filled in by @DatabaseHook() providers in the API (see apps/api/src/modules/jobs).
+  // klin:else
+  //? // Filled in by the API at startup (see apps/api/src/jobs/email.ts).
+  // klin:endif
   databaseHooks: {},
 
   // klin:endif

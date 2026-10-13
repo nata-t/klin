@@ -1,7 +1,8 @@
 import { auth } from "@repo/auth"
 import { Module } from "@nestjs/common"
-import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from "@nestjs/core"
-import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler"
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from "@nestjs/core" // klin:only rate-limit
+//? import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from "@nestjs/core" // klin:only !rate-limit
+import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler" // klin:only rate-limit
 import { AuthModule } from "@thallesp/nestjs-better-auth"
 import { ZodSerializerInterceptor, ZodValidationPipe } from "nestjs-zod"
 import { ApiExceptionFilter } from "./common/filters/api-exception.filter"
@@ -23,9 +24,20 @@ import { PrismaModule } from "./prisma/prisma.module"
     PrismaModule,
     // Mounts Better Auth on /api/auth/* and registers a global AuthGuard:
     // every route requires a session unless marked @Public().
-    AuthModule.forRoot({ auth, disableTrustedOriginsCors: true }),
+    AuthModule.forRoot({
+      auth,
+      // klin:if nest-fastify && cors
+      //? // Fastify serves /api/auth/* through middleware, which app.enableCors()
+      //? // doesn't reach — the module applies Better Auth's trustedOrigins there.
+      //? disableTrustedOriginsCors: false,
+      // klin:else
+      disableTrustedOriginsCors: true,
+      // klin:endif
+    }),
+    // klin:if rate-limit
     // 120 requests per minute per IP. Tune per route with @Throttle()/@SkipThrottle().
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
+    // klin:endif
     HealthModule,
     MeModule,
     NotesModule,
@@ -36,7 +48,7 @@ import { PrismaModule } from "./prisma/prisma.module"
     // klin-anchor:modules
   ],
   providers: [
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: ThrottlerGuard }, // klin:only rate-limit
     // nestjs-zod: @Body()/@Query() parameters typed with a DTO made by
     // createZodDto(schema) are validated against that schema (→ 422 on failure).
     { provide: APP_PIPE, useClass: ZodValidationPipe },

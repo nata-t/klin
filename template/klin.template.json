@@ -1,12 +1,36 @@
 {
   "name": "klin",
-  "description": "NestJS + Better Auth + Prisma + TanStack (Router, Query, Form) + shadcn/ui, in a Turborepo with shared Zod validators.",
+  "description": "NestJS or plain Express/Fastify + Better Auth + Prisma + TanStack (Router, Query, Form) + shadcn/ui, in a Turborepo with shared Zod validators.",
   "tokens": {
     "klin-app": "slug",
     "klin_app": "snake",
     "Klin App": "title"
   },
   "questions": [
+    {
+      "id": "backend",
+      "type": "select",
+      "flag": "backend",
+      "message": "How should the API be built?",
+      "options": ["nest", "plain"],
+      "default": "nest"
+    },
+    {
+      "id": "server",
+      "type": "select",
+      "flag": "server",
+      "message": "Which HTTP server runs it?",
+      "options": ["express", "fastify"],
+      "default": "express"
+    },
+    {
+      "id": "database",
+      "type": "select",
+      "flag": "db",
+      "message": "Where should your data live?",
+      "options": ["postgres", "mysql", "sqlite"],
+      "default": "postgres"
+    },
     {
       "id": "auth",
       "type": "multiselect",
@@ -25,12 +49,12 @@
       "default": []
     },
     {
-      "id": "database",
-      "type": "select",
-      "flag": "db",
-      "message": "Where should your data live?",
-      "options": ["postgres", "mysql", "sqlite"],
-      "default": "postgres"
+      "id": "security",
+      "type": "multiselect",
+      "flag": "security",
+      "message": "Which API safeguards?",
+      "options": ["cors", "helmet", "rate-limit"],
+      "default": ["cors", "helmet", "rate-limit"]
     },
     {
       "id": "extras",
@@ -51,6 +75,50 @@
     }
   ],
   "options": {
+    "nest": {
+      "label": "NestJS",
+      "hint": "modules, DI, nestjs-zod DTOs",
+      "json": {
+        "apps/api/package.json": {
+          "dependencies": [
+            "@nestjs/common",
+            "@nestjs/core",
+            "@thallesp/nestjs-better-auth",
+            "nestjs-pino",
+            "nestjs-zod",
+            "reflect-metadata",
+            "rxjs"
+          ],
+          "devDependencies": ["@swc/core"]
+        },
+        "package.json": {
+          "trustedDependencies": ["@swc/core"]
+        }
+      }
+    },
+    "plain": {
+      "label": "Plain",
+      "hint": "no framework, just routes"
+    },
+    "express": {
+      "label": "Express",
+      "hint": "the classic, huge ecosystem",
+      "json": {
+        "apps/api/package.json": {
+          "dependencies": ["helmet"],
+          "devDependencies": ["@types/express"]
+        }
+      }
+    },
+    "fastify": {
+      "label": "Fastify",
+      "hint": "faster, schema-first",
+      "json": {
+        "apps/api/package.json": {
+          "dependencies": ["@fastify/helmet"]
+        }
+      }
+    },
     "password": {
       "label": "Email & password",
       "hint": "sign up, reset & verify flows"
@@ -102,6 +170,8 @@
       "hint": "teams, invites, roles, permissions",
       "remove": [
         "apps/api/src/modules/organization/**",
+        "apps/api/plain-*/routes/organization.ts",
+        "apps/api/plain/services/organization.ts",
         "apps/web/src/features/organizations/**",
         "apps/web/src/routes/_app/settings/organization.tsx",
         "apps/web/src/routes/accept-invitation.$invitationId.tsx",
@@ -113,6 +183,8 @@
       "hint": "manage users, ban, impersonate",
       "remove": [
         "apps/api/src/modules/admin/**",
+        "apps/api/plain-*/routes/admin.ts",
+        "apps/api/plain/services/admin.ts",
         "apps/web/src/features/admin/**",
         "apps/web/src/routes/_app/admin.tsx",
         "apps/web/src/routes/_app/admin/**"
@@ -168,6 +240,18 @@
         }
       }
     },
+    "cors": {
+      "label": "CORS",
+      "hint": "only your web app may call the API"
+    },
+    "helmet": {
+      "label": "Helmet",
+      "hint": "secure HTTP headers"
+    },
+    "rate-limit": {
+      "label": "Rate limiting",
+      "hint": "120 requests / minute / IP"
+    },
     "email": {
       "label": "Transactional email",
       "hint": "Resend + React Email",
@@ -197,6 +281,8 @@
       "hint": "S3 / R2 presigned URLs",
       "remove": [
         "apps/api/src/modules/uploads/**",
+        "apps/api/plain-*/routes/uploads.ts",
+        "apps/api/plain/services/uploads.ts",
         "apps/web/src/features/uploads/**",
         "packages/docs/uploads.md"
       ],
@@ -209,7 +295,12 @@
     "queues": {
       "label": "Background jobs",
       "hint": "BullMQ + Redis",
-      "remove": ["apps/api/src/modules/jobs/**", "packages/docs/background-jobs.md"],
+      "remove": [
+        "apps/api/src/modules/jobs/**",
+        "apps/api/plain-*/routes/jobs.ts",
+        "apps/api/plain/jobs/**",
+        "packages/docs/background-jobs.md"
+      ],
       "json": {
         "apps/api/package.json": {
           "dependencies": ["@nestjs/bullmq", "bullmq", "ioredis"]
@@ -228,7 +319,7 @@
     },
     "docker": {
       "label": "Docker",
-      "hint": "compose for local services + production images",
+      "hint": "local services + production images",
       "remove": [
         "**/Dockerfile",
         "**/docker-entrypoint.sh",
@@ -262,10 +353,15 @@
     }
   },
   "flags": {
+    "scaffolded": "pnpm || bun || npm",
     "oauth": "google || github",
     "sends-auth-email": "password || magic-link || organizations",
     "compose": "docker && (postgres || mysql || queues || uploads)",
-    "settings-security": "password || two-factor || passkey"
+    "settings-security": "password || two-factor || passkey",
+    "nest-express": "nest && express",
+    "nest-fastify": "nest && fastify",
+    "plain-express": "plain && express",
+    "plain-fastify": "plain && fastify"
   },
   "rules": [
     {
@@ -289,7 +385,7 @@
       }
     },
     {
-      "when": "!npm",
+      "when": "!npm || !nest",
       "json": {
         "package.json": {
           "overrides": true
@@ -302,6 +398,109 @@
       "json": {
         "package.json": {
           "scripts": ["db:up", "db:down"]
+        }
+      }
+    },
+    {
+      "when": "nest",
+      "remove": ["apps/api/plain/**", "apps/api/plain-express/**", "apps/api/plain-fastify/**"]
+    },
+    {
+      "when": "plain",
+      "remove": ["apps/api/src/*/**", "apps/api/src/main.ts", "apps/api/src/app.module.ts", "apps/api/src/logger.module.ts"],
+      "move": {
+        "apps/api/plain/": "apps/api/src/",
+        "apps/api/plain-express/": "apps/api/src/",
+        "apps/api/plain-fastify/": "apps/api/src/"
+      }
+    },
+    {
+      "when": "plain && !express",
+      "remove": ["apps/api/plain-express/**"]
+    },
+    {
+      "when": "plain && !fastify",
+      "remove": ["apps/api/plain-fastify/**"]
+    },
+    {
+      "when": "!nest-express",
+      "json": {
+        "apps/api/package.json": {
+          "dependencies": ["@nestjs/platform-express"]
+        }
+      }
+    },
+    {
+      "when": "!nest-fastify",
+      "json": {
+        "apps/api/package.json": {
+          "dependencies": ["@nestjs/platform-fastify"]
+        }
+      }
+    },
+    {
+      "when": "!plain-express",
+      "json": {
+        "apps/api/package.json": {
+          "dependencies": ["cors", "express", "express-rate-limit"],
+          "devDependencies": ["@types/cors"]
+        }
+      }
+    },
+    {
+      "when": "!plain-fastify",
+      "json": {
+        "apps/api/package.json": {
+          "dependencies": ["@fastify/cors", "@fastify/rate-limit", "fastify"]
+        }
+      }
+    },
+    {
+      "when": "!nest && !express",
+      "json": {
+        "apps/api/package.json": {
+          "dependencies": ["pino-http"]
+        }
+      }
+    },
+    {
+      "when": "!nest || !queues",
+      "json": {
+        "apps/api/package.json": {
+          "dependencies": ["@nestjs/bullmq"]
+        }
+      }
+    },
+    {
+      "when": "!nest || !rate-limit",
+      "json": {
+        "apps/api/package.json": {
+          "dependencies": ["@nestjs/throttler"]
+        }
+      }
+    },
+    {
+      "when": "!helmet",
+      "json": {
+        "apps/api/package.json": {
+          "dependencies": ["@fastify/helmet", "helmet"]
+        }
+      }
+    },
+    {
+      "when": "!cors",
+      "json": {
+        "apps/api/package.json": {
+          "dependencies": ["@fastify/cors", "cors"],
+          "devDependencies": ["@types/cors"]
+        }
+      }
+    },
+    {
+      "when": "!rate-limit",
+      "json": {
+        "apps/api/package.json": {
+          "dependencies": ["@fastify/rate-limit", "express-rate-limit"]
         }
       }
     }
@@ -323,8 +522,10 @@
     },
     "minimal": {
       "label": "Featherweight",
-      "hint": "email & password on SQLite \u2014 no Docker needed",
+      "hint": "plain Fastify on SQLite, no Docker",
       "answers": {
+        "backend": "plain",
+        "server": "fastify",
         "auth": ["password"],
         "database": "sqlite",
         "extras": []

@@ -118,7 +118,9 @@ export async function generateCommand(flags: Flags) {
   if (scope === "user") insert(edits, root, "packages/db/prisma/models/auth.prisma", "// klin-anchor:user-relations", relation)
   if (scope === "org") insert(edits, root, "packages/db/prisma/models/auth.prisma", "// klin-anchor:organization-relations", relation)
 
-  if (withApi) {
+  const backend = (config.answers.backend as string | undefined) ?? "nest"
+  const server = (config.answers.server as string | undefined) ?? "express"
+  if (withApi && backend === "nest") {
     const dir = `apps/api/src/modules/${names.plural.kebab}`
     add(`${dir}/${names.plural.kebab}.module.ts`, t.apiModuleFile(spec))
     add(`${dir}/${names.plural.kebab}.dto.ts`, t.apiDtoFile(spec))
@@ -127,6 +129,18 @@ export async function generateCommand(flags: Flags) {
     const appModule = "apps/api/src/app.module.ts"
     insert(edits, root, appModule, "// klin-anchor:module-imports", `import { ${names.plural.pascal}Module } from "./modules/${names.plural.kebab}/${names.plural.kebab}.module"`)
     insert(edits, root, appModule, "// klin-anchor:modules", `${names.plural.pascal}Module,`)
+  } else if (withApi) {
+    add(`apps/api/src/services/${names.plural.kebab}.ts`, t.plainServiceFile(spec))
+    const app = "apps/api/src/app.ts"
+    if (server === "fastify") {
+      add(`apps/api/src/routes/${names.plural.kebab}.ts`, t.fastifyRoutesFile(spec))
+      insert(edits, root, app, "// klin-anchor:route-imports", `import { ${names.plural.camel}Routes } from "./routes/${names.plural.kebab}"`)
+      insert(edits, root, app, "// klin-anchor:routes", `await app.register(${names.plural.camel}Routes, { prefix: "/api/${names.plural.kebab}" })`)
+    } else {
+      add(`apps/api/src/routes/${names.plural.kebab}.ts`, t.expressRoutesFile(spec))
+      insert(edits, root, app, "// klin-anchor:route-imports", `import { ${names.plural.camel}Router } from "./routes/${names.plural.kebab}"`)
+      insert(edits, root, app, "// klin-anchor:routes", `app.use("/api/${names.plural.kebab}", ${names.plural.camel}Router)`)
+    }
   }
 
   if (withUi) {
