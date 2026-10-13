@@ -18,17 +18,21 @@ export interface Flags {
   template?: string
   from?: string
   cwd?: string
+  url?: string
+  plural?: string
   [key: string]: unknown
 }
 
 export const FLAG_SPEC = {
-  boolean: ["help", "version", "yes", "force", "dry-run", "install", "git", "banner"],
+  boolean: ["help", "version", "yes", "force", "dry-run", "install", "git", "banner", "validation", "model", "route", "nav"],
   string: [
     "pm",
     "preset",
     "template",
     "from",
     "cwd",
+    "url",
+    "plural",
     "backend",
     "server",
     "db",

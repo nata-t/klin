@@ -33,7 +33,7 @@ export function pathsFor(t: Target): Paths {
       api: `${webDir}/api.ts`,
       page: `${webDir}/${t.leaf.kebab}-page.tsx`,
       form: `${webDir}/${t.one.kebab}-form.tsx`,
-      route: `apps/web/src/routes/_app/${t.path}.tsx`,
+      route: `apps/web/src/routes/_app/${t.url}.tsx`,
     },
   }
 }

@@ -2,8 +2,8 @@ import { resolve } from "node:path"
 import { describe, expect, it } from "vitest"
 import { loadManifest, normalizeAnswers } from "../src/engine/manifest"
 import { render } from "../src/engine/render"
-import { type Plan, PlanError, planGenerate, type Project, type Reader } from "../src/generators/plan"
-import { type GenKind, parseTarget, resolveKind } from "../src/generators/target"
+import { type GenerateOptions, type Plan, PlanError, planGenerate, type Project, type Reader } from "../src/generators/plan"
+import { type GenKind, parseTarget, resolveKind, type TargetOverrides } from "../src/generators/target"
 import { singularize } from "../src/utils/names"
 
 const templateDir = resolve(import.meta.dirname, "../../../template")
@@ -26,7 +26,8 @@ async function project(overrides: Record<string, string | string[]> = {}) {
     packagesUi: answers.components === "packages-ui",
     pm: "bun",
   }
-  const plan = (kind: GenKind, name: string, force = false) => planGenerate(kind, parseTarget(name), info, fs, { force })
+  const plan = (kind: GenKind, name: string, flags: GenerateOptions & TargetOverrides = {}) =>
+    planGenerate(kind, parseTarget(name, { plural: flags.plural, url: flags.url }), info, fs, flags)
   const apply = (result: Plan) => {
     for (const edit of result.edits) if (edit.content !== undefined) files.set(edit.path, edit.content)
     return result
@@ -186,7 +187,7 @@ describe("generate: NestJS", () => {
     expect(() => plan("backend", "order/payment")).toThrow(/already exports createPaymentSchema/)
     expect(() => plan("resource", "loan/payment")).toThrow(/already exists/)
     expect(() => plan("resource", "user")).toThrow(PlanError)
-    expect(plan("resource", "loan/payment", true).edits.find((e) => e.path.endsWith("payment.controller.ts"))?.kind).toBe("update")
+    expect(plan("resource", "loan/payment", { force: true }).edits.find((e) => e.path.endsWith("payment.controller.ts"))?.kind).toBe("update")
   })
 })
 
@@ -224,5 +225,78 @@ describe("generate: shared UI package", () => {
     const page = byPath(plan("frontend", "payment")).get("apps/web/src/features/payment/payment-page.tsx")?.content ?? ""
     expect(page).toContain('from "@repo/ui/components/button"')
     expect(page).not.toContain('"@/components/ui/')
+  })
+})
+
+describe("generate: flags", () => {
+  it("--url serves the API and the page somewhere other than the folders", async () => {
+    const { plan } = await project()
+    const edits = byPath(plan("resource", "blog/post", { url: "/api/articles/" }))
+    expect(edits.has("apps/api/src/modules/blog/post/post.controller.ts")).toBe(true)
+    expect(edits.get("apps/api/src/modules/blog/post/post.controller.ts")?.content).toContain('@Controller("articles")')
+    expect(edits.get("apps/web/src/features/blog/post/api.ts")?.content).toContain('api.get<PostList>("/articles", query, signal)')
+    expect(edits.get("apps/web/src/routes/_app/articles.tsx")?.content).toContain('createFileRoute("/_app/articles")')
+    expect(edits.has("apps/web/src/routes/_app/blog/post.tsx")).toBe(false)
+    expect(edits.get("apps/web/src/config/nav.ts")?.content).toContain('{ id: "blog-post", title: "Posts", to: "/articles", icon: NewspaperIcon },')
+
+    const plain = await project({ backend: "plain", server: "express" })
+    expect(byPath(plain.plan("backend", "blog/post", { url: "articles" })).get("apps/api/src/app.ts")?.content).toContain('app.use("/api/articles", postRouter)')
+  })
+
+  it("--url refuses a path another controller or router already serves", async () => {
+    const nest = await project()
+    expect(() => nest.plan("backend", "blog/post", { url: "notes" })).toThrow(/already serves \/api\/notes/)
+    const fastify = await project({ backend: "plain", server: "fastify" })
+    expect(() => fastify.plan("backend", "blog/post", { url: "notes" })).toThrow(/already serves \/api\/notes/)
+    expect(() => parseTarget("post", { url: "/api/" })).toThrow(/--url needs a path/)
+  })
+
+  it("--plural fixes a wrong guess", async () => {
+    const t = parseTarget("criterion", { plural: "criteria" })
+    expect(t.one.pascal).toBe("Criterion")
+    expect(t.many.title).toBe("Criteria")
+    const { plan } = await project({ backend: "plain", server: "express" })
+    const edits = byPath(plan("resource", "criterion", { plural: "criteria" }))
+    expect(edits.get("apps/api/src/services/criterion.ts")?.content).toContain("export async function listCriteria(")
+    expect(edits.get("apps/web/src/features/criterion/api.ts")?.content).toContain("export function useCriteria(")
+    expect(() => parseTarget("criterion", { plural: "a/b" })).toThrow(/single word/)
+  })
+
+  it("--no-model leaves the database alone and the service to fill in", async () => {
+    const { plan } = await project()
+    const edits = byPath(plan("resource", "post", { model: false }))
+    expect([...edits.keys()].some((path) => path.startsWith("packages/db"))).toBe(false)
+    expect(edits.get("apps/api/src/modules/post/post.service.ts")?.content).toContain("NotImplementedException")
+    expect(edits.has("apps/web/src/routes/_app/post.tsx")).toBe(true)
+  })
+
+  it("--no-validation writes nothing in packages/validators and reuses schemas that exist", async () => {
+    const { plan, apply } = await project()
+    apply(plan("frontend", "blog/post"))
+    const reuse = plan("backend", "post", { validation: false })
+    expect([...byPath(reuse).keys()].some((path) => path.startsWith("packages/validators"))).toBe(false)
+    expect(reuse.warnings).toEqual([])
+
+    const missing = plan("frontend", "comment", { validation: false })
+    expect([...byPath(missing).keys()].some((path) => path.startsWith("packages/validators"))).toBe(false)
+    expect(missing.warnings.join("\n")).toMatch(/doesn't export createCommentSchema, Comment, CommentList/)
+  })
+
+  it("--no-route skips the route and the nav entry; --no-nav just the nav entry", async () => {
+    const { plan } = await project()
+    const noRoute = byPath(plan("frontend", "post", { route: false }))
+    expect(noRoute.has("apps/web/src/features/post/post-page.tsx")).toBe(true)
+    expect(noRoute.has("apps/web/src/routes/_app/post.tsx")).toBe(false)
+    expect(noRoute.has("apps/web/src/config/nav.ts")).toBe(false)
+
+    const noNav = byPath(plan("frontend", "post", { nav: false }))
+    expect(noNav.has("apps/web/src/routes/_app/post.tsx")).toBe(true)
+    expect(noNav.has("apps/web/src/config/nav.ts")).toBe(false)
+  })
+
+  it("says when a flag does nothing for the kind", async () => {
+    const { plan } = await project()
+    expect(plan("backend", "post", { nav: false, route: false }).warnings).toHaveLength(2)
+    expect(plan("frontend", "post", { model: false }).warnings[0]).toMatch(/--no-model does nothing here/)
   })
 })

@@ -20,6 +20,13 @@ export function schemaExports({ one: o }: Target) {
   ]
 }
 
+/** The names the generated backend and frontend import from @repo/validators. */
+export function schemaImports({ one: o }: Target, sides: { api: boolean; web: boolean }) {
+  const api = [`create${o.pascal}Schema`, `update${o.pascal}Schema`, `${o.camel}ListQuerySchema`, `${o.camel}Schema`, `${o.camel}ListSchema`, `Create${o.pascal}`, `Update${o.pascal}`, `${o.pascal}ListQuery`]
+  const web = [`create${o.pascal}Schema`, o.pascal, `${o.pascal}List`, `${o.pascal}ListQuery`, `Create${o.pascal}Input`, `Update${o.pascal}Input`]
+  return [...new Set([...(sides.api ? api : []), ...(sides.web ? web : [])])]
+}
+
 /* ─── packages/validators ──────────────────────────────────────────────── */
 
 export function validatorsFile({ target: t, paths, command }: TemplateContext) {

@@ -39,6 +39,12 @@ export function help() {
     ${cmd("klin generate backend")} ${dim("<name>")}  controller, service, DTOs, module
     ${cmd("klin generate frontend")} ${dim("<name>")} page, route, query hooks, form
                                   ${dim("slashes make folders: klin g resource blog/post · aliases r, b, f")}
+        ${flag("--url")} ${dim("<path>")}              serve on /api/<path> and /<path> instead of the folders
+        ${flag("--plural")} ${dim("<word>")}           when the guessed plural is wrong ${dim("(criterion → criteria)")}
+        ${flag("--no-model")}                skip the Prisma model ${dim("(the service is left to fill in)")}
+        ${flag("--no-validation")}           skip packages/validators ${dim("(the schemas already exist)")}
+        ${flag("--no-route")} ${dim("·")} ${flag("--no-nav")}     skip the page's route ${dim("·")} skip the sidebar entry
+        ${flag("--dry-run")} ${dim("·")} ${flag("--force")}       show the plan only ${dim("·")} overwrite generated files
     ${cmd("klin list")}                     modules and what's switched on
     ${cmd("klin doctor")}                   check env, database, services & versions
     ${cmd("klin upgrade")} ${dim("[--from <dir>]")}   merge template improvements in ${dim("(experimental)")}

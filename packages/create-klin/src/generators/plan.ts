@@ -4,7 +4,7 @@ import { rewriteCommand } from "../utils/pm"
 import { importPath, pathsFor, type TemplateContext } from "./paths"
 import { commandFor, type GenKind, type Target } from "./target"
 import * as api from "./templates/api"
-import { prismaFile, schemaExports, validatorsFile } from "./templates/schema"
+import { prismaFile, schemaExports, schemaImports, validatorsFile } from "./templates/schema"
 import * as web from "./templates/web"
 
 /** What generation needs to know about the project (from klin.json). */
@@ -40,15 +40,38 @@ export interface Plan {
 /** A problem with the request itself (taken name, existing files) — shown as-is. */
 export class PlanError extends Error {}
 
+/** The --flags: everything is on unless switched off. --url and --plural live on the Target. */
+export interface GenerateOptions {
+  /** Overwrite generated files that already exist (never the shared schema file). */
+  force?: boolean
+  /** Write the schema file in packages/validators (`--no-validation`). */
+  validation?: boolean
+  /** Write the Prisma model of a resource (`--no-model`). */
+  model?: boolean
+  /** Write the page's route file (`--no-route`); without one there's no nav entry either. */
+  route?: boolean
+  /** Add a sidebar entry (`--no-nav`). */
+  nav?: boolean
+}
+
 /**
  * Every file `klin generate <kind> <path>` writes or touches. Nothing is
  * written here; a clash anywhere throws a PlanError before any file changes.
  */
-export function planGenerate(kind: GenKind, target: Target, project: Project, fs: Reader, options: { force?: boolean } = {}): Plan {
+export function planGenerate(kind: GenKind, target: Target, project: Project, fs: Reader, options: GenerateOptions = {}): Plan {
+  const backend = kind !== "frontend"
+  const frontend = kind !== "backend"
+  const model = kind === "resource" && options.model !== false
+  const route = frontend && options.route !== false
+  const nav = route && options.nav !== false
   const paths = pathsFor(target)
-  const ctx: TemplateContext = { target, kind, paths, command: commandFor(kind, target), withModel: kind === "resource" }
+  const ctx: TemplateContext = { target, kind, paths, command: commandFor(kind, target), withModel: model }
   const edits: Edit[] = []
   const warnings: string[] = []
+
+  if (kind !== "resource" && options.model === false) warnings.push("--no-model does nothing here — only a full-stack resource writes a model")
+  if (!frontend && options.route === false) warnings.push("--no-route does nothing here — a backend module has no page")
+  if (!frontend && options.nav === false) warnings.push("--no-nav does nothing here — a backend module has no page")
 
   const current = (path: string) => edits.findLast((e) => e.path === path)?.content ?? fs.read(path)
 
@@ -90,27 +113,33 @@ export function planGenerate(kind: GenKind, target: Target, project: Project, fs
 
   /* ─── packages/validators — shared, so it's reused when it's there ───── */
 
-  const names = schemaExports(target)
-  if (fs.exists(paths.validators)) {
+  const imported = schemaImports(target, { api: backend, web: frontend })
+  const validatorFiles = fs.files("packages/validators/src").filter((file) => file.endsWith(".ts") && !file.endsWith(".test.ts"))
+  if (options.validation === false) {
+    // Nothing is written there, but the generated code still imports these.
+    const missing = imported.filter((name) => !validatorFiles.some((file) => exportsName(fs.read(file) ?? "", name)))
+    if (missing.length) warnings.push(`packages/validators doesn't export ${missing.join(", ")} yet — the generated code imports them from @repo/validators`)
+  } else if (fs.exists(paths.validators)) {
     edits.push({ path: paths.validators, kind: "keep", note: "already there — reused" })
     const text = fs.read(paths.validators) ?? ""
-    const missing = names.filter((name) => !exportsName(text, name))
+    const missing = imported.filter((name) => !exportsName(text, name))
     if (missing.length) warnings.push(`${paths.validators} doesn't export ${missing.join(", ")} — the generated code imports them`)
   } else {
-    for (const file of fs.files("packages/validators/src")) {
-      if (!/\.ts$/.test(file) || /\.test\.ts$/.test(file)) continue
-      const text = fs.read(file) ?? ""
-      const taken = names.find((name) => exportsName(text, name))
-      if (taken) throw new PlanError(`${file} already exports ${taken} — pick another name${suggestion(target)}`)
+    const names = schemaExports(target)
+    for (const file of validatorFiles) {
+      const taken = names.find((name) => exportsName(fs.read(file) ?? "", name))
+      if (taken) throw new PlanError(`${file} already exports ${taken} — pick another name${suggestion(target)}, or reuse its schemas with --no-validation`)
     }
     edits.push({ path: paths.validators, kind: "create", content: validatorsFile(ctx) })
   }
-  const index = "packages/validators/src/index.ts"
-  insert(index, "// klin-anchor:exports", `export * from "${importPath(index, paths.validators)}"`)
+  if (options.validation !== false) {
+    const index = "packages/validators/src/index.ts"
+    insert(index, "// klin-anchor:exports", `export * from "${importPath(index, paths.validators)}"`)
+  }
 
   /* ─── packages/db ─────────────────────────────────────────────────────── */
 
-  if (kind === "resource") {
+  if (model) {
     const model = target.one.pascal
     for (const file of fs.files("packages/db/prisma")) {
       if (!file.endsWith(".prisma") || file === paths.prisma) continue
@@ -123,55 +152,70 @@ export function planGenerate(kind: GenKind, target: Target, project: Project, fs
 
   /* ─── apps/api ────────────────────────────────────────────────────────── */
 
-  if (kind !== "frontend" && project.backend === "nest") {
+  // Another controller or router on the same /api path would shadow this one.
+  const urlTaken = (where: string) =>
+    new PlanError(`${where} already serves /api/${target.url} — ${target.url === target.path ? "pick another name, or" : "pick another"} --url`)
+
+  if (backend && project.backend === "nest") {
     const appModule = "apps/api/src/app.module.ts"
     const name = `${target.leaf.pascal}Module`
     const line = `import { ${name} } from "${importPath(appModule, paths.nest.module)}"`
     claim(appModule, name, line)
+    const controller = new RegExp(`@Controller\\(\\s*["'\`]/?${escape(target.url)}/?["'\`]`)
+    for (const file of fs.files("apps/api/src")) {
+      if (file.endsWith(".controller.ts") && file !== paths.nest.controller && controller.test(fs.read(file) ?? "")) throw urlTaken(file)
+    }
     write(paths.nest.module, api.nestModuleFile(ctx))
     write(paths.nest.dto, api.nestDtoFile(ctx))
     write(paths.nest.controller, api.nestControllerFile(ctx))
     write(paths.nest.service, api.nestServiceFile(ctx))
     insert(appModule, "// klin-anchor:module-imports", line)
     insert(appModule, "// klin-anchor:modules", `${name},`)
-  } else if (kind !== "frontend") {
+  } else if (backend) {
     const app = "apps/api/src/app.ts"
     const fastify = project.server === "fastify"
     const name = fastify ? `${target.leaf.camel}Routes` : `${target.leaf.camel}Router`
     const line = `import { ${name} } from "${importPath(app, paths.plain.routes)}"`
     claim(app, name, line)
+    const mounted = (current(app) ?? "").split("\n").some((l) => l.includes(`"/api/${target.url}"`) && !new RegExp(`\\b${name}\\b`).test(l))
+    if (mounted) throw urlTaken(app)
     write(paths.plain.service, api.plainServiceFile(ctx))
     write(paths.plain.routes, fastify ? api.fastifyRoutesFile(ctx) : api.expressRoutesFile(ctx))
     insert(app, "// klin-anchor:route-imports", line)
     insert(
       app,
       "// klin-anchor:routes",
-      fastify ? `await app.register(${name}, { prefix: "/api/${target.path}" })` : `app.use("/api/${target.path}", ${name})`
+      fastify ? `await app.register(${name}, { prefix: "/api/${target.url}" })` : `app.use("/api/${target.url}", ${name})`
     )
   }
 
   /* ─── apps/web ────────────────────────────────────────────────────────── */
 
-  if (kind !== "backend") {
+  if (frontend) {
     // With components in packages/ui, shadcn imports come from @repo/ui.
-    const ui = (code: string) => (project.packagesUi ? web.toUiPackageImports(code) : code)
+    const shadcn = (code: string) => (project.packagesUi ? web.toUiPackageImports(code) : code)
     write(paths.web.api, web.webApiFile(ctx))
-    write(paths.web.form, ui(web.webFormFile(ctx)))
-    write(paths.web.page, ui(web.webPageFile(ctx)))
+    write(paths.web.form, shadcn(web.webFormFile(ctx)))
+    write(paths.web.page, shadcn(web.webPageFile(ctx)))
+  }
+
+  if (route) {
     write(paths.web.route, web.webRouteFile(ctx))
-
-    const parentRoute = `apps/web/src/routes/_app/${target.folders.join("/")}.tsx`
-    if (target.folders.length && fs.exists(parentRoute)) {
-      warnings.push(`${parentRoute} exists, so /${target.path} renders inside it — make sure its component renders <Outlet />`)
+    const parent = target.url.split("/").slice(0, -1).join("/")
+    const parentRoute = `apps/web/src/routes/_app/${parent}.tsx`
+    if (parent && fs.exists(parentRoute)) {
+      warnings.push(`${parentRoute} exists, so /${target.url} renders inside it — make sure its component renders <Outlet />`)
     }
+  }
 
-    const nav = "apps/web/src/config/nav.ts"
-    const navText = current(nav)
+  if (nav) {
+    const file = "apps/web/src/config/nav.ts"
+    const text = current(file)
     const id = target.path.replaceAll("/", "-")
-    if (navText !== null && !navText.includes(`id: "${id}"`)) {
+    if (text !== null && !text.includes(`id: "${id}"`)) {
       const icon = web.iconFor(target.one.kebab)
-      if (!new RegExp(`\\b${icon}\\b`).test(navText)) insert(nav, "// klin-anchor:nav-icons", `${icon},`)
-      insert(nav, "// klin-anchor:nav", `{ id: "${id}", title: "${target.many.title}", to: "/${target.path}", icon: ${icon} },`)
+      if (!new RegExp(`\\b${icon}\\b`).test(text)) insert(file, "// klin-anchor:nav-icons", `${icon},`)
+      insert(file, "// klin-anchor:nav", `{ id: "${id}", title: "${target.many.title}", to: "/${target.url}", icon: ${icon} },`)
     }
   }
 

@@ -2,8 +2,8 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"
 import { mkdir, writeFile } from "node:fs/promises"
 import { dirname, join, posix, relative, sep } from "node:path"
 import { pathsFor } from "../generators/paths"
-import { type Plan, PlanError, planGenerate, type Project, type Reader } from "../generators/plan"
-import { type GenKind, KIND_LABELS, parseTarget, resolveKind, type Target } from "../generators/target"
+import { type GenerateOptions, type Plan, PlanError, planGenerate, type Project, type Reader } from "../generators/plan"
+import { type GenKind, KIND_LABELS, parseTarget, resolveKind, type Target, type TargetOverrides } from "../generators/target"
 import { box } from "../ui/box"
 import { centered, centeredBlock, intro, log, outro } from "../ui/log"
 import * as prompts from "../ui/prompts"
@@ -34,12 +34,28 @@ export async function generateCommand(flags: Flags) {
   const project = projectOf(config)
   const fs = diskReader(root)
   const interactive = Boolean(process.stdin.isTTY) && !flags.yes
-  const force = Boolean(flags.force)
+  const options: GenerateOptions = {
+    force: Boolean(flags.force),
+    validation: flags.validation !== false,
+    model: flags.model !== false,
+    route: flags.route !== false,
+    nav: flags.nav !== false,
+  }
+  const overrides: TargetOverrides = {
+    plural: typeof flags.plural === "string" ? flags.plural : undefined,
+    url: typeof flags.url === "string" ? flags.url : undefined,
+  }
 
   const [rawKind, rawName, ...extra] = flags._
   if (extra.length) bail(`klin generate takes no fields any more — add them to the generated schema and model.\n  ${USAGE}`)
   let kind = rawKind ? resolveKind(rawKind) : undefined
   if (rawKind && !kind) bail(`There's no "${rawKind}" generator — pick resource, backend or frontend.\n  ${USAGE}`)
+  try {
+    // A bad --url or --plural fails now, not on every keystroke of the name.
+    parseTarget("check", overrides)
+  } catch (error) {
+    bail((error as Error).message)
+  }
 
   // After the full-screen questions the result is centered, like the wizard's
   // last page; a one-line command reads as a log down the rail.
@@ -57,18 +73,18 @@ export async function generateCommand(flags: Flags) {
   let target: Target
   if (rawName) {
     try {
-      target = parseTarget(rawName)
+      target = parseTarget(rawName, overrides)
     } catch (error) {
       bail((error as Error).message)
     }
   } else {
     if (!interactive) bail(`Give it a name: klin generate ${kind} blog/post`)
-    target = parseTarget(await askName(kind, project, fs, force))
+    target = parseTarget(await askName(kind, project, fs, options, overrides), overrides)
   }
 
   let plan: Plan
   try {
-    plan = planGenerate(kind, target, project, fs, { force })
+    plan = planGenerate(kind, target, project, fs, options)
   } catch (error) {
     if (error instanceof PlanError) bail(error.message)
     throw error
@@ -95,8 +111,8 @@ export async function generateCommand(flags: Flags) {
 
   // Keep types in sync right away: the Prisma client and TanStack's route tree.
   const { pm } = project
-  const prismaClient = kind === "resource"
-  const routeTree = kind !== "backend" && existsSync(join(root, "apps/web/node_modules"))
+  const prismaClient = kind === "resource" && options.model !== false
+  const routeTree = kind !== "backend" && options.route !== false && existsSync(join(root, "apps/web/node_modules"))
   if (prismaClient || routeTree) {
     await task(prismaClient ? "Regenerating the Prisma client and routes" : "Regenerating the route tree", async () => {
       if (prismaClient) await run(pm, ["run", "db:generate"], { cwd: root })
@@ -109,7 +125,7 @@ export async function generateCommand(flags: Flags) {
     })
   }
 
-  console.log(nextSteps(kind, target, project, config, ask))
+  console.log(nextSteps(kind, target, project, config, options, ask))
   out.end(shimmer(ask ? `${sym.star} ${OUTROS[kind]}` : OUTROS[kind]))
 }
 
@@ -136,30 +152,26 @@ function printer(center: boolean) {
 }
 
 /** What's left for the developer: the files to fill in, then how to see it run. */
-function nextSteps(kind: GenKind, target: Target, project: Project, config: ProjectConfig, center: boolean) {
+function nextSteps(kind: GenKind, target: Target, project: Project, config: ProjectConfig, options: GenerateOptions, center: boolean) {
   const paths = pathsFor(target)
-  const service = project.backend === "nest" ? paths.nest.service : paths.plain.service
-  const todo: Array<[string, string]> =
-    kind === "resource"
-      ? [
-          [paths.validators, "the fields clients send and get back"],
-          [paths.prisma, "the columns"],
-          [paths.web.form, "the inputs"],
-        ]
-      : kind === "backend"
-        ? [
-            [service, "the logic"],
-            [paths.validators, "the request and response shapes"],
-          ]
-        : [
-            [paths.validators, "the request and response shapes"],
-            [paths.web.form, "the inputs"],
-            [paths.web.page, "the page"],
-          ]
+  const backend = kind !== "frontend"
+  const frontend = kind !== "backend"
+  const model = kind === "resource" && options.model !== false
+  const route = frontend && options.route !== false
+  const todo: Array<[string, string]> = []
+  if (options.validation !== false) todo.push([paths.validators, model ? "the fields clients send and get back" : "the request and response shapes"])
+  if (model) todo.push([paths.prisma, "the columns"])
+  if (backend && !model) todo.push([project.backend === "nest" ? paths.nest.service : paths.plain.service, "the logic"])
+  if (frontend) todo.push([paths.web.form, "the inputs"])
+  if (kind === "frontend") todo.push([paths.web.page, "the page"])
+
   const script = (name: string) => c.white(rewriteCommand(`pnpm ${name}`, project.pm))
   const steps: Array<[string, string]> = []
-  if (kind === "resource") steps.push([script(`db:migrate --name add-${target.one.kebab}`), "create the table"])
-  steps.push([script("dev"), kind === "backend" ? `then call /api/${target.path}` : `then open /${target.path}`])
+  if (model) steps.push([script(`db:migrate --name add-${target.one.kebab}`), "create the table"])
+  steps.push([
+    script("dev"),
+    route ? `then open /${target.url}` : frontend ? `then show <${target.leaf.pascal}Page /> where you want it` : `then call /api/${target.url}`,
+  ])
 
   // The box never gets wider than the terminal: a "why" that won't fit beside
   // its path or command goes under it instead.
@@ -178,10 +190,10 @@ function nextSteps(kind: GenKind, target: Target, project: Project, config: Proj
     ...columns(steps.map(([step, why]) => [`${c.dim(sym.arrow)} ${step}`, why])),
   ]
   if (kind !== "frontend") {
-    lines.push("", `${c.dim("endpoints")}  GET POST /api/${target.path}`, `           GET PATCH DELETE /api/${target.path}/:id`)
+    lines.push("", `${c.dim("endpoints")}  GET POST /api/${target.url}`, `           GET PATCH DELETE /api/${target.url}/:id`)
   }
   const i18n = Object.values(config.answers).flat().includes("i18n")
-  if (i18n && kind !== "backend") {
+  if (i18n && route && options.nav !== false) {
     lines.push("", `${c.dim("i18n")}  add "nav.${target.path.replaceAll("/", "-")}" to apps/web/src/i18n/locales/*.json`)
   }
   return box(lines, { title: `${sym.star} ${target.path} is wired up`, center })
@@ -224,13 +236,13 @@ async function askKind(project: Project): Promise<GenKind> {
   )
 }
 
-async function askName(kind: GenKind, project: Project, fs: Reader, force: boolean): Promise<string> {
+async function askName(kind: GenKind, project: Project, fs: Reader, options: GenerateOptions, overrides: TargetOverrides): Promise<string> {
   // Validation runs on every repaint; planning is cheap, but not free.
   const problems = new Map<string, string | undefined>()
   const problem = (value: string) => {
     if (!problems.has(value)) {
       try {
-        planGenerate(kind, parseTarget(value), project, fs, { force })
+        planGenerate(kind, parseTarget(value, overrides), project, fs, options)
         problems.set(value, undefined)
       } catch (error) {
         // One line under the input: drop the path prefixes everyone knows.
@@ -253,7 +265,7 @@ async function askName(kind: GenKind, project: Project, fs: Reader, force: boole
       validate: (value) => (value.trim() ? problem(value) : undefined),
       describe: (value) => {
         if (!value.trim()) return { tone: "ok", message: "Letters, numbers and dashes; slashes make folders" }
-        const target = parseTarget(value)
+        const target = parseTarget(value, overrides)
         const parent = target.folders.join("/")
         const reused = parent && fs.exists(posix.join(mainDir(kind, project), parent))
         return { tone: "ok", message: `Goes in ${landing(kind, project).replaceAll("<path>", target.path)}${reused ? `, inside your ${parent}/ folder` : ""}` }
