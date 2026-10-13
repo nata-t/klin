@@ -1,25 +1,25 @@
 import { VERSION } from "../context"
-import { gradient, pc, sym } from "./theme"
+import { c, shimmer, sym } from "./theme"
 
-const cmd = (s: string) => pc.cyan(s)
-const flag = (s: string) => pc.yellow(s)
-const dim = pc.dim
+const cmd = (s: string) => c.white(s)
+const flag = (s: string) => c.bright(s)
+const dim = c.dim
 
 export function help() {
-  const title = `${gradient(`${sym.star} klin`)} ${dim(`v${VERSION}`)} ${dim("— a spotless full-stack starter")}`
+  const title = `${shimmer(`${sym.star} klin`)} ${dim(`v${VERSION}`)} ${dim("— a spotless full-stack starter")}`
   console.log(`
   ${title}
 
-  ${pc.bold("Create a project")}
+  ${c.bold("Create a project")}
     ${cmd("npm create klin@latest")} ${dim("[name] [options]")}
     ${dim("also:")} ${cmd("pnpm create klin")} ${dim("·")} ${cmd("bun create klin")} ${dim("·")} ${cmd("npx create-klin")}
 
     ${flag("--preset")} ${dim("<id>")}        recommended · saas · minimal · everything
     ${flag("--backend")} ${dim("<name>")}     nest · plain
     ${flag("--server")} ${dim("<name>")}      express · fastify
+    ${flag("--db")} ${dim("<name>")}          postgres · mysql · sqlite
     ${flag("--auth")} ${dim("<list>")}        password,google,github,magic-link,two-factor,passkey
     ${flag("--plugins")} ${dim("<list>")}     organizations,admin,api-keys ${dim("(or none)")}
-    ${flag("--db")} ${dim("<name>")}          postgres · mysql · sqlite
     ${flag("--security")} ${dim("<list>")}    cors,helmet,rate-limit ${dim("(or none)")}
     ${flag("--extras")} ${dim("<list>")}      email,uploads,queues,i18n,docker,ci ${dim("(or none)")}
     ${flag("--components")} ${dim("<where>")} apps-web · packages-ui
@@ -31,7 +31,7 @@ export function help() {
     ${flag("--dry-run")}             show what would be created
     ${flag("--no-install")} ${dim("·")} ${flag("--no-git")} ${dim("·")} ${flag("--force")} ${dim("·")} ${flag("--no-banner")}
 
-  ${pc.bold("Inside a project")} ${dim("(pnpm klin … · npx create-klin …)")}
+  ${c.bold("Inside a project")} ${dim("(pnpm klin … · npx create-klin …)")}
     ${cmd("klin add")} ${dim("<module…>")}            bolt on a module later      ${dim("klin add organizations email")}
     ${cmd("klin remove")} ${dim("<module…>")}         take one out again
     ${cmd("klin generate resource")} ${dim("<name> [field:type…]")}

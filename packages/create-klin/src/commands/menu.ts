@@ -1,6 +1,7 @@
-import * as p from "@clack/prompts"
 import { VERSION } from "../context"
-import { brand, pc } from "../ui/theme"
+import { intro } from "../ui/log"
+import * as prompts from "../ui/prompts"
+import { c } from "../ui/theme"
 import { findProjectRoot, readProject } from "../utils/project"
 import { type Flags, guard } from "./flags"
 
@@ -8,17 +9,20 @@ import { type Flags, guard } from "./flags"
 export async function menu(flags: Flags) {
   const root = findProjectRoot()!
   const config = readProject(root)
-  p.intro(`${brand(" klin ")} ${pc.dim(`${config.name} · v${VERSION}`)}`)
+  intro("klin", c.dim(`${config.name} · v${VERSION}`))
+  prompts.setPromptContext(`klin · ${config.name}`)
 
   const action = guard(
-    await p.select({
+    await prompts.select({
       message: "What are we tidying up today?",
+      subtitle: config.name,
+      title: "Commands",
       options: [
-        { value: "generate", label: "Generate a resource", hint: "schema + model + API + hook + page" },
-        { value: "add", label: "Add a module", hint: "organizations, email, uploads…" },
-        { value: "remove", label: "Remove a module" },
-        { value: "doctor", label: "Run a health check", hint: "env, database, versions" },
-        { value: "list", label: "List modules" },
+        { value: "generate", label: "Generate a resource", about: "Schema, model, API, query hooks and a page for a new resource — one command, every layer." },
+        { value: "add", label: "Add a module", about: "Bolt on organizations, email, uploads, a different database… klin merges it into your code." },
+        { value: "remove", label: "Remove a module", about: "Take a module out again. Files you edited are kept and listed." },
+        { value: "doctor", label: "Run a health check", about: "Checks Node, your package manager, .env, the database and services, and drifting versions." },
+        { value: "list", label: "List modules", about: "Every module the template offers, and which ones this project has on." },
       ],
     })
   )

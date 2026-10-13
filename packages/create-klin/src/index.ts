@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 import { basename } from "node:path"
 import mri from "mri"
-import * as p from "@clack/prompts"
 import { create } from "./commands/create"
 import { FLAG_SPEC, type Flags } from "./commands/flags"
 import { VERSION } from "./context"
 import { help } from "./ui/help"
-import { pc } from "./ui/theme"
+import { cancel } from "./ui/log"
+import { c } from "./ui/theme"
 import { findProjectRoot } from "./utils/project"
 
 const COMMANDS = {
@@ -56,7 +56,7 @@ async function main() {
 
 main().catch((error: unknown) => {
   const message = error instanceof Error ? error.message : String(error)
-  p.cancel(pc.red(message))
+  cancel(c.error(message))
   if (process.env.KLIN_DEBUG && error instanceof Error) console.error(error.stack)
   process.exit(1)
 })

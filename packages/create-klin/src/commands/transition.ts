@@ -3,7 +3,6 @@ import { existsSync, mkdtempSync, readdirSync, readFileSync } from "node:fs"
 import { rm, unlink, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
-import * as p from "@clack/prompts"
 import { diff3Merge } from "node-diff3"
 import { cliDependency, resolveTemplate, VERSION } from "../context"
 import {
@@ -16,7 +15,9 @@ import {
 import { type FileMap, render } from "../engine/render"
 import { box } from "../ui/box"
 import { INSTALL_QUIPS, task } from "../ui/task"
-import { accent, brand, gradient, pc, sym } from "../ui/theme"
+import { cancel, intro, log, outro } from "../ui/log"
+import * as prompts from "../ui/prompts"
+import { c, shimmer, sym } from "../ui/theme"
 import { type ChangeKind, fileTree } from "../ui/tree"
 import { mergeEnv } from "../utils/env-file"
 import { run } from "../utils/exec"
@@ -70,7 +71,8 @@ async function changeModules(flags: Flags, mode: "add" | "remove") {
   const manifest = loadManifest(template.dir)
   const requested = flags._
 
-  p.intro(`${brand(` klin ${mode} `)} ${pc.dim(config.name)}`)
+  intro(`klin ${mode}`, c.dim(config.name))
+  prompts.setPromptContext(`klin ${mode} · ${config.name}`)
 
   let modules = requested
   if (modules.length === 0) {
@@ -82,9 +84,15 @@ async function changeModules(flags: Flags, mode: "add" | "remove") {
       )
     if (choices.length === 0) bail(mode === "add" ? "Every module is already on — spotless!" : "Nothing to remove.")
     modules = guard(
-      await p.multiselect({
+      await prompts.multiselect({
         message: mode === "add" ? "What should we bolt on?" : "What should we take out?",
-        options: choices.map(({ id }) => ({ value: id, label: manifest.options[id]!.label, hint: manifest.options[id]!.hint })),
+        subtitle: mode === "add" ? "Snap on anything — klin merges it into your code." : "Files you edited stay and are listed.",
+        options: choices.map(({ id, q }) => ({
+          value: id,
+          label: manifest.options[id]!.label,
+          about: manifest.options[id]!.about ?? manifest.options[id]!.hint,
+          group: q.type === "select" ? `${q.title ?? q.id} · switch to` : (q.title ?? q.id),
+        })),
         required: true,
       })
     )
@@ -93,7 +101,7 @@ async function changeModules(flags: Flags, mode: "add" | "remove") {
   const next: Answers = structuredClone(config.answers)
   for (const id of modules) {
     const question = manifest.questions.find((q) => q.options.includes(id))
-    if (!question) bail(`Unknown module "${id}". Run ${pc.cyan("klin list")} to see them all.`)
+    if (!question) bail(`Unknown module "${id}". Run ${c.code("klin list")} to see them all.`)
     if (question.type === "select") {
       if (mode === "remove") bail(`"${id}" can't be removed — switch to another ${question.id} with \`klin add <other>\` instead.`)
       next[question.id] = id
@@ -111,7 +119,7 @@ async function changeModules(flags: Flags, mode: "add" | "remove") {
   } catch (error) {
     bail((error as Error).message)
   }
-  for (const note of normalized.notes) p.log.info(note)
+  for (const note of normalized.notes) log.info(note)
 
   // Removing something another module requires would be undone by normalization.
   if (mode === "remove") {
@@ -121,7 +129,7 @@ async function changeModules(flags: Flags, mode: "add" | "remove") {
   }
 
   if (JSON.stringify(normalized.answers) === JSON.stringify(config.answers)) {
-    p.outro(`${sym.sparkle} Nothing to do — ${modules.join(", ")} ${mode === "add" ? "is already on" : "isn't on"}.`)
+    outro(`${sym.star} Nothing to do — ${modules.join(", ")} ${mode === "add" ? "is already on" : "isn't on"}.`)
     return
   }
 
@@ -138,8 +146,9 @@ async function changeModules(flags: Flags, mode: "add" | "remove") {
 
 export async function upgradeCommand(flags: Flags) {
   const { root, config } = loadProject()
-  p.intro(`${brand(" klin upgrade ")} ${pc.dim(`${config.name} · made with v${config.version}`)}`)
-  p.log.warn(`${pc.bold("Experimental.")} Commit or stash your work first so you can review the result with git diff.`)
+  intro("klin upgrade", c.dim(`${config.name} · made with v${config.version}`))
+  prompts.setPromptContext(`klin upgrade · ${config.name}`)
+  log.warn(`${c.bold("Experimental.")} Commit or stash your work first so you can review the result with git diff.`)
 
   const current = resolveTemplate(config.template === "bundled" ? undefined : config.template, root)
   let baseDir: string
@@ -150,7 +159,7 @@ export async function upgradeCommand(flags: Flags) {
   } else if (config.template !== "bundled") {
     bail("Upgrading a project made from a custom template needs --from <old template dir>.")
   } else if (config.version === VERSION) {
-    p.outro(`${sym.sparkle} Already on the latest template (v${VERSION}).`)
+    outro(`${sym.star} Already on the latest template (v${VERSION}).`)
     return
   } else {
     const fetched = await task(`Fetching the v${config.version} template to compare against`, async () => fetchTemplate(config.version))
@@ -214,23 +223,23 @@ async function transition(options: {
   const skipped = changes.filter((c) => c.kind === "skip")
 
   if (visible.length === 0) {
-    p.outro(`${sym.sparkle} Nothing to change.`)
+    outro(`${sym.star} Nothing to change.`)
     return
   }
 
-  p.log.step(options.title)
+  log.step(options.title)
   console.log(fileTree(visible.map(({ path, kind, note }) => ({ path, kind, note }))))
   console.log(
-    `\n  ${pc.green("+ new")}  ${pc.cyan("~ updated/merged")}  ${pc.yellow("! needs your eyes")}  ${pc.red("- removed")}\n`
+    `\n  ${c.ok("+ new")}  ${c.code("~ updated/merged")}  ${c.warn("! needs your eyes")}  ${c.error("- removed")}\n`
   )
-  for (const s of skipped) p.log.info(`${pc.dim("Skipped")} ${s.path} ${pc.dim(`— ${s.note}`)}`)
+  for (const s of skipped) log.info(`${c.dim("Skipped")} ${s.path} ${c.dim(`— ${s.note}`)}`)
 
   if (flags["dry-run"]) {
-    p.outro(pc.dim("Dry run — nothing was written."))
+    outro(c.dim("Dry run — nothing was written."))
     return
   }
   if (!flags.yes && process.stdin.isTTY) {
-    const ok = guard(await p.confirm({ message: "Apply these changes?", initialValue: true }))
+    const ok = guard(await prompts.confirm({ message: "Apply these changes?", initialValue: true }))
     if (!ok) bail("Nothing changed.")
   }
 
@@ -256,7 +265,7 @@ async function transition(options: {
     const merged = mergeEnv(readFileSync(envPath, "utf8"), example, options.target.manifest.env?.generate ?? {})
     if (merged.added.length) {
       await writeFile(envPath, merged.text)
-      p.log.info(`Added to .env: ${merged.added.map((k) => pc.cyan(k)).join(", ")}`)
+      log.info(`Added to .env: ${merged.added.map((k) => c.code(k)).join(", ")}`)
     }
   }
 
@@ -269,7 +278,7 @@ async function transition(options: {
       const result = await run(pm, ["install"], { cwd: root })
       if (result.code !== 0) throw new Error(result.output.split("\n").slice(-10).join("\n"))
     }, { quips: INSTALL_QUIPS, done: () => "Dependencies are up to date" }).catch((error: Error) => {
-      p.log.warn(`Install failed — run ${pc.cyan(pmCommands(pm).install)} yourself.\n${pc.dim(error.message)}`)
+      log.warn(`Install failed — run ${c.code(pmCommands(pm).install)} yourself.\n${c.dim(error.message)}`)
     })
     await run(pm, ["run", "db:generate"], { cwd: root })
   }
@@ -278,22 +287,22 @@ async function transition(options: {
   const schemaChanged = changes.some((c) => c.path.startsWith("packages/db/prisma/") && c.kind !== "keep")
   const lines: string[] = []
   if (conflicts.length) {
-    lines.push(`${pc.yellow(sym.warn)} ${pc.bold(`${conflicts.length} file(s) need a look`)} — search for ${pc.yellow("<<<<<<<")}:`)
-    for (const c of conflicts) lines.push(`   ${pc.yellow(c.path)}`)
+    lines.push(`${c.warn(sym.warn)} ${c.bold(`${conflicts.length} file(s) need a look`)} — search for ${c.warn("<<<<<<<")}:`)
+    for (const conflict of conflicts) lines.push(`   ${c.warn(conflict.path)}`)
     lines.push("")
   }
-  if (schemaChanged) lines.push(`${accent(sym.arrow)} ${pc.bold(run_("db:migrate"))}  ${pc.dim("the database schema changed")}`)
-  if (depsChanged && flags.install === false) lines.push(`${accent(sym.arrow)} ${pc.bold(pmCommands(pm).install)}`)
-  lines.push(`${accent(sym.arrow)} ${pc.bold(run_("dev"))}  ${pc.dim("and take a look")}`)
-  lines.push(`${accent(sym.arrow)} ${pc.bold("git diff")}  ${pc.dim("review everything that changed")}`)
-  console.log(box(lines, { title: conflicts.length ? "almost spotless" : `${sym.sparkle} done` }))
+  if (schemaChanged) lines.push(`${c.dim(sym.arrow)} ${c.bold(run_("db:migrate"))}  ${c.dim("the database schema changed")}`)
+  if (depsChanged && flags.install === false) lines.push(`${c.dim(sym.arrow)} ${c.bold(pmCommands(pm).install)}`)
+  lines.push(`${c.dim(sym.arrow)} ${c.bold(run_("dev"))}  ${c.dim("and take a look")}`)
+  lines.push(`${c.dim(sym.arrow)} ${c.bold("git diff")}  ${c.dim("review everything that changed")}`)
+  console.log(box(lines, { title: conflicts.length ? "almost spotless" : `${sym.star} done` }))
 
   const notes = selectedOptions(options.target.manifest, options.target.answers)
     .filter((id) => !selectedOptions(options.base.manifest, options.base.answers).includes(id))
     .map((id) => options.target.manifest.options[id]?.note)
     .filter(Boolean) as string[]
-  for (const note of notes) p.log.info(note)
-  p.outro(gradient(conflicts.length ? "Resolve the markers and you're done." : "All tidy."))
+  for (const note of notes) log.info(note)
+  outro(shimmer(conflicts.length ? "Resolve the markers and you're done." : "All tidy."))
 }
 
 /**

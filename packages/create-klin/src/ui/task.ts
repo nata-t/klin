@@ -1,12 +1,11 @@
-import { log, spinner } from "@clack/prompts"
-import { gradient, pc, pick, unicode } from "./theme"
-
-const FRAMES = unicode ? ["✶", "✸", "✹", "✺", "✹", "✷"] : ["-", "\\", "|", "/"]
+import { log } from "./log"
+import { screen } from "./term"
+import { c, gray, paint, pick, sym, unicode } from "./theme"
 
 export const INSTALL_QUIPS = [
   "fluffing node_modules",
   "untangling the dependency graph",
-  "politely asking npm for packages",
+  "politely asking the registry for packages",
   "dusting off Prisma",
   "polishing every semver range",
   "folding the TypeScript types neatly",
@@ -15,55 +14,92 @@ export const INSTALL_QUIPS = [
   "alphabetizing the junk drawer",
 ]
 
-/**
- * A spinner step: sparkle animation, elapsed timer, optional rotating quips
- * for slow work. Resolves with fn's result; on error it marks the step failed
- * and rethrows.
- */
-export async function task<T>(
+const FRAMES = unicode ? ["◐", "◓", "◑", "◒"] : ["-", "\\", "|", "/"]
+
+export interface TaskOptions<T> {
+  /** Rotating one-liners for slow steps. */
+  quips?: string[]
+  /** The line shown when it succeeds (defaults to the title). */
+  done?: (result: T) => string
+}
+
+/** Runs a step and reports it; the default reporter is a line spinner. */
+export type TaskReporter = <T>(
   title: string,
   fn: (update: (message: string) => void) => Promise<T>,
-  options: { quips?: string[]; done?: (result: T) => string } = {}
+  options: TaskOptions<T>
+) => Promise<T>
+
+let reporter: TaskReporter | undefined
+
+/** The full-screen build view takes over task reporting while it's up. */
+export function setTaskReporter(next: TaskReporter | undefined) {
+  reporter = next
+}
+
+/**
+ * A step with a grayscale spinner and an elapsed timer. Resolves with fn's
+ * result; on error it marks the step failed and rethrows.
+ */
+export function task<T>(
+  title: string,
+  fn: (update: (message: string) => void) => Promise<T>,
+  options: TaskOptions<T> = {}
 ): Promise<T> {
-  // Pipes and CI logs get plain lines instead of animation frames.
+  return (reporter ?? lineTask)(title, fn, options)
+}
+
+const seconds = (started: number) => `${((Date.now() - started) / 1000).toFixed(1)}s`
+
+/**
+ * A one-line grayscale spinner for work that isn't a single function call.
+ * `update` changes the detail text; `stop` replaces it with a ✓ line.
+ */
+export function spinner(title: string) {
+  screen.close()
+  const started = Date.now()
+  let detail = ""
   if (!process.stdout.isTTY) {
-    const started = Date.now()
-    try {
-      const result = await fn(() => {})
-      log.success(`${options.done ? options.done(result) : title} ${pc.dim(`(${((Date.now() - started) / 1000).toFixed(1)}s)`)}`)
-      return result
-    } catch (error) {
-      log.error(`${title} ${pc.red("failed")}`)
-      throw error
+    return {
+      update: (message: string) => void (detail = message),
+      stop: (line = title) => log.success(`${line} ${c.dim(`(${seconds(started)})`)}`),
+      fail: (line = title) => log.error(`${line} ${c.dim("failed")}`),
     }
   }
-
   let frame = 0
-  const s = spinner({
-    frames: FRAMES,
-    indicator: "timer",
-    styleFrame: (f) => gradient(f, undefined, (frame++ % 12) / 12),
-  })
-  s.start(title)
-  let detail = ""
-  const render = () => s.message(detail ? `${title} ${pc.dim(detail)}` : title)
-  const timer = options.quips
-    ? setInterval(() => {
-        detail = `· ${pick(options.quips!)}`
-        render()
-      }, 2800)
-    : undefined
+  const draw = () => {
+    const icon = paint(FRAMES[frame++ % FRAMES.length]!, { fg: [gray.bright, gray.bright, gray.bright] })
+    process.stdout.write(`\r\x1b[2K${icon}  ${c.bright(title)} ${c.dim(detail)} ${c.faint(seconds(started))}`)
+  }
+  process.stdout.write(`${c.faint(unicode ? "│" : "|")}\n\x1b[?25l`)
+  const timer = setInterval(draw, 90)
+  draw()
+  const finish = (line: string) => {
+    clearInterval(timer)
+    process.stdout.write(`\r\x1b[2K${line}\n\x1b[?25h`)
+  }
+  return {
+    update: (message: string) => void (detail = message),
+    stop: (line = title) => finish(`${c.bright(sym.check)}  ${line} ${c.faint(seconds(started))}`),
+    fail: (line = title) => finish(`${c.error(sym.cross)}  ${line} ${c.dim("failed")}`),
+  }
+}
+
+async function lineTask<T>(
+  title: string,
+  fn: (update: (message: string) => void) => Promise<T>,
+  options: TaskOptions<T>
+): Promise<T> {
+  const spin = spinner(title)
+  const quips = options.quips && process.stdout.isTTY ? setInterval(() => spin.update(`· ${pick(options.quips!)}`), 2800) : undefined
   try {
-    const result = await fn((message) => {
-      detail = message
-      render()
-    })
-    s.stop(options.done ? options.done(result) : title)
+    const result = await fn(spin.update)
+    spin.stop(options.done ? options.done(result) : title)
     return result
   } catch (error) {
-    s.error(`${title} ${pc.red("failed")}`)
+    spin.fail(title)
     throw error
   } finally {
-    if (timer) clearInterval(timer)
+    if (quips) clearInterval(quips)
   }
 }

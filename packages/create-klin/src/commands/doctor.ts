@@ -1,11 +1,12 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs"
 import { connect, createServer } from "node:net"
 import { join } from "node:path"
-import * as p from "@clack/prompts"
 import { glob } from "tinyglobby"
 import { resolveTemplate, VERSION } from "../context"
 import { loadManifest } from "../engine/manifest"
-import { brand, gradient, pc, sym } from "../ui/theme"
+import { intro, outro } from "../ui/log"
+import { spinner } from "../ui/task"
+import { c, shimmer, sym } from "../ui/theme"
 import { parseEnv } from "../utils/env-file"
 import { pmCommands, pmVersion } from "../utils/pm"
 import { findProjectRoot, parsePackageManager, readProject } from "../utils/project"
@@ -22,10 +23,10 @@ interface Check {
 }
 
 const ICON: Record<Status, string> = {
-  ok: pc.green(sym.check),
-  warn: pc.yellow(sym.warn),
-  fail: pc.red(sym.cross),
-  info: pc.blue(sym.info),
+  ok: c.ok(sym.check),
+  warn: c.warn(sym.warn),
+  fail: c.error(sym.cross),
+  info: c.info(sym.info),
 }
 
 /**
@@ -43,9 +44,8 @@ export async function doctorCommand(_flags: Flags) {
   const checks: Check[] = []
   const add = (check: Check) => checks.push(check)
 
-  p.intro(`${brand(" klin doctor ")} ${pc.dim(`checking ${config.name}`)}`)
-  const spin = p.spinner()
-  spin.start("Listening to the heartbeat")
+  intro("klin doctor", c.dim(`checking ${config.name}`))
+  const spin = spinner("Listening to the heartbeat")
 
   /* ─── Toolchain ────────────────────────────────────────────────────── */
   const [major = 0, minor = 0] = process.versions.node.split(".").map(Number)
@@ -151,7 +151,7 @@ export async function doctorCommand(_flags: Flags) {
       const abs = file.startsWith("/") ? file : join(root, file)
       add({
         group: "Services",
-        title: existsSync(abs) ? `SQLite database ${pc.dim(file)}` : "SQLite database file doesn't exist yet",
+        title: existsSync(abs) ? `SQLite database ${c.dim(file)}` : "SQLite database file doesn't exist yet",
         status: existsSync(abs) ? "ok" : "warn",
         hint: existsSync(abs) ? undefined : run("db:migrate"),
       })
@@ -260,11 +260,11 @@ export async function doctorCommand(_flags: Flags) {
 
   /* ─── Report ───────────────────────────────────────────────────────── */
   for (const group of [...new Set(checks.map((c) => c.group))]) {
-    console.log(`\n  ${pc.bold(group)}`)
+    console.log(`\n  ${c.bold(group)}`)
     for (const check of checks.filter((c) => c.group === group)) {
       console.log(`    ${ICON[check.status]} ${check.title}`)
-      if (check.detail) for (const line of check.detail.split("\n")) console.log(`      ${pc.dim(line)}`)
-      if (check.hint) console.log(`      ${pc.dim(sym.arrow)} ${pc.cyan(check.hint)}`)
+      if (check.detail) for (const line of check.detail.split("\n")) console.log(`      ${c.dim(line)}`)
+      if (check.hint) console.log(`      ${c.dim(sym.arrow)} ${c.code(check.hint)}`)
     }
   }
   console.log()
@@ -274,12 +274,12 @@ export async function doctorCommand(_flags: Flags) {
   const passed = checks.filter((c) => c.status === "ok").length
   const summary = `${passed} passed · ${warns} warning${warns === 1 ? "" : "s"} · ${fails} problem${fails === 1 ? "" : "s"}`
   if (fails) {
-    p.outro(`${pc.red(summary)} — fix the ${pc.red(sym.cross)} items and run me again.`)
+    outro(`${c.error(summary)} — fix the ${c.error(sym.cross)} items and run me again.`)
     process.exitCode = 1
   } else if (warns) {
-    p.outro(`${pc.yellow(summary)} — almost spotless.`)
+    outro(`${c.warn(summary)} — almost spotless.`)
   } else {
-    p.outro(`${gradient(`${summary} — spotless ${sym.sparkle}`)}`)
+    outro(`${shimmer(`${summary} — spotless ${sym.star}`)}`)
   }
 }
 

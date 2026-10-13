@@ -1,7 +1,6 @@
 import { existsSync, readFileSync } from "node:fs"
 import { mkdir, writeFile } from "node:fs/promises"
 import { dirname, join } from "node:path"
-import * as p from "@clack/prompts"
 import {
   type Database,
   type Field,
@@ -16,7 +15,9 @@ import {
 import * as t from "../generators/resource/templates"
 import { box } from "../ui/box"
 import { task } from "../ui/task"
-import { accent, brand, gradient, pc, sym } from "../ui/theme"
+import { intro, log, outro } from "../ui/log"
+import * as prompts from "../ui/prompts"
+import { c, shimmer, sym } from "../ui/theme"
 import { type ChangeKind, fileTree } from "../ui/tree"
 import { run } from "../utils/exec"
 import { camel } from "../utils/names"
@@ -42,14 +43,15 @@ export async function generateCommand(flags: Flags) {
   const enabled = new Set(Object.values(config.answers).flat())
   const interactive = process.stdin.isTTY && !flags.yes
 
-  p.intro(`${brand(" klin generate ")} ${pc.dim("a whole feature, one command")}`)
+  intro("klin generate", c.dim("a whole feature, one command"))
+  prompts.setPromptContext(`klin generate · ${config.name}`)
 
   /* ─── Name ─────────────────────────────────────────────────────────── */
   let [name, ...fieldSpecs] = rest
   if (!name) {
     if (!interactive) bail("Give the resource a name: klin generate resource project title:string")
     name = guard(
-      await p.text({
+      await prompts.text({
         message: "What's the resource called? (singular)",
         placeholder: "project",
         validate: (v) => (!v || !/^[a-zA-Z][\w-]*$/.test(v) ? "Use letters, numbers and dashes" : undefined),
@@ -81,7 +83,7 @@ export async function generateCommand(flags: Flags) {
     scope =
       enabled.has("organizations") && interactive
         ? guard(
-            await p.select({
+            await prompts.select({
               message: `Who owns a ${names.lower}?`,
               options: [
                 { value: "user" as const, label: "The user who created it", hint: "private to each person" },
@@ -161,14 +163,14 @@ export async function generateCommand(flags: Flags) {
   }
 
   /* ─── Show & write ─────────────────────────────────────────────────── */
-  p.log.step(
-    `${pc.bold(names.title)} ${pc.dim(`(${fields.map((f) => `${f.name}:${f.type}${f.optional ? "?" : ""}`).join(" ")})`)} ${pc.dim(`· owned by ${scope === "org" ? "organization" : scope}`)}`
+  log.step(
+    `${c.bold(names.title)} ${c.dim(`(${fields.map((f) => `${f.name}:${f.type}${f.optional ? "?" : ""}`).join(" ")})`)} ${c.dim(`· owned by ${scope === "org" ? "organization" : scope}`)}`
   )
   console.log(fileTree(edits.map(({ path, kind }) => ({ path, kind }))))
   console.log()
 
   if (flags["dry-run"]) {
-    p.outro(pc.dim("Dry run — nothing was written."))
+    outro(c.dim("Dry run — nothing was written."))
     return
   }
 
@@ -188,30 +190,30 @@ export async function generateCommand(flags: Flags) {
       await run(bin!, args, { cwd: join(root, "apps/web") })
     }
   }, { done: () => "Prisma client and route tree are up to date" }).catch(() => {
-    p.log.warn("Couldn't regenerate types automatically — they'll update on the next `dev`.")
+    log.warn("Couldn't regenerate types automatically — they'll update on the next `dev`.")
   })
 
-  const cmd = (command: string) => pc.bold(rewriteCommand(`pnpm ${command}`, pm))
+  const cmd = (command: string) => c.bold(rewriteCommand(`pnpm ${command}`, pm))
   const lines = [
-    `${accent(sym.arrow)} ${cmd(`db:migrate --name add-${names.plural.kebab}`)}  ${pc.dim("create the table")}`,
-    `${accent(sym.arrow)} ${cmd("dev")}  ${pc.dim("then open")} ${pc.cyan(`/${names.plural.kebab}`)}`,
+    `${c.dim(sym.arrow)} ${cmd(`db:migrate --name add-${names.plural.kebab}`)}  ${c.dim("create the table")}`,
+    `${c.dim(sym.arrow)} ${cmd("dev")}  ${c.dim("then open")} ${c.code(`/${names.plural.kebab}`)}`,
     "",
-    `${pc.dim("schema")}   packages/validators/src/${names.kebab}.ts`,
-    `${pc.dim("api")}      ${withApi ? `GET/POST /api/${names.plural.kebab} · GET/PATCH/DELETE /api/${names.plural.kebab}/:id` : pc.dim("skipped (--no-api)")}`,
+    `${c.dim("schema")}   packages/validators/src/${names.kebab}.ts`,
+    `${c.dim("api")}      ${withApi ? `GET/POST /api/${names.plural.kebab} · GET/PATCH/DELETE /api/${names.plural.kebab}/:id` : c.dim("skipped (--no-api)")}`,
   ]
-  if (enabled.has("i18n") && withUi) lines.push(`${pc.dim("i18n")}     add "nav.${names.plural.kebab}" to src/i18n/locales/*.json`)
-  console.log(box(lines, { title: `${sym.sparkle} ${names.plural.title} are ready` }))
-  p.outro(gradient("One schema, five layers, zero copy-paste."))
+  if (enabled.has("i18n") && withUi) lines.push(`${c.dim("i18n")}     add "nav.${names.plural.kebab}" to src/i18n/locales/*.json`)
+  console.log(box(lines, { title: `${sym.star} ${names.plural.title} are ready` }))
+  outro(shimmer("One schema, five layers, zero copy-paste."))
 }
 
 /** Interactive field builder: name → type → (values) → required? — until an empty name. */
 async function askFields(): Promise<Field[]> {
   const fields: Field[] = []
-  p.log.info(pc.dim("Add fields one at a time. Leave the name empty when you're done."))
+  log.info(c.dim("Add fields one at a time. Leave the name empty when you're done."))
   while (true) {
     const name = guard(
-      await p.text({
-        message: fields.length ? `Field ${fields.length + 1} name ${pc.dim("(empty to finish)")}` : "First field name",
+      await prompts.text({
+        message: fields.length ? `Field ${fields.length + 1} name ${c.dim("(empty to finish)")}` : "First field name",
         placeholder: fields.length ? "" : "name",
         validate: (v) => {
           if (!v) return fields.length ? undefined : "Add at least one field"
@@ -222,15 +224,15 @@ async function askFields(): Promise<Field[]> {
     )
     if (!name) break
     const type = guard(
-      await p.select<FieldType>({
-        message: `Type of ${pc.cyan(name)}`,
+      await prompts.select<FieldType>({
+        message: `Type of ${c.code(name)}`,
         options: FIELD_TYPES.map((type) => ({ value: type, label: type, hint: FIELD_TYPE_HINTS[type] })),
       })
     )
     let values = ""
     if (type === "enum") {
       values = guard(
-        await p.text({
+        await prompts.text({
           message: "Allowed values (comma-separated)",
           placeholder: "draft, published",
           validate: (v) => (!v || v.split(",").filter((x) => x.trim()).length < 2 ? "Give at least two values" : undefined),
@@ -240,11 +242,11 @@ async function askFields(): Promise<Field[]> {
     const required =
       type === "boolean"
         ? true
-        : guard(await p.confirm({ message: `Is ${pc.cyan(name)} required?`, initialValue: true }))
+        : guard(await prompts.confirm({ message: `Is ${c.code(name)} required?`, initialValue: true }))
     try {
       fields.push(parseField(`${name}:${type}${values ? `:${values}` : ""}${required ? "" : "?"}`))
     } catch (error) {
-      p.log.error((error as Error).message)
+      log.error((error as Error).message)
     }
   }
   return fields
@@ -272,7 +274,7 @@ function currentText(edits: Edit[], root: string, path: string): string | null {
 function insert(edits: Edit[], root: string, path: string, anchor: string, line: string) {
   const text = currentText(edits, root, path)
   if (text === null) {
-    p.log.warn(`${path} is missing — add this yourself:\n  ${pc.cyan(line)}`)
+    log.warn(`${path} is missing — add this yourself:\n  ${c.code(line)}`)
     return
   }
   if (text.includes(line)) return
@@ -281,7 +283,7 @@ function insert(edits: Edit[], root: string, path: string, anchor: string, line:
   const pattern = new RegExp(`${anchor.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![\\w-])`)
   const at = lines.findIndex((l) => pattern.test(l))
   if (at === -1) {
-    p.log.warn(`Couldn't find ${pc.dim(anchor)} in ${path} — add this yourself:\n  ${pc.cyan(line)}`)
+    log.warn(`Couldn't find ${c.dim(anchor)} in ${path} — add this yourself:\n  ${c.code(line)}`)
     return
   }
   const indentation = /^\s*/.exec(lines[at]!)?.[0] ?? ""

@@ -6,11 +6,42 @@
     "klin_app": "snake",
     "Klin App": "title"
   },
+  "steps": [
+    {
+      "id": "stack",
+      "title": "Stack",
+      "heading": "Pick your engine.",
+      "subtitle": "How the API is built, what serves it, and where the data lives.",
+      "questions": ["backend", "server", "database"]
+    },
+    {
+      "id": "auth",
+      "title": "Auth",
+      "heading": "Decide who gets in.",
+      "subtitle": "Better Auth runs sessions, cookies and the tricky flows for you.",
+      "questions": ["auth", "plugins"]
+    },
+    {
+      "id": "toolbox",
+      "title": "Toolbox",
+      "heading": "Fill the toolbox.",
+      "subtitle": "Space snaps a part on or off. Your kit updates as you go.",
+      "questions": ["security", "extras"]
+    },
+    {
+      "id": "looks",
+      "title": "Looks",
+      "heading": "Make it look like yours.",
+      "subtitle": "shadcn/ui, wired so new components and themes are one command away.",
+      "questions": ["components", "accent"]
+    }
+  ],
   "questions": [
     {
       "id": "backend",
       "type": "select",
       "flag": "backend",
+      "title": "Framework",
       "message": "How should the API be built?",
       "options": ["nest", "plain"],
       "default": "nest"
@@ -19,6 +50,7 @@
       "id": "server",
       "type": "select",
       "flag": "server",
+      "title": "HTTP server",
       "message": "Which HTTP server runs it?",
       "options": ["express", "fastify"],
       "default": "express"
@@ -27,6 +59,7 @@
       "id": "database",
       "type": "select",
       "flag": "db",
+      "title": "Database",
       "message": "Where should your data live?",
       "options": ["postgres", "mysql", "sqlite"],
       "default": "postgres"
@@ -35,6 +68,7 @@
       "id": "auth",
       "type": "multiselect",
       "flag": "auth",
+      "title": "Sign-in",
       "message": "How should people sign in?",
       "options": ["password", "google", "github", "magic-link", "two-factor", "passkey"],
       "default": ["password"],
@@ -44,6 +78,7 @@
       "id": "plugins",
       "type": "multiselect",
       "flag": "plugins",
+      "title": "Power-ups",
       "message": "Any Better Auth power-ups?",
       "options": ["organizations", "admin", "api-keys"],
       "default": []
@@ -52,6 +87,7 @@
       "id": "security",
       "type": "multiselect",
       "flag": "security",
+      "title": "Security",
       "message": "Which API safeguards?",
       "options": ["cors", "helmet", "rate-limit"],
       "default": ["cors", "helmet", "rate-limit"]
@@ -60,14 +96,20 @@
       "id": "extras",
       "type": "multiselect",
       "flag": "extras",
+      "title": "Extras",
       "message": "Extras for the toolbox?",
       "options": ["email", "uploads", "queues", "i18n", "docker", "ci"],
-      "default": ["docker", "ci"]
+      "default": ["docker", "ci"],
+      "groups": [
+        { "title": "Features", "options": ["email", "uploads", "queues", "i18n"] },
+        { "title": "Ship it", "options": ["docker", "ci"] }
+      ]
     },
     {
       "id": "components",
       "type": "select",
       "flag": "components",
+      "title": "Components live in",
       "message": "Where should shadcn/ui components live?",
       "options": ["apps-web", "packages-ui"],
       "default": "apps-web"
@@ -76,6 +118,7 @@
       "id": "accent",
       "type": "select",
       "flag": "accent",
+      "title": "Theme color",
       "message": "Pick a theme color",
       "options": [
         "neutral",
@@ -105,6 +148,7 @@
     "nest": {
       "label": "NestJS",
       "hint": "modules, DI, nestjs-zod DTOs",
+      "about": "Modules, controllers and dependency injection, with nestjs-zod turning the shared Zod schemas into DTOs. Pick it when the API will grow and a team wants structure.",
       "json": {
         "apps/api/package.json": {
           "dependencies": [
@@ -125,11 +169,13 @@
     },
     "plain": {
       "label": "Plain",
-      "hint": "no framework, just routes"
+      "hint": "no framework, just routes",
+      "about": "No framework on top: an app file, route modules and plain service functions. Less ceremony, with the same shared Zod schemas, auth guards and response envelope."
     },
     "express": {
       "label": "Express",
       "hint": "the classic, huge ecosystem",
+      "about": "The classic Node.js server with the biggest middleware ecosystem. NestJS runs on @nestjs/platform-express; plain mode uses Express 5 with async error handling.",
       "json": {
         "apps/api/package.json": {
           "dependencies": ["helmet"],
@@ -140,6 +186,7 @@
     "fastify": {
       "label": "Fastify",
       "hint": "faster, schema-first",
+      "about": "A faster server with schema-first routes and built-in pino logging. NestJS runs on @nestjs/platform-fastify; plain mode types every route straight from your Zod schemas.",
       "json": {
         "apps/api/package.json": {
           "dependencies": ["@fastify/helmet"]
@@ -148,25 +195,30 @@
     },
     "password": {
       "label": "Email & password",
-      "hint": "sign up, reset & verify flows"
+      "hint": "sign up, reset & verify flows",
+      "about": "Classic email and password with sign-up, verification and password reset. Better Auth hashes passwords and stores sessions in your database; the forms live in apps/web/src/features/auth."
     },
     "google": {
       "label": "Google",
       "hint": "OAuth",
-      "note": "Add GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET to .env to switch on Google sign-in"
+      "note": "Add GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET to .env to switch on Google sign-in",
+      "about": "Sign in with Google over OAuth: the button, callback and account linking are wired. Add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to .env to switch it on."
     },
     "github": {
       "label": "GitHub",
       "hint": "OAuth",
-      "note": "Add GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET to .env to switch on GitHub sign-in"
+      "note": "Add GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET to .env to switch on GitHub sign-in",
+      "about": "Sign in with GitHub over OAuth: the button, callback and account linking are wired. Add GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET to .env to switch it on."
     },
     "magic-link": {
       "label": "Magic link",
-      "hint": "passwordless email links"
+      "hint": "passwordless email links",
+      "about": "Passwordless sign-in: people type their email and click the link they get. Until email is set up, links are printed to the API logs so you can click them locally."
     },
     "two-factor": {
       "label": "Two-factor (TOTP)",
       "hint": "authenticator apps + backup codes",
+      "about": "Authenticator-app codes with backup codes, switched on from the security settings page. It builds on email & password, so that gets snapped on too.",
       "requires": ["password"],
       "remove": [
         "apps/web/src/routes/_auth/two-factor.tsx",
@@ -182,6 +234,7 @@
     "passkey": {
       "label": "Passkeys",
       "hint": "Face ID, Touch ID, security keys",
+      "about": "Face ID, Touch ID and hardware keys over WebAuthn. People add passkeys in their security settings and can then sign in without a password.",
       "remove": ["apps/web/src/features/settings/passkeys-card.tsx"],
       "json": {
         "packages/auth/package.json": {
@@ -195,6 +248,7 @@
     "organizations": {
       "label": "Organizations & RBAC",
       "hint": "teams, invites, roles, permissions",
+      "about": "Teams with invitations, roles and permissions, plus an organization switcher in the sidebar. Access rules live in packages/auth/src/permissions.ts and guard API routes and UI alike.",
       "remove": [
         "apps/api/src/modules/organization/**",
         "apps/api/plain-*/routes/organization.ts",
@@ -208,6 +262,7 @@
     "admin": {
       "label": "Admin dashboard",
       "hint": "manage users, ban, impersonate",
+      "about": "An admin area to list, ban and impersonate users, with sign-up stats. Only users with the admin role get in, and the seed script makes the demo user one.",
       "remove": [
         "apps/api/src/modules/admin/**",
         "apps/api/plain-*/routes/admin.ts",
@@ -220,6 +275,7 @@
     "api-keys": {
       "label": "API keys",
       "hint": "let users call your API from scripts",
+      "about": "People create API keys in settings to call your API from scripts and CI. Keys are stored hashed, can expire, and work anywhere a session cookie does.",
       "remove": ["apps/web/src/features/api-keys/**", "apps/web/src/routes/_app/settings/api-keys.tsx"],
       "json": {
         "packages/auth/package.json": {
@@ -233,6 +289,7 @@
     "postgres": {
       "label": "PostgreSQL",
       "hint": "recommended",
+      "about": "PostgreSQL through Prisma's pg driver adapter. Docker Compose starts a local server (pnpm db:up) and DATABASE_URL in .env already points at it.",
       "json": {
         "packages/db/package.json": {
           "dependencies": ["@prisma/adapter-pg"]
@@ -245,6 +302,7 @@
     "mysql": {
       "label": "MySQL",
       "hint": "or MariaDB",
+      "about": "MySQL or MariaDB through Prisma's MariaDB adapter. Docker Compose runs a local server, or point DATABASE_URL in .env at your own.",
       "json": {
         "packages/db/package.json": {
           "dependencies": ["@prisma/adapter-mariadb"]
@@ -257,6 +315,7 @@
     "sqlite": {
       "label": "SQLite",
       "hint": "zero setup, a file on disk",
+      "about": "One file at packages/db/data/dev.db, with nothing to install or start. Great for prototypes; switch later with klin add postgres.",
       "remove": ["packages/db/data/.gitkeep"],
       "json": {
         "packages/db/package.json": {
@@ -269,19 +328,23 @@
     },
     "cors": {
       "label": "CORS",
-      "hint": "only your web app may call the API"
+      "hint": "only your web app may call the API",
+      "about": "Browsers may only call the API from your web app's origin (WEB_URL), with cookies allowed. In development the Vite proxy keeps requests same-origin anyway."
     },
     "helmet": {
       "label": "Helmet",
-      "hint": "secure HTTP headers"
+      "hint": "secure HTTP headers",
+      "about": "Secure HTTP headers on every API response: no MIME sniffing, no framing, a strict referrer policy and more. Uses helmet on Express and @fastify/helmet on Fastify."
     },
     "rate-limit": {
       "label": "Rate limiting",
-      "hint": "120 requests / minute / IP"
+      "hint": "120 requests / minute / IP",
+      "about": "Caps each IP at 120 requests a minute so one client can't flood the API; health checks are exempt. Uses @nestjs/throttler, express-rate-limit or @fastify/rate-limit, tuned in one place."
     },
     "email": {
       "label": "Transactional email",
       "hint": "Resend + React Email",
+      "about": "Resend with React Email templates in packages/email: verification, reset, magic-link and invite emails are wired. Preview the templates with pnpm email:dev.",
       "remove": ["packages/email/**", "packages/docs/email.md"],
       "json": {
         "package.json": {
@@ -306,6 +369,7 @@
     "uploads": {
       "label": "File uploads",
       "hint": "S3 / R2 presigned URLs",
+      "about": "Direct-to-storage uploads with presigned URLs for S3, R2 or any S3-compatible store. Docker Compose runs MinIO locally, and the avatar upload shows the whole flow.",
       "remove": [
         "apps/api/src/modules/uploads/**",
         "apps/api/plain-*/routes/uploads.ts",
@@ -322,6 +386,7 @@
     "queues": {
       "label": "Background jobs",
       "hint": "BullMQ + Redis",
+      "about": "BullMQ jobs on Redis, with a welcome email queued on every sign-up. Docker Compose starts Redis, and workers run inside the API process to begin with.",
       "remove": [
         "apps/api/src/modules/jobs/**",
         "apps/api/plain-*/routes/jobs.ts",
@@ -337,6 +402,7 @@
     "i18n": {
       "label": "Internationalization",
       "hint": "i18next, English to start",
+      "about": "i18next set up with English, and every UI string already goes through t(). Add a language by dropping a JSON file into apps/web/src/i18n/locales; a switcher appears once there are two.",
       "remove": ["apps/web/src/i18n/**", "apps/web/src/components/language-switcher.tsx"],
       "json": {
         "apps/web/package.json": {
@@ -347,6 +413,7 @@
     "docker": {
       "label": "Docker",
       "hint": "local services + production images",
+      "about": "Docker Compose for local services, plus production images for the API and the web app behind nginx. Ship it all with docker compose -f docker-compose.prod.yml up.",
       "remove": [
         "**/Dockerfile",
         "**/docker-entrypoint.sh",
@@ -358,88 +425,109 @@
     "ci": {
       "label": "GitHub Actions + Renovate",
       "hint": "lint, typecheck, test, build, e2e",
+      "about": "GitHub Actions run lint, typecheck, tests, the build and Playwright on every push. Renovate keeps dependencies fresh with grouped, scheduled pull requests.",
       "remove": [".github/**", "renovate.json"]
     },
     "apps-web": {
       "label": "apps/web",
-      "hint": "next to your app"
+      "hint": "next to your app",
+      "about": "Components live in apps/web/src/components/ui, right next to the app that uses them. The simplest setup: pnpm ui:add <component> drops new ones there."
     },
     "packages-ui": {
       "label": "packages/ui",
       "hint": "a shared @repo/ui package",
+      "about": "Components, styles and the theme move to a shared @repo/ui workspace, ready for a second app. pnpm ui:add <component> still works: shadcn reads both components.json files and installs into the package.",
       "remove": ["variants/packages-ui/**"]
     },
     "neutral": {
       "label": "Neutral",
-      "swatch": "oklch(0.922 0 0)"
+      "swatch": "oklch(0.922 0 0)",
+      "about": "shadcn's default black-and-white look with soft gray accents. Buttons, focus rings and charts stay neutral, so content carries the color."
     },
     "amber": {
       "label": "Amber",
-      "swatch": "oklch(0.473 0.137 46.201)"
+      "swatch": "oklch(0.473 0.137 46.201)",
+      "about": "shadcn's Amber theme for buttons, focus rings, the active sidebar item and charts. Change it later by editing --brand in the stylesheet."
     },
     "blue": {
       "label": "Blue",
-      "swatch": "oklch(0.424 0.199 265.638)"
+      "swatch": "oklch(0.424 0.199 265.638)",
+      "about": "shadcn's Blue theme for buttons, focus rings, the active sidebar item and charts. Change it later by editing --brand in the stylesheet."
     },
     "cyan": {
       "label": "Cyan",
-      "swatch": "oklch(0.45 0.085 224.283)"
+      "swatch": "oklch(0.45 0.085 224.283)",
+      "about": "shadcn's Cyan theme for buttons, focus rings, the active sidebar item and charts. Change it later by editing --brand in the stylesheet."
     },
     "emerald": {
       "label": "Emerald",
-      "swatch": "oklch(0.432 0.095 166.913)"
+      "swatch": "oklch(0.432 0.095 166.913)",
+      "about": "shadcn's Emerald theme for buttons, focus rings, the active sidebar item and charts. Change it later by editing --brand in the stylesheet."
     },
     "fuchsia": {
       "label": "Fuchsia",
-      "swatch": "oklch(0.452 0.211 324.591)"
+      "swatch": "oklch(0.452 0.211 324.591)",
+      "about": "shadcn's Fuchsia theme for buttons, focus rings, the active sidebar item and charts. Change it later by editing --brand in the stylesheet."
     },
     "green": {
       "label": "Green",
-      "swatch": "oklch(0.448 0.119 151.328)"
+      "swatch": "oklch(0.448 0.119 151.328)",
+      "about": "shadcn's Green theme for buttons, focus rings, the active sidebar item and charts. Change it later by editing --brand in the stylesheet."
     },
     "indigo": {
       "label": "Indigo",
-      "swatch": "oklch(0.398 0.195 277.366)"
+      "swatch": "oklch(0.398 0.195 277.366)",
+      "about": "shadcn's Indigo theme for buttons, focus rings, the active sidebar item and charts. Change it later by editing --brand in the stylesheet."
     },
     "lime": {
       "label": "Lime",
-      "swatch": "oklch(0.768 0.233 130.85)"
+      "swatch": "oklch(0.768 0.233 130.85)",
+      "about": "shadcn's Lime theme for buttons, focus rings, the active sidebar item and charts, with dark text on the bright primary. Change it later by editing --brand in the stylesheet."
     },
     "orange": {
       "label": "Orange",
-      "swatch": "oklch(0.47 0.157 37.304)"
+      "swatch": "oklch(0.47 0.157 37.304)",
+      "about": "shadcn's Orange theme for buttons, focus rings, the active sidebar item and charts. Change it later by editing --brand in the stylesheet."
     },
     "pink": {
       "label": "Pink",
-      "swatch": "oklch(0.459 0.187 3.815)"
+      "swatch": "oklch(0.459 0.187 3.815)",
+      "about": "shadcn's Pink theme for buttons, focus rings, the active sidebar item and charts. Change it later by editing --brand in the stylesheet."
     },
     "purple": {
       "label": "Purple",
-      "swatch": "oklch(0.438 0.218 303.724)"
+      "swatch": "oklch(0.438 0.218 303.724)",
+      "about": "shadcn's Purple theme for buttons, focus rings, the active sidebar item and charts. Change it later by editing --brand in the stylesheet."
     },
     "red": {
       "label": "Red",
-      "swatch": "oklch(0.444 0.177 26.899)"
+      "swatch": "oklch(0.444 0.177 26.899)",
+      "about": "shadcn's Red theme for buttons, focus rings, the active sidebar item and charts. Change it later by editing --brand in the stylesheet."
     },
     "rose": {
       "label": "Rose",
-      "swatch": "oklch(0.455 0.188 13.697)"
+      "swatch": "oklch(0.455 0.188 13.697)",
+      "about": "shadcn's Rose theme for buttons, focus rings, the active sidebar item and charts. Change it later by editing --brand in the stylesheet."
     },
     "sky": {
       "label": "Sky",
-      "swatch": "oklch(0.443 0.11 240.79)"
+      "swatch": "oklch(0.443 0.11 240.79)",
+      "about": "shadcn's Sky theme for buttons, focus rings, the active sidebar item and charts. Change it later by editing --brand in the stylesheet."
     },
     "teal": {
       "label": "Teal",
-      "swatch": "oklch(0.437 0.078 188.216)"
+      "swatch": "oklch(0.437 0.078 188.216)",
+      "about": "shadcn's Teal theme for buttons, focus rings, the active sidebar item and charts. Change it later by editing --brand in the stylesheet."
     },
     "violet": {
       "label": "Violet",
-      "swatch": "oklch(0.432 0.232 292.759)"
+      "swatch": "oklch(0.432 0.232 292.759)",
+      "about": "shadcn's Violet theme for buttons, focus rings, the active sidebar item and charts. Change it later by editing --brand in the stylesheet."
     },
     "yellow": {
       "label": "Yellow",
-      "swatch": "oklch(0.795 0.184 86.047)"
+      "swatch": "oklch(0.795 0.184 86.047)",
+      "about": "shadcn's Yellow theme for buttons, focus rings, the active sidebar item and charts, with dark text on the bright primary. Change it later by editing --brand in the stylesheet."
     }
   },
   "flags": {
@@ -647,11 +735,13 @@
     "recommended": {
       "label": "Recommended",
       "hint": "email & password, Postgres, Docker, CI",
+      "about": "A solid default: NestJS on Express, email and password sign-in, Postgres in Docker, CI and every API safeguard on. Change anything on the next screens.",
       "answers": {}
     },
     "saas": {
       "label": "SaaS starter",
       "hint": "OAuth, 2FA, teams, admin, email, uploads, jobs",
+      "about": "Everything a multi-tenant SaaS needs on day one: OAuth and 2FA, organizations with roles, an admin area, email, uploads and background jobs.",
       "answers": {
         "auth": ["password", "google", "github", "two-factor"],
         "plugins": ["organizations", "admin"],
@@ -661,6 +751,7 @@
     "minimal": {
       "label": "Featherweight",
       "hint": "plain Fastify on SQLite, no Docker",
+      "about": "The lightest kit: a plain Fastify API, email and password on SQLite, and nothing to start but pnpm dev. Ideal for prototypes and weekend projects.",
       "answers": {
         "backend": "plain",
         "server": "fastify",
@@ -672,6 +763,7 @@
     "everything": {
       "label": "Kitchen sink",
       "hint": "every module, so you can see it all",
+      "about": "Every module switched on, so you can tour the whole kit and delete what you don't need. Expect Docker for Postgres, Redis and MinIO.",
       "answers": {
         "auth": ["password", "google", "github", "magic-link", "two-factor", "passkey"],
         "plugins": ["organizations", "admin", "api-keys"],

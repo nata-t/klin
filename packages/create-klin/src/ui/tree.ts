@@ -1,15 +1,16 @@
-import { pc, unicode } from "./theme"
+import { c, paint, unicode } from "./theme"
 
 export type ChangeKind = "create" | "update" | "merge" | "conflict" | "delete" | "keep" | "skip"
 
+/** Brightness, weight and strike-through tell the kinds apart — no hues. */
 const MARKS: Record<ChangeKind, (s: string) => string> = {
-  create: (s) => pc.green(s),
-  update: (s) => pc.cyan(s),
-  merge: (s) => pc.cyan(s),
-  conflict: (s) => pc.yellow(s),
-  delete: (s) => pc.red(s),
-  keep: (s) => pc.dim(s),
-  skip: (s) => pc.dim(s),
+  create: (s) => c.white(s),
+  update: (s) => c.bright(s),
+  merge: (s) => c.bright(s),
+  conflict: (s) => paint(s, { fg: "white", bold: true, underline: true }),
+  delete: (s) => paint(s, { fg: "subtle", strike: true }),
+  keep: (s) => c.dim(s),
+  skip: (s) => c.dim(s),
 }
 
 const SIGNS: Record<ChangeKind, string> = {
@@ -66,12 +67,12 @@ export function fileTree(entries: Array<{ path: string; kind: ChangeKind; note?:
     const children = [...node.children].map(([name, child]) => collapse(name, child))
     children.forEach(([name, child], index) => {
       const last = index === children.length - 1
-      const connector = pc.dim(prefix + (last ? branch.last : branch.mid))
+      const connector = c.faint(prefix + (last ? branch.last : branch.mid))
       if (child.kind) {
         const mark = MARKS[child.kind]
-        lines.push(`${indent}${connector}${mark(SIGNS[child.kind])} ${mark(name)}${child.note ? pc.dim(`  ${child.note}`) : ""}`)
+        lines.push(`${indent}${connector}${mark(SIGNS[child.kind])} ${mark(name)}${child.note ? c.dim(`  ${child.note}`) : ""}`)
       } else {
-        lines.push(`${indent}${connector}${pc.dim(name + "/")}`)
+        lines.push(`${indent}${connector}${c.muted(name + "/")}`)
         walk(child, prefix + (last ? branch.space : branch.pipe))
       }
     })

@@ -1,6 +1,7 @@
-import * as p from "@clack/prompts"
 import type { Answers, Manifest } from "../engine/manifest"
-import { pc } from "../ui/theme"
+import { cancel } from "../ui/log"
+import { isCancel } from "../ui/prompts"
+import { c } from "../ui/theme"
 
 export interface Flags {
   _: string[]
@@ -26,7 +27,24 @@ export interface Flags {
 
 export const FLAG_SPEC = {
   boolean: ["help", "version", "yes", "force", "dry-run", "install", "git", "banner", "ui", "api"],
-  string: ["pm", "preset", "template", "plural", "scope", "from", "cwd", "backend", "server", "auth", "plugins", "db", "security", "extras", "components", "accent"],
+  string: [
+    "pm",
+    "preset",
+    "template",
+    "plural",
+    "scope",
+    "from",
+    "cwd",
+    "backend",
+    "server",
+    "db",
+    "auth",
+    "plugins",
+    "security",
+    "extras",
+    "components",
+    "accent",
+  ],
   alias: { h: "help", v: "version", y: "yes", f: "force", t: "template", p: "preset" },
   default: { install: true, git: true, banner: true, ui: true, api: true },
 }
@@ -53,16 +71,16 @@ export function answersFromFlags(manifest: Manifest, flags: Flags): Answers {
   return answers
 }
 
-/** Unwraps a clack prompt result, exiting cleanly on Ctrl+C. */
+/** Unwraps a prompt result, exiting cleanly on Ctrl+C / Esc. */
 export function guard<T>(value: T): Exclude<T, symbol> {
-  if (p.isCancel(value)) {
-    p.cancel("Swept under the rug — nothing changed.")
+  if (isCancel(value)) {
+    cancel("Swept under the rug — nothing changed.")
     process.exit(0)
   }
   return value as Exclude<T, symbol>
 }
 
 export function bail(message: string): never {
-  p.cancel(pc.red(message))
+  cancel(c.error(message))
   process.exit(1)
 }
