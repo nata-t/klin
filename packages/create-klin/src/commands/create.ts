@@ -14,11 +14,11 @@ import {
 import { render } from "../engine/render"
 import { banner } from "../ui/banner"
 import { box, table } from "../ui/box"
-import { cancel, intro, log, outro } from "../ui/log"
+import { cancel, centered, intro, log, outro } from "../ui/log"
 import { isCancel } from "../ui/prompts"
 import { INSTALL_QUIPS, setTaskReporter, task } from "../ui/task"
 import { interactive } from "../ui/term"
-import { c, padEnd, pick, shimmer, swatch, sym, width, wrap } from "../ui/theme"
+import { c, padEnd, pick, shimmer, swatch, sym, width } from "../ui/theme"
 import { fileTree } from "../ui/tree"
 import { generateEnv } from "../utils/env-file"
 import { run } from "../utils/exec"
@@ -207,15 +207,23 @@ export async function create(flags: Flags) {
 
   /* ─── Next steps ───────────────────────────────────────────────────── */
   const installFailed = willInstall && !installed
-  if (ask) intro("create-klin", `${projectName} is ready`)
-  console.log(nextSteps({ manifest, answers, targetDir, pm, installed, installFailed }))
+  const steps = nextSteps({ manifest, answers, targetDir, pm, installed, installFailed, center: ask })
   const optionNotes = Object.values(answers)
     .flat()
     .map((id) => manifest.options[id]?.note)
     .filter(Boolean) as string[]
-  for (const note of optionNotes) log.info(note)
+  const signOff = installFailed ? c.warn("Almost there — rerun the install once the problem above is fixed.") : shimmer(`${sym.star} ${pick(SIGN_OFFS)}`)
 
-  outro(installFailed ? c.warn("Almost there — rerun the install once the problem above is fixed.") : shimmer(`${sym.star} ${pick(SIGN_OFFS)}`))
+  if (ask) {
+    // The wizard's last word, centered like its pages.
+    centered([`${c.badge("create-klin")}  ${c.muted(`${projectName} is ready`)}`])
+    console.log(steps)
+    centered([...optionNotes.map((note) => `${c.muted(sym.info)}  ${note}`), ...(optionNotes.length ? [""] : []), signOff, ""])
+    return
+  }
+  console.log(steps)
+  for (const note of optionNotes) log.info(note)
+  outro(signOff)
 }
 
 /* ─── Helpers ──────────────────────────────────────────────────────────── */
@@ -317,6 +325,7 @@ function nextSteps({
   pm,
   installed,
   installFailed,
+  center,
 }: {
   manifest: Manifest
   answers: Answers
@@ -324,6 +333,7 @@ function nextSteps({
   pm: PackageManager
   installed: boolean
   installFailed: boolean
+  center: boolean
 }) {
   const run = pmCommands(pm).run
   const has = (id: string) => Object.values(answers).flat().includes(id)
@@ -346,33 +356,17 @@ function nextSteps({
   const maxW = Math.max(40, Math.min(76, (process.stdout.columns || 100) - 8))
   const lines = [c.white("run it"), ...commandLines(steps, maxW)]
 
-  if (has("docker")) {
-    const prod = "docker compose -f docker-compose.prod.yml"
-    const services = ["web", "API", sqlite ? "SQLite (in a volume)" : dbName, ...(has("queues") ? ["Redis"] : [])]
-    const what = `${services.slice(0, -1).join(", ")} and ${services.at(-1)}`
-    lines.push("", c.white("run the production images"))
-    lines.push(
-      ...commandLines(
-        [
-          [`${prod} up --build -d`, `${what} → http://localhost:8080`],
-          [`${prod} logs -f api`, "follow the API"],
-          [`${prod} down`, "stop everything"],
-        ],
-        maxW
-      )
-    )
-    const note = `Builds both images and reads secrets from .env. The API applies your migrations (from ${run("db:migrate")}) as it starts. For a real domain, set PUBLIC_URL in .env — see packages/docs/deployment.md.`
-    lines.push(...wrap(note, maxW - 2).map((line) => `  ${c.dim(line)}`))
-  }
-
   lines.push("")
   const extras: Array<[string, string]> = []
   if (has("password")) extras.push(["demo login", `demo@example.com ${c.dim("/")} demo-password-123`])
   extras.push(["new feature", run("klin generate resource project name:string")])
   extras.push(["add a component", run("ui:add dialog")])
   extras.push(["health check", run("klin doctor")])
-  lines.push(...table(extras, 2))
-  return box(lines, { title: installFailed ? "almost there — next steps" : "spotless! next steps" })
+  // Same rule as the commands: a value that won't fit beside its label goes under it.
+  const labelW = Math.max(...extras.map(([label]) => width(label)))
+  if (extras.every(([, value]) => labelW + 2 + width(value) <= maxW)) lines.push(...table(extras, 2))
+  else lines.push(...extras.flatMap(([label, value]) => [c.dim(label), `  ${value}`]))
+  return box(lines, { title: installFailed ? "almost there — next steps" : "spotless! next steps", center })
 }
 
 /** `→ command  why`, aligned — or the why on its own line when it won't fit. */

@@ -1,5 +1,5 @@
 import { screen } from "./term"
-import { c, sym, unicode } from "./theme"
+import { c, sym, unicode, width } from "./theme"
 
 /**
  * Line output with a quiet rail down the left, in grays:
@@ -36,6 +36,14 @@ export const log = {
 export function intro(title: string, subtitle = "") {
   screen.close()
   process.stdout.write(`\n  ${c.badge(title)}  ${c.muted(subtitle)}\n`)
+}
+
+/** Lines centered in the terminal — the end of the wizard, whose pages are centered too. */
+export function centered(lines: string[]) {
+  screen.close()
+  const columns = process.stdout.columns || 80
+  const pad = (line: string) => (line ? " ".repeat(Math.max(0, Math.floor((columns - width(line)) / 2))) + line : "")
+  process.stdout.write(`${lines.map(pad).join("\n")}\n`)
 }
 
 export function outro(message: string) {
