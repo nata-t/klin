@@ -56,8 +56,14 @@ const toItems = <T extends string>(options: Option<T>[]): ChipItem[] =>
     disabled: o.disabled,
   }))
 
+/**
+ * Every prompt keeps room for the tallest one — a heading, a subtitle and a
+ * full eight-option list — so the logo stays one size across a run of them.
+ */
+const PROMPT_ROOM = 12
+
 function page(message: string, subtitle: string | undefined, fields: Field[], keys: Page["keys"]): Page {
-  return { title: context, version: `v${VERSION}`, heading: message, subtitle, fields, keys }
+  return { title: context, version: `v${VERSION}`, heading: message, subtitle, fields, keys, room: () => PROMPT_ROOM }
 }
 
 export async function select<T extends string>(options: {

@@ -100,6 +100,11 @@ export interface Page {
   keys: Array<[key: string, action: string]>
   /** Help text when nothing is highlighted (summary/progress pages). */
   help?: { title: string; text: string }
+  /**
+   * Rows to keep free for the page body at a terminal width — the tallest page
+   * of a multi-step flow — so the logo keeps one size on every page of it.
+   */
+  room?: (width: number) => number
 }
 
 export type Action = "submit" | "back" | "cancel" | "changed" | "none"
@@ -348,8 +353,9 @@ export class Form {
     const height = sum(blocks)
 
     // The logo and the page are centered together under the steps; the logo
-    // shrinks (full letters → folded → one line) to leave the page room.
-    const size = logoSizeFor(avail - height - 1, w)
+    // shrinks (full letters → folded → one line) to leave the page room — the
+    // room of the flow's tallest page, so it doesn't change size between steps.
+    const size = logoSizeFor(avail - Math.max(height, this.page.room?.(w) ?? 0) - 1, w)
     const logoH = size + 1
     if (logoH + height <= avail) {
       this.scroll = 0
@@ -505,6 +511,11 @@ export class Form {
       else blocks.push(progressBlock(field))
     }
     return blocks
+  }
+
+  /** Rows the page body takes at a terminal width (the heading and fields, not the header or footer). */
+  bodyHeight(width: number): number {
+    return sum(this.layout(Math.min(width - 4, BODY_MAX)))
   }
 
   /** Where the focused field sits in the laid-out page: [top, bottom). */

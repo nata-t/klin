@@ -12,6 +12,22 @@ export const LOGO = [
 ]
 
 /**
+ * The same letters drawn taller — seven rows of face instead of five, the
+ * diagonals of K and N stretched to match — for the full-screen header when
+ * there's room.
+ */
+const TALL_LOGO = [
+  "██╗   ██╗██╗     ██╗███╗     ██╗",
+  "██║  ██╔╝██║     ██║████╗    ██║",
+  "██║ ██╔╝ ██║     ██║██╔██╗   ██║",
+  "█████╔╝  ██║     ██║██║╚██╗  ██║",
+  "██╔═██╗  ██║     ██║██║ ╚██╗ ██║",
+  "██║  ██╗ ██║     ██║██║  ╚██╗██║",
+  "██║   ██╗███████╗██║██║   ╚████║",
+  "╚═╝   ╚═╝╚══════╝╚═╝╚═╝    ╚═══╝",
+]
+
+/**
  * The same letters at half the height, for shorter terminals: every two rows
  * of solid blocks fold into one row of ▀ ▄ █.
  *
@@ -37,10 +53,10 @@ export const MINI_LOGO: string[] = (() => {
 /** One line, for when the screen is short: ✦ K L I N ✦ */
 const WORDMARK = "K L I N"
 
-/** How many rows the header logo takes: the full letters, the folded ones, or one line. */
-export type LogoSize = 6 | 3 | 1
+/** How many rows the header logo takes: tall letters, the regular ones, folded ones, or one line. */
+export type LogoSize = 8 | 6 | 3 | 1
 
-const ART: Record<LogoSize, string[]> = { 6: LOGO, 3: MINI_LOGO, 1: [WORDMARK] }
+const ART: Record<LogoSize, string[]> = { 8: TALL_LOGO, 6: LOGO, 3: MINI_LOGO, 1: [WORDMARK] }
 const ART_WIDTH = (size: LogoSize) => Math.max(...ART[size].map((line) => line.length))
 
 /**
@@ -49,6 +65,20 @@ const ART_WIDTH = (size: LogoSize) => Math.max(...ART[size].map((line) => line.l
  */
 type Sparkle = [row: number, away: number, glyph: string, level: number]
 const SPARKLES: Record<LogoSize, { left: Sparkle[]; right: Sparkle[] }> = {
+  8: {
+    left: [
+      [1, 3, "✦", 0xb4],
+      [4, 6, "·", 0x6a],
+      [6, 2, "·", 0x52],
+    ],
+    right: [
+      [0, 3, "✦", 0xe0],
+      [2, 6, "·", 0x6a],
+      [3, 2, "✧", 0x92],
+      [5, 5, "·", 0x6a],
+      [7, 2, "✦", 0x7c],
+    ],
+  },
   6: {
     left: [
       [1, 3, "✦", 0xb4],
@@ -85,6 +115,7 @@ export function logoWidth(size: LogoSize) {
 
 /** The largest logo that fits in `rows` × `columns` (the one-liner always "fits"). */
 export function logoSizeFor(rows: number, columns: number): LogoSize {
+  if (unicode && rows >= 8 && columns >= logoWidth(8) + 4) return 8
   if (unicode && rows >= 6 && columns >= logoWidth(6) + 4) return 6
   if (unicode && rows >= 3 && columns >= logoWidth(3) + 4) return 3
   return 1
@@ -126,7 +157,8 @@ export function drawLogo(canvas: Canvas, x: number, w: number, y: number, size: 
   const artW = ART_WIDTH(size)
   const left = x + Math.floor((w - artW) / 2)
   const light = band()
-  const faceRows = size === 6 ? 5 : size === 3 ? 3 : 1
+  // The gradient runs over the rows with solid faces (not the shadow-only bottom row).
+  const faceRows = Math.max(1, art.filter((line) => /[█▀▄]/.test(line)).length)
 
   art.forEach((line, row) => {
     ;[...line].forEach((char, col) => {

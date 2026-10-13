@@ -4,6 +4,7 @@ import { join } from "node:path"
 import { describe, expect, it } from "vitest"
 import { describeName } from "../src/commands/wizard"
 import { type ChipField, type ChipItem, Form, type InputField, type Page } from "../src/ui/form"
+import { logoSizeFor } from "../src/ui/logo"
 import type { Key } from "../src/ui/term"
 import { hue, parseColor, width, wrap } from "../src/ui/theme"
 
@@ -116,6 +117,25 @@ describe("full-screen layout", () => {
     expect(big).not.toMatch(/TOOLBOX.*██/)
     expect(form.render(80, 28).toString()).toContain("▄█▀")
     expect(form.render(60, 20).toString()).toContain("K L I N")
+  })
+
+  it("draws the tallest logo that fits, down to one line", () => {
+    expect([8, 7, 6, 5, 3, 2].map((rows) => logoSizeFor(rows, 120))).toEqual([8, 6, 6, 3, 3, 1])
+    // Too narrow for the tall letters and their sparkles: the regular ones.
+    expect(logoSizeFor(8, 48)).toBe(6)
+    expect(new Form(page().p).render(120, 44).toString()).toContain("██║  ██╔╝")
+  })
+
+  it("keeps the logo one size across the pages of a flow", () => {
+    const short = page().p
+    const tall = grid().p
+    const logo = (text: string) => (text.includes("██╗") ? 6 : text.includes("▄█▀") ? 3 : 1)
+    // On their own, a short page gets a bigger logo than a tall one at this height…
+    expect(logo(new Form(short).render(100, 28).toString())).toBeGreaterThan(logo(new Form(tall).render(100, 28).toString()))
+    // …but with the flow's room they match.
+    const room = (width: number) => Math.max(new Form(short).bodyHeight(width), new Form(tall).bodyHeight(width))
+    const sizes = [short, tall].map((p) => logo(new Form({ ...p, room }).render(100, 28).toString()))
+    expect(sizes[0]).toBe(sizes[1])
   })
 
   it("lists each group in one column, two side by side, the odd one out centered below", () => {
