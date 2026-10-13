@@ -231,9 +231,11 @@ function choosePackageManager(flags: Flags): PackageManager {
     if (!PACKAGE_MANAGERS.includes(flags.pm as PackageManager)) bail(`--pm must be one of ${PACKAGE_MANAGERS.join(", ")}`)
     return flags.pm as PackageManager
   }
+  // `pnpm create klin` / `bun create klin` say what you use; anything else
+  // (npm create, npx, the bare binary) gets the default: bun, if it's installed.
   const invoking = detectInvokingPm()
-  if (invoking) return invoking
-  return pmVersion("pnpm") ? "pnpm" : "npm"
+  if (invoking === "pnpm" || invoking === "bun") return invoking
+  return PACKAGE_MANAGERS.find((pm) => pmVersion(pm)) ?? "npm"
 }
 
 function optionLabels(manifest: Manifest, ids: string[] | string | undefined) {

@@ -25,7 +25,7 @@ export function help() {
     ${flag("--components")} ${dim("<where>")} apps-web · packages-ui
     ${flag("--accent")} ${dim("<color>")}     neutral · amber · blue · cyan · emerald · fuchsia · green · indigo · lime
                          orange · pink · purple · red · rose · sky · teal · violet · yellow
-    ${flag("--pm")} ${dim("<name>")}          pnpm · bun · npm
+    ${flag("--pm")} ${dim("<name>")}          bun ${dim("(default)")} · pnpm · npm
     ${flag("--template")} ${dim("<src>")}     ./folder or github:you/your-template[#branch]
     ${flag("-y, --yes")}            accept defaults, no questions
     ${flag("--dry-run")}             show what would be created

@@ -51,8 +51,8 @@ export interface WizardResult {
 }
 
 const PM_ABOUT: Record<PackageManager, string> = {
-  pnpm: "Fast installs from a shared store with strict node_modules: the template's home turf. The monorepo is wired with pnpm-workspace.yaml.",
-  bun: "Bun's very fast installer, with scripts run through bun run. Workspaces go in package.json, and klin rewrites every command for you.",
+  bun: "Bun's very fast installer, with scripts run through bun run — the default. Workspaces go in package.json, and klin rewrites every command for you.",
+  pnpm: "Fast installs from a shared store with strict node_modules. The monorepo is wired with pnpm-workspace.yaml.",
   npm: "Comes with Node.js, so there's nothing else to install. Workspaces go in package.json; installs are slower but it works everywhere.",
 }
 

@@ -10,7 +10,8 @@ import { evaluate, identifiers, type FlagSet } from "./expr"
  */
 
 export type PackageManager = "pnpm" | "bun" | "npm"
-export const PACKAGE_MANAGERS: PackageManager[] = ["pnpm", "bun", "npm"]
+/** In the order the CLI offers them — bun is the default. */
+export const PACKAGE_MANAGERS: PackageManager[] = ["bun", "pnpm", "npm"]
 
 /** `{ "apps/api/package.json": { "dependencies": ["bullmq"], "trustedDependencies": true } }` */
 export type JsonStrip = Record<string, Record<string, true | string[]>>
