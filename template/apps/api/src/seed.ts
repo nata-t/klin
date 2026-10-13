@@ -16,7 +16,7 @@ const DEMO_USER = {
 const DEMO_NOTES = [
   { title: "👋 Welcome to Klin App", content: "This note lives in your database. Edit it, pin it, delete it.", pinned: true },
   { title: "How this page works", content: "Zod schema → Prisma model → Nest module → TanStack Query hook. See packages/docs/add-a-feature.md." },
-  { title: "Generate your own", content: "Run `pnpm klin generate resource project name:string budget:int?` and refresh." },
+  { title: "Generate your own", content: "Run `pnpm klin generate resource project`, then `pnpm db:migrate`, and open /project." },
 ]
 
 async function main() {

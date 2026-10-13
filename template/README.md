@@ -116,16 +116,20 @@ i18n (i18next) ·
 ## Build a feature
 
 ```bash
-pnpm klin generate resource project name:string budget:int? due:date?
-pnpm db:migrate --name add-projects
+pnpm klin generate resource billing/invoice
+pnpm db:migrate --name add-invoice
 ```
 
 <!-- klin:if nest -->
-That writes the Zod schemas, Prisma model, Nest module (with nestjs-zod DTOs),
-TanStack Query hooks, form and page, and wires them together.
+That writes the Zod schemas, a Prisma model, a Nest module (controller with the
+five REST endpoints, service, nestjs-zod DTOs), TanStack Query hooks, a form and
+a page, and wires them together — you add the fields. `pnpm klin generate`
+alone asks what to make; `backend` and `frontend` make just one side.
 <!-- klin:else -->
-That writes the Zod schemas, Prisma model, API routes and service, TanStack
-Query hooks, form and page, and wires them together.
+That writes the Zod schemas, a Prisma model, API routes and a service,
+TanStack Query hooks, a form and a page, and wires them together — you add the
+fields. `pnpm klin generate` alone asks what to make; `backend` and `frontend`
+make just one side.
 <!-- klin:endif -->
 
 Need another UI component? `pnpm ui:add dialog` — see

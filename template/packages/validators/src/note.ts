@@ -12,7 +12,7 @@ import { booleanish, idSchema, isoDate } from "./common"
  *   apps/web/src/features/notes/*            (form validation + z.infer types)
  *   apps/web/src/routes/_app/notes.tsx
  *
- * `klin generate resource <name>` produces this exact shape for a new resource.
+ * `klin generate resource <name>` starts a new resource in this same shape.
  */
 
 const noteFields = {

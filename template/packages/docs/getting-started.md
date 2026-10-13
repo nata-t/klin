@@ -86,7 +86,7 @@ packages/
 <!-- klin:if email -->
 | `pnpm email:dev` | Preview email templates at <http://localhost:3030> |
 <!-- klin:endif -->
-| `pnpm klin generate resource …` | Scaffold a feature end to end |
+| `pnpm klin generate` | Scaffold a resource, a backend module or a frontend feature |
 | `pnpm klin add …` · `pnpm klin remove …` | Switch modules on or off |
 | `pnpm klin doctor` | Health check |
 

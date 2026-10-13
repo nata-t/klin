@@ -56,7 +56,7 @@ Notes for AI coding assistants (and humans in a hurry).
 
 ## Commands
 
-- `pnpm klin generate resource <name> field:type…` scaffolds a full vertical slice. Prefer it for new CRUD resources.
+- `pnpm klin generate <resource|backend|frontend> <name>` scaffolds the files and wiring for a new feature (slashes make folders: `billing/invoice`). Prefer it for new CRUD resources, then fill in the fields and logic it leaves as TODOs.
 - `pnpm typecheck && pnpm lint && pnpm test` before finishing a change.
 - After editing `prisma/models`: `pnpm db:migrate --name <change>`.
 - Keep the `klin-anchor:*` comments: the klin CLI inserts code above them.

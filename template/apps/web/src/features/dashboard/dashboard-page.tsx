@@ -103,12 +103,12 @@ export function DashboardPage() {
             </div>
             <CardTitle>One command, one feature</CardTitle>
             <CardDescription>
-              Schema, database model, API module and data hook — generated together and wired up.
+              Schema, database model, API module, data hooks and a page — generated together and wired up.
             </CardDescription>
           </CardHeader>
           <CardContent className="relative">
             <pre className="overflow-x-auto rounded-lg bg-zinc-950 p-3 font-mono text-xs text-zinc-100">
-              pnpm klin generate resource project name:string budget:int?
+              pnpm klin generate resource billing/invoice
             </pre>
             <Button variant="link" className="mt-2 px-0" render={<Link to="/notes" />}>
               See the Notes example <ArrowRightIcon />

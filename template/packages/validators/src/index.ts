@@ -8,8 +8,9 @@
  *   • the web app validates forms with it   → useAppForm({ validators: { onDynamic: createNoteSchema } })
  *   • TypeScript types are inferred from it → type Note = z.infer<typeof noteSchema>
  *
- * Change a rule once, and both sides agree. `klin generate resource` adds new
- * files here and re-exports them below (keep the marker comment).
+ * Change a rule once, and both sides agree. `klin generate` adds new files
+ * here (in folders, for names like billing/invoice) and re-exports them below
+ * (keep the marker comment).
  */
 export * from "./common"
 export * from "./api"

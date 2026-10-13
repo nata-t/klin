@@ -16,7 +16,7 @@ export interface NavItem {
   icon: LucideIcon
 }
 
-/** Sidebar navigation. `klin generate resource` adds entries at the anchor. */
+/** Sidebar navigation. `klin generate` adds entries at the anchor. */
 export const mainNav: NavItem[] = [
   { id: "dashboard", title: "Dashboard", to: "/dashboard", icon: LayoutDashboardIcon },
   { id: "notes", title: "Notes", to: "/notes", icon: StickyNoteIcon },

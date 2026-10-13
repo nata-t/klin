@@ -67,8 +67,11 @@ app.delete("/projects/:id", { preHandler: requirePermission({ project: ["delete"
 Read the active organization in a handler from
 `request.auth.session.activeOrganizationId`.
 <!-- klin:endif -->
-Generate org-owned resources with
-`pnpm klin generate resource project name:string --scope org`.
+To make a generated resource (`pnpm klin generate resource project`) belong to
+the active organization, give its model an `organizationId` with a relation
+(and `projects Project[]` on `Organization`), then filter and create by the
+active organization in its service. [Add a feature](./add-a-feature.md#3-make-it-yours)
+shows the same for user-owned records.
 
 ## In the web app
 
