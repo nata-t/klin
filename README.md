@@ -68,22 +68,27 @@ pnpm create klin my-app --preset saas --backend nest --server fastify --db postg
 bunx create-klin my-app --backend plain --server express --auth password,google,passkey --plugins organizations --extras email,docker,ci -y
 ```
 
-In a terminal, `create-klin` opens a full-screen, grayscale wizard — the KLIN
-logo and a step indicator on top, everything centered — six steps, each a page
-of "chips" you snap on and off:
+In a terminal, `create-klin` opens a full-screen, grayscale wizard — a step
+indicator on top, the KLIN logo under it (sized to fit the terminal), everything
+centered — six steps, each a page of text chips you snap on and off, one list
+per group and two groups side by side when there's room:
 
 1. **Base** — name your kit (validated live: `✓ ./my-app is free to use`), package manager (bun by default), a preset to start from
 2. **Stack** — NestJS or plain · Express or Fastify · Postgres, MySQL or SQLite
 3. **Auth** — sign-in methods and Better Auth power-ups
-4. **Toolbox** — CORS, Helmet, rate limiting (on by default), email, uploads, jobs, i18n, Docker, CI
+4. **Toolbox** — CORS, Helmet, rate limiting (on by default, with a warning if you switch one off), email, uploads, jobs, i18n, Docker, CI
 5. **Looks** — where shadcn/ui lives (`apps/web` or `packages/ui`) and one of shadcn's 18 theme colors
 6. **Build** — review, then build with live progress
 
 The highlighted part is always explained at the bottom, above the key hints.
+Problems show in red and risky choices in amber; everything else stays gray.
 Then it scaffolds
 the project, strips what you didn't pick, writes `.env` with fresh secrets,
 runs `git init`, installs dependencies, generates the Prisma client, commits,
-and prints your next steps. With `--yes` (or in CI) it skips the wizard.
+and prints your next steps. If the project needs Docker and your user can't
+reach it yet (on Linux, usually because you're not in the `docker` group), the
+next steps start with the one-time fix for your OS — `klin doctor` checks it
+too. With `--yes` (or in CI) it skips the wizard.
 
 Presets: `recommended` · `saas` · `minimal` (plain Fastify on SQLite, no Docker) · `everything`.
 
