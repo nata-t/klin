@@ -35,7 +35,7 @@ jobs:
 
   # Every generated project must install, typecheck, lint, test and build.
   generated:
-    name: ${{ matrix.preset }} · ${{ matrix.pm }} · ${{ matrix.db }}
+    name: ${{ matrix.preset }} · ${{ matrix.pm }} · ${{ matrix.db }}${{ matrix.flags && format(' · {0}', matrix.flags) || '' }}
     needs: cli
     runs-on: ubuntu-latest
     strategy:
@@ -43,10 +43,11 @@ jobs:
       matrix:
         include:
           - { preset: recommended, pm: pnpm, db: postgres }
-          - { preset: minimal, pm: pnpm, db: sqlite }
-          - { preset: saas, pm: npm, db: mysql }
-          - { preset: everything, pm: bun, db: sqlite }
-          - { preset: everything, pm: pnpm, db: postgres }
+          - { preset: minimal, pm: pnpm, db: sqlite } # plain Fastify
+          - { preset: saas, pm: npm, db: mysql, flags: "--server fastify" }
+          - { preset: everything, pm: bun, db: sqlite, flags: "--backend plain --server express" }
+          - { preset: everything, pm: pnpm, db: postgres, flags: "--components packages-ui" }
+          - { preset: recommended, pm: pnpm, db: sqlite, flags: "--backend plain --server express --security none" }
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
@@ -63,7 +64,7 @@ jobs:
           mkdir -p /tmp/gen && cd /tmp/gen
           git config --global user.email "ci@klin.dev" && git config --global user.name "klin CI"
           node $GITHUB_WORKSPACE/packages/create-klin/dist/index.js app \
-            --preset ${{ matrix.preset }} --pm ${{ matrix.pm }} --db ${{ matrix.db }} --yes --no-banner
+            --preset ${{ matrix.preset }} --pm ${{ matrix.pm }} --db ${{ matrix.db }} ${{ matrix.flags }} --yes --no-banner
       - name: Check it
         working-directory: /tmp/gen/app
         run: npx --no -- turbo run typecheck lint test build
