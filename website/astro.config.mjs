@@ -2,6 +2,7 @@
 import starlight from "@astrojs/starlight"
 import { defineConfig } from "astro/config"
 import starlightLinksValidator from "starlight-links-validator"
+import { cliBridge, cliSrc } from "./cli-bridge.mjs"
 
 const repo = "https://github.com/nata-t/klin"
 
@@ -105,4 +106,8 @@ export default defineConfig({
       ],
     }),
   ],
+  vite: {
+    plugins: [cliBridge()],
+    resolve: { alias: { "@cli": cliSrc } },
+  },
 })
