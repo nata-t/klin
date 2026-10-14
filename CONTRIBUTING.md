@@ -14,6 +14,7 @@ template/               the kit: a full monorepo with every module on
   apps/api/src/         the NestJS API (the default backend)
   apps/api/plain*/      the plain Express / Fastify APIs, merged into src/ when picked
   variants/             files that only exist for some answers (packages/ui, the Next.js web app)
+website/                the landing page and the docs (Astro + Starlight; see website/README.md)
 scripts/                maintenance (dependency ages, playground)
 demo/                   VHS tape for the README GIF
 ```
@@ -25,6 +26,7 @@ pnpm install
 pnpm --filter create-klin dev        # tsup --watch
 pnpm test
 pnpm playground everything pnpm      # renders + installs into .playground/
+pnpm site:dev                        # the website on :4321, wizard demo included
 FORCE_COLOR=3 pnpm --filter create-klin exec tsx scripts/preview-ui.ts /tmp/ui 130 42
                                      # wizard frames as HTML screenshots, no TTY needed
 ```
