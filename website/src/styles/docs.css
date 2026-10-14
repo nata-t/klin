@@ -1,0 +1,280 @@
+/*
+ * The docs in klin's look: the CLI's grays in both themes (no accent hue),
+ * Geist for reading, Geist Mono for structure, headings and labels.
+ */
+
+:root {
+  --sl-font: "Geist Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --sl-font-mono: "Geist Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Dark: the CLI's palette (packages/create-klin/src/ui/theme.ts). */
+  --sl-color-white: #ffffff;
+  --sl-color-gray-1: #eeeeee;
+  --sl-color-gray-2: #c4c4c4;
+  --sl-color-gray-3: #929292;
+  --sl-color-gray-4: #6a6a6a;
+  --sl-color-gray-5: #444444;
+  --sl-color-gray-6: #1c1c1c;
+  --sl-color-black: #141414;
+
+  --sl-color-accent-low: #303030;
+  --sl-color-accent: #c4c4c4;
+  --sl-color-accent-high: #ffffff;
+  --sl-color-text-accent: #ffffff;
+
+  --sl-color-bg-nav: rgba(20, 20, 20, 0.82);
+  --sl-color-bg-sidebar: #141414;
+  --sl-color-bg-inline-code: #242424;
+  --sl-color-hairline-light: #2a2a2a;
+  --sl-color-hairline: #242424;
+  --sl-color-hairline-shade: #101010;
+
+  --sl-content-width: 46rem;
+  --sl-text-h1: 2.4rem;
+  --klin-radius: 7px;
+}
+
+:root[data-theme="light"] {
+  --sl-color-white: #101010;
+  --sl-color-gray-1: #1c1c1c;
+  --sl-color-gray-2: #303030;
+  --sl-color-gray-3: #555555;
+  --sl-color-gray-4: #7a7a7a;
+  --sl-color-gray-5: #c4c4c4;
+  --sl-color-gray-6: #ebebeb;
+  --sl-color-gray-7: #f5f5f5;
+  --sl-color-black: #fbfbfb;
+
+  --sl-color-accent-low: #e4e4e4;
+  --sl-color-accent: #303030;
+  --sl-color-accent-high: #101010;
+  --sl-color-text-accent: #101010;
+
+  --sl-color-bg-nav: rgba(251, 251, 251, 0.85);
+  --sl-color-bg-sidebar: #fbfbfb;
+  --sl-color-bg-inline-code: #ececec;
+  --sl-color-hairline-light: #e2e2e2;
+  --sl-color-hairline: #e8e8e8;
+  --sl-color-hairline-shade: #dcdcdc;
+}
+
+/* ─── Chrome ───────────────────────────────────────────────────────────── */
+
+header.header {
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  border-bottom: 1px solid var(--sl-color-hairline);
+}
+
+.sidebar-pane {
+  border-inline-end: 1px solid var(--sl-color-hairline);
+}
+
+/* Sidebar group labels: mono micro-labels, like the CLI's group titles. */
+.sidebar-content .group-label .large,
+.sidebar-content summary .group-label span {
+  font-family: var(--sl-font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sl-color-gray-3);
+}
+
+.sidebar-content a {
+  font-size: 0.9rem;
+  border-radius: 4px;
+}
+
+.sidebar-content a[aria-current="page"],
+.sidebar-content a[aria-current="page"]:hover,
+.sidebar-content a[aria-current="page"]:focus {
+  background: var(--sl-color-gray-6);
+  color: var(--sl-color-white);
+  font-weight: 600;
+}
+
+/* The current page gets the wizard's ◆, the rest stay plain. */
+.sidebar-content a[aria-current="page"]::before {
+  content: "◆";
+  margin-inline-end: 0.55em;
+  font-size: 0.7em;
+  vertical-align: 0.1em;
+}
+
+/* ─── Content ──────────────────────────────────────────────────────────── */
+
+.sl-markdown-content :is(h1, h2, h3, h4),
+h1#_top {
+  font-family: var(--sl-font-mono);
+  letter-spacing: -0.03em;
+  font-weight: 620;
+}
+
+h1#_top {
+  letter-spacing: -0.045em;
+}
+
+.sl-markdown-content .sl-heading-wrapper.level-h2:not(:first-child) {
+  padding-top: 0.9em;
+  border-top: 1px solid var(--sl-color-hairline);
+}
+
+.sl-markdown-content a {
+  color: var(--sl-color-white);
+  text-decoration-color: var(--sl-color-gray-4);
+  text-underline-offset: 0.2em;
+}
+
+.sl-markdown-content a:hover {
+  text-decoration-color: var(--sl-color-white);
+}
+
+.sl-markdown-content code:not(pre code) {
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  font-size: 0.86em;
+}
+
+.sl-markdown-content table {
+  font-size: 0.9rem;
+}
+
+.sl-markdown-content th {
+  font-family: var(--sl-font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--sl-color-gray-3);
+}
+
+.sl-markdown-content kbd {
+  padding: 0.05em 0.45em;
+  border: 1px solid var(--sl-color-gray-5);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  font-family: var(--sl-font-mono);
+  font-size: 0.8em;
+}
+
+/* Asides: hairline boxes, grayscale, a mono label. */
+.starlight-aside {
+  border: 1px solid var(--sl-color-gray-5);
+  border-inline-start-width: 3px;
+  border-radius: var(--klin-radius);
+  background: var(--sl-color-gray-6);
+  color: var(--sl-color-gray-2);
+}
+.starlight-aside__title {
+  font-family: var(--sl-font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--sl-color-white);
+}
+.starlight-aside--caution,
+.starlight-aside--danger {
+  border-inline-start-color: #fbbf24;
+}
+.starlight-aside--danger {
+  border-inline-start-color: #f87171;
+}
+.starlight-aside__icon {
+  color: var(--sl-color-white);
+}
+
+/* Cards and link cards. */
+.card,
+.sl-link-card {
+  border-radius: var(--klin-radius) !important;
+  border-color: var(--sl-color-gray-5) !important;
+  background: transparent !important;
+}
+.sl-link-card:hover {
+  border-color: var(--sl-color-gray-3) !important;
+  background: var(--sl-color-gray-6) !important;
+}
+.card .icon {
+  color: var(--sl-color-white) !important;
+}
+
+/* Tabs (package managers): chip-like, ● on the active one. */
+starlight-tabs [role="tab"] {
+  font-family: var(--sl-font-mono);
+  font-size: 0.85rem;
+}
+starlight-tabs [role="tab"][aria-selected="true"] {
+  color: var(--sl-color-white);
+  border-color: var(--sl-color-white);
+  font-weight: 600;
+}
+
+/* Search and buttons: square-ish, hairline. */
+site-search button[data-open-modal] {
+  border-radius: 6px;
+}
+
+.pagination-links a {
+  border-radius: var(--klin-radius);
+  box-shadow: none;
+}
+.pagination-links a:hover {
+  border-color: var(--sl-color-gray-3);
+}
+
+/* ─── The site title (src/components/docs/SiteTitle.astro) ─────────────── */
+
+.klin-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--sl-color-white);
+  text-decoration: none;
+  font-family: var(--sl-font-mono);
+  font-size: 0.85rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+.klin-title .spark {
+  color: var(--sl-color-gray-3);
+  font-size: 0.65rem;
+  transition: transform 400ms ease;
+}
+.klin-title:hover .spark {
+  transform: rotate(90deg);
+  color: var(--sl-color-white);
+}
+.klin-title .tag {
+  margin-inline-start: 0.3rem;
+  padding: 0.05rem 0.4rem;
+  border: 1px solid var(--sl-color-gray-5);
+  border-radius: 4px;
+  color: var(--sl-color-gray-3);
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* ─── Bits used by the reference pages ─────────────────────────────────── */
+
+.klin-chip {
+  font-family: var(--sl-font-mono);
+  font-size: 0.85em;
+  white-space: nowrap;
+}
+
+.klin-swatch {
+  display: inline-block;
+  width: 0.9em;
+  height: 0.9em;
+  margin-inline-end: 0.4em;
+  border-radius: 3px;
+  vertical-align: -0.1em;
+  box-shadow: inset 0 0 0 1px rgba(127, 127, 127, 0.35);
+}
+
+.klin-muted {
+  color: var(--sl-color-gray-3);
+}

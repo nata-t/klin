@@ -1,0 +1,84 @@
+---
+title: Deploying
+description: The environment checklist and three ways to ship a klin project.
+---
+
+import { Aside } from "@astrojs/starlight/components"
+
+A klin project is two processes: the **API** and the **web app** — static files
+with Vite, a Node.js server with Next.js. Serve them behind one domain so `/api`
+is same-origin and auth cookies just work. Every project's
+`packages/docs/deployment.md` has the full guide for its exact stack; this is
+the overview.
+
+## Before you ship
+
+| Variable | Production value |
+| --- | --- |
+| `NODE_ENV` | `production` — secure cookies, required email verification, hidden error details |
+| `BETTER_AUTH_SECRET` | A new secret of 32+ characters, never reused from development (`openssl rand -base64 32`) |
+| `WEB_URL`, `BETTER_AUTH_URL` | Your public origin, e.g. `https://app.example.com` |
+| `DATABASE_URL` | Your managed database |
+| OAuth credentials | Production client ids, with the callback `https://app.example.com/api/auth/callback/<provider>` |
+| `RESEND_API_KEY`, `EMAIL_FROM` | A verified sending domain (with email) |
+| `S3_*` | Your bucket (with uploads) |
+| `REDIS_URL` | A managed Redis or Valkey; `rediss://` for TLS (with jobs) |
+
+The API refuses to start if any of it is missing. Its Docker image runs
+`prisma migrate deploy` before starting (set `SKIP_MIGRATIONS=1` to run
+migrations as a separate release step). Commit the migrations `db:migrate`
+creates.
+
+## Option A — Docker, one machine
+
+```bash
+docker compose -f docker-compose.prod.yml up --build -d
+```
+
+That runs the database, the API and the web app behind nginx on port 8080, with
+`/api` routed to the API. Set `PUBLIC_URL=https://your-domain` in `.env` and put
+a TLS-terminating proxy (Caddy, Traefik, a load balancer) in front.
+
+## Option B — build the images, run them anywhere
+
+```bash
+docker build -f apps/api/Dockerfile -t my-app-api .
+docker build -f apps/web/Dockerfile -t my-app-web .
+```
+
+The API image listens on `$API_PORT`, runs migrations and has a health check on
+`/api/health`. The web image is nginx serving the app (Vite), or Next.js's
+standalone server (build it with `--build-arg API_URL=http://api:3000`). Both
+run as-is on Fly.io, Railway, Render, Cloud Run, ECS / App Runner, DigitalOcean
+App Platform and Kubernetes.
+
+<Aside type="caution" title="Rate limits need the visitor's address">
+  The API's rate limit counts requests per IP, from `X-Forwarded-For`. Keep a
+  proxy or load balancer in front that sets it — with Next.js, the production
+  compose file puts nginx in front of the Next.js server for exactly this.
+</Aside>
+
+## Option C — platform builds, no Docker
+
+Any Node.js host can run the API:
+
+```bash
+pnpm install --frozen-lockfile
+pnpm turbo run build --filter=@repo/api
+pnpm db:deploy
+node apps/api/dist/main.js
+```
+
+The web app builds with `pnpm turbo run build --filter=@repo/web`. With Vite,
+host `apps/web/dist` anywhere that can rewrite `/api/*` to the API and every
+other path to `index.html`. With Next.js, run `pnpm --dir apps/web start`, or
+import the repository on Vercel with `apps/web` as the root and `API_URL` set to
+the API's public URL.
+
+## API on another origin
+
+If the web app and the API can't share an origin, point the web app at the API
+(`VITE_API_URL`, or `API_URL` with Next.js), set `WEB_URL` to the web app's
+origin on the API, and keep both on the same site (`app.example.com` +
+`api.example.com`) so cookies keep working with `SameSite=Lax`. Different sites
+mean third-party cookies, which some browsers block.

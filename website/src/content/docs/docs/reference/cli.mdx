@@ -1,0 +1,98 @@
+---
+title: CLI
+description: Every create-klin and klin command, and every flag.
+---
+
+import CreateFlags from "../../../../components/reference/CreateFlags.astro"
+
+create-klin installs two names for the same CLI: `create-klin` (what
+`npm create klin` runs) and `klin` (what you use inside a project).
+`klin --help` prints all of this in the terminal.
+
+## create-klin
+
+```bash
+npm create klin@latest [name] [-- options]
+pnpm create klin [name] [options]
+bun create klin [name] [options]
+npx create-klin [name] [options]
+```
+
+`npm create` passes options to create-klin only after `--`:
+`npm create klin@latest my-app -- --preset saas -y`.
+
+### Create flags
+
+The stack flags come from the template's questions, so this table is generated
+from it. [Options & modules](/docs/reference/options/) describes every value.
+
+<CreateFlags />
+
+## Inside a project
+
+Run the CLI through your package manager — `pnpm klin …`, `bun run klin …` or
+`npx klin …` — so you get the version the project was made with. It's a dev
+dependency of every project.
+
+### klin generate
+
+```bash
+klin generate                          # asks what to make and what to call it
+klin generate <kind> <name> [flags]    # kind: resource (r) · backend (b, api) · frontend (f, web)
+klin generate paths [--…-dir <dir>] [--reset]
+```
+
+| Flag | Does |
+| --- | --- |
+| `--url <path>` | Serve on `/api/<path>` and `/<path>` instead of the folder path |
+| `--plural <word>` | When the guessed plural is wrong |
+| `--no-model` · `--no-validation` | Skip the Prisma model · skip `packages/validators` |
+| `--no-route` · `--no-nav` | Skip the page's route · skip the sidebar entry |
+| `--backend-dir` · `--frontend-dir` · `--validation-dir` · `--model-dir <dir>` | Put this run's files in another folder |
+| `--dry-run` · `--force` · `--yes` | Show the plan only · overwrite generated files · never ask |
+
+See [klin generate](/docs/grow/generate/).
+
+### klin add · klin remove
+
+```bash
+klin add [ids…]       # switch modules on (no ids: pick from a list)
+klin remove [ids…]    # switch modules off
+```
+
+Ids are the values `klin list` shows. See
+[klin add & remove](/docs/grow/add-remove/).
+
+### klin list
+
+```bash
+klin list
+```
+
+Every question and option, with its id, and which ones the project has on.
+
+### klin doctor
+
+```bash
+klin doctor
+```
+
+Checks the toolchain, `.env`, services, ports, the database and dependency
+drift. Exits with code 1 when something needs fixing. See
+[klin doctor](/docs/grow/doctor/).
+
+### klin upgrade
+
+```bash
+klin upgrade [--from <old template>]
+```
+
+Merges template improvements in (experimental). See
+[klin upgrade](/docs/grow/upgrade/).
+
+### Global flags
+
+| Flag | Does |
+| --- | --- |
+| `-h`, `--help` | Show help |
+| `-v`, `--version` | Show the version |

@@ -1,0 +1,53 @@
+---
+title: Options & modules
+description: Every question create-klin asks and every option it offers, from the template's manifest.
+---
+
+import Options from "../../../../components/reference/Options.astro"
+
+The tables on this page are generated from `template/klin.template.json`, the
+file that defines the wizard, so they always match what create-klin offers.
+Each section is a question; the value column is what you pass to its flag, or
+to `klin add` / `klin remove`.
+
+## Framework
+
+<Options only="backend" />
+
+## HTTP server
+
+<Options only="server" />
+
+## Database
+
+<Options only="database" />
+
+## Web app
+
+<Options only="web" />
+
+## Sign-in
+
+<Options only="auth" />
+
+## Power-ups
+
+<Options only="plugins" />
+
+## Security
+
+<Options only="security" />
+
+## Extras
+
+<Options only="extras" />
+
+## Components live in
+
+<Options only="components" />
+
+## Theme color
+
+<Options only="accent" />
+
+<Options except={["backend", "server", "database", "web", "auth", "plugins", "security", "extras", "components", "accent"]} />

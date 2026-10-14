@@ -1,0 +1,60 @@
+---
+title: Environment
+description: The .env file, how it's validated, and setting up OAuth, email, uploads and Redis.
+---
+
+import { Aside } from "@astrojs/starlight/components"
+
+There's one `.env` at the project root, shared by every app. create-klin wrote
+it for you from `.env.example`, with fresh random secrets. `.env.example`
+documents every variable; `packages/env` validates them when the API boots and
+stops it with a message naming anything that's missing or malformed.
+
+## Always there
+
+| Variable | What it is |
+| --- | --- |
+| `NODE_ENV` | `development` locally, `production` when deployed |
+| `LOG_LEVEL` | `trace` · `debug` · `info` · `warn` · `error` |
+| `WEB_URL` | The web app's origin, trusted for CORS and auth cookies |
+| `API_PORT` | The port the API listens on (3000) |
+| `DATABASE_URL` | Your database (Postgres, MySQL, or a `file:` path for SQLite) |
+| `BETTER_AUTH_SECRET` | At least 32 random characters — generated for you |
+| `BETTER_AUTH_URL` | The public origin that serves `/api/auth` — with the built-in proxy, the web app's origin |
+
+The web app gets one more: `VITE_API_URL` with Vite (leave it empty to go
+through the `/api` proxy), or `API_URL` with Next.js (where the Next.js server
+reaches the API; empty means `http://localhost:$API_PORT`).
+
+<Aside type="caution">
+  Only `VITE_*` (or `NEXT_PUBLIC_*`) variables reach the browser. Never put a
+  secret in one.
+</Aside>
+
+## OAuth sign-in
+
+Google and GitHub sign-in stay off until their keys are in `.env`. The closing
+next steps and `klin doctor` remind you.
+
+- **Google** — create OAuth credentials at
+  [console.cloud.google.com/apis/credentials](https://console.cloud.google.com/apis/credentials)
+  with the redirect URI `http://localhost:5173/api/auth/callback/google`, then
+  set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
+- **GitHub** — create an OAuth app at
+  [github.com/settings/developers](https://github.com/settings/developers) with
+  the callback URL `http://localhost:5173/api/auth/callback/github`, then set
+  `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`.
+
+In production, use your public origin in those URLs.
+
+## Modules
+
+| Module | Variables |
+| --- | --- |
+| Email | `RESEND_API_KEY`, `EMAIL_FROM` — leave the key empty in development and emails print to the API console |
+| Uploads | `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_FORCE_PATH_STYLE` — they point at the local RustFS container; for Cloudflare R2 use `https://<account-id>.r2.cloudflarestorage.com` and `S3_REGION=auto` |
+| Background jobs | `REDIS_URL` — the local Redis container by default |
+| Postgres / MySQL in Docker | `POSTGRES_*` or `MYSQL_*`, used by `docker-compose.yml` |
+
+`klin add` appends the variables a new module needs to `.env`, with fresh
+secrets where they're needed.

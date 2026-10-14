@@ -1,0 +1,121 @@
+---
+title: klin generate
+description: Add a resource, a backend module or a frontend feature as a skeleton, wired into the app.
+---
+
+import { Aside, FileTree } from "@astrojs/starlight/components"
+
+`klin generate` writes the **files and the wiring** for a new feature — not your
+schema. One example `name` field shows where yours go; everything typechecks
+and lints as generated.
+
+```bash
+pnpm klin generate                            # asks what to make and what to call it
+pnpm klin generate resource billing/invoice   # model + schemas + API + page
+pnpm klin generate backend billing/invoice    # controller, service, DTOs, module
+pnpm klin generate frontend billing/invoice   # page, route, query hooks, form
+```
+
+## Three kinds
+
+| Kind | Aliases | Writes |
+| --- | --- | --- |
+| `resource` | `r` | The Zod schemas, a Prisma model, the API module with the five REST endpoints and basic Prisma CRUD, and the web feature |
+| `backend` | `b`, `api` | A Nest controller with the five REST endpoints, a service, nestjs-zod DTOs and a module registered in `app.module.ts` — or plain Express/Fastify routes and a service — plus the schemas |
+| `frontend` | `f`, `web` | A page, its route, TanStack Query hooks, a form and a sidebar entry — plus the schemas |
+
+`backend` and `frontend` reuse the schemas if the other side made them first.
+A backend-only service has no model to query, so its methods answer `501` until
+you fill them in.
+
+## What `resource` writes
+
+`pnpm klin generate resource billing/invoice` in a NestJS + Vite project:
+
+<FileTree>
+- apps/
+  - api/src/
+    - app.module.ts updated: the module is registered
+    - modules/billing/invoice/
+      - invoice.controller.ts
+      - invoice.dto.ts
+      - invoice.module.ts
+      - invoice.service.ts
+  - web/src/
+    - config/nav.ts updated: the sidebar entry
+    - features/billing/invoice/
+      - api.ts
+      - invoice-form.tsx
+      - invoice-page.tsx
+    - routes/_app/billing/invoice.tsx
+- packages/
+  - db/prisma/models/billing/invoice.prisma
+  - validators/src/
+    - billing/invoice.ts
+    - index.ts updated: the export
+</FileTree>
+
+The endpoints are `GET POST /api/billing/invoice` and
+`GET PATCH DELETE /api/billing/invoice/:id`. With a plain backend, the backend
+folder gets `routes/` and `services/` instead of a module; with Next.js, the page
+is an App Router `page.tsx` in `app/(app)/billing/invoice/`, added to the
+guarded pages in `proxy.ts`, and klin runs `next typegen` afterwards.
+
+Then fill in the fields — the schema, the model's columns and the form's
+inputs — and create the table:
+
+```bash
+pnpm db:migrate --name add-invoice
+```
+
+## Names and folders
+
+Slashes make folders in **every** layer: `loan/payment` goes in
+`modules/loan/payment/`, `validators/src/loan/payment.ts` and
+`/api/loan/payment`, reusing a folder that's already there. Names that would
+clash with existing schemas, models or modules are refused before anything is
+written.
+
+<Aside>
+  Two features with the same last segment in different folders
+  (`loan/payment` and `order/payment`) would produce the same class names, so
+  the second one is refused. Pick a distinct name.
+</Aside>
+
+## Flags
+
+| Flag | Does |
+| --- | --- |
+| `--url <path>` | Serve on `/api/<path>` and `/<path>` instead of the folder path (folders don't change) |
+| `--plural <word>` | When the guessed plural is wrong (`criterion` → `criteria`) |
+| `--no-model` | Skip the Prisma model; the service is left for you to fill in |
+| `--no-validation` | Skip `packages/validators` (the schemas already exist); klin warns about any name it imports that isn't there |
+| `--no-route` | Skip the page's route (and so the sidebar entry) |
+| `--no-nav` | Skip the sidebar entry |
+| `--dry-run` | Show the plan, write nothing |
+| `--force` | Overwrite files generate made before |
+| `--yes` | Never ask anything (also what happens without a terminal) |
+
+## Where files go
+
+Each layer has a folder klin writes into: **backend** (`apps/api/src/modules`,
+or `apps/api/src` for plain backends), **frontend** (`apps/web/src/features`),
+**validation** (`packages/validators/src`) and **model**
+(`packages/db/prisma/models`).
+
+Change them for one run with `--backend-dir`, `--frontend-dir`,
+`--validation-dir` and `--model-dir` (or on the "Where should it go?" page when
+`klin generate` asks), or for good:
+
+```bash
+pnpm klin generate paths                                  # list them, or change them
+pnpm klin generate paths --frontend-dir apps/web/src/pages
+pnpm klin generate paths --reset                          # back to klin's
+```
+
+Project defaults are saved in `klin.json` under `generate.paths` (only the ones
+that differ from klin's). Folders are checked before anything is written: they
+start from the project root, can't contain `..`, must stay inside the layer's
+source folder, and can't be inside the router's folder (`routes/`, or `app/`
+with Next.js) or `migrations/`. Route files always stay where the router expects
+them.

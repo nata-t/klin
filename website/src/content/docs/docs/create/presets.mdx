@@ -1,0 +1,29 @@
+---
+title: Presets
+description: The four starting points, and how flags change them.
+---
+
+import Presets from "../../../../components/reference/Presets.astro"
+
+A preset is a set of answers to start from. Pick one on the wizard's first page
+or with `--preset`; anything you change afterwards — in the wizard or with a
+flag — wins.
+
+<Presets />
+
+## Presets and flags
+
+Flags replace a preset's answer **for that question only**. Everything else
+stays as the preset set it:
+
+```bash
+# The saas preset, but with Next.js and without GitHub sign-in:
+bunx create-klin my-app --preset saas --web next --auth password,google,two-factor -y
+```
+
+List flags (`--auth`, `--plugins`, `--security`, `--extras`) replace the whole
+list, so include everything you want on. `none` turns a list off:
+`--extras none`.
+
+The wizard on [the home page](/#wizard) builds this command for you: pick your
+parts there, and it hands you the shortest command that recreates them.

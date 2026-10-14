@@ -1,0 +1,48 @@
+---
+title: klin upgrade
+description: Merge template improvements from a newer create-klin into your project (experimental).
+---
+
+import { Aside } from "@astrojs/starlight/components"
+
+<Aside type="caution" title="Experimental">
+  `klin upgrade` works, but it's new. Commit or stash your work first and review
+  the result with `git diff`.
+</Aside>
+
+```bash
+pnpm add -D create-klin@latest
+pnpm klin upgrade
+```
+
+The first command moves the project's klin to the newest version; the second
+merges what changed in the template since the version that made your project.
+
+## How it works
+
+The same 3-way merge as [`klin add` and `klin remove`](/docs/grow/add-remove/):
+
+- the **base** is the template of the version recorded in `klin.json` (klin
+  downloads that version of create-klin from npm to get it),
+- the **target** is the template of the klin you're running,
+- the difference merges into your code. Files you never touched are replaced;
+  files you edited are merged; real conflicts get markers.
+
+Afterwards `klin.json` records the new version. Read the diff, run
+`pnpm db:migrate` if the schema changed, and run your tests.
+
+## Custom templates
+
+A project made from a [custom template](/docs/reference/custom-templates/) can't
+download its old template from npm. Point klin at it:
+
+```bash
+pnpm klin upgrade --from ../my-template-v1
+```
+
+## Dependencies
+
+`klin upgrade` is about the template's code, not your dependency versions. If
+you picked CI, Renovate opens grouped pull requests for those (NestJS, Prisma,
+Better Auth, TanStack and React each move together), and `klin doctor` flags
+drift.

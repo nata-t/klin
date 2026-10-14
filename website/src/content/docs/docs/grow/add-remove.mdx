@@ -1,0 +1,51 @@
+---
+title: klin add & remove
+description: Switch modules on and off after create, merged into your code like a git merge.
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components"
+
+```bash
+pnpm klin list                    # what's available, and what's on
+pnpm klin add organizations email # switch modules on
+pnpm klin remove email            # switch one off
+```
+
+Pass the ids `klin list` shows — the same ones the
+[create flags](/docs/reference/cli/#create-flags) take. Pick-one choices switch
+over the same way (`klin add fastify`), except the web framework, which is
+picked once at create. Run `klin add` with no ids to pick from a list.
+
+## How it works
+
+A klin project wasn't installed, it was rendered — so there's no package to
+bump. Instead, `klin add` and `klin remove` do what `git merge` does:
+
+<Steps>
+
+1. Render the template with your current options (the **base**).
+2. Render it again with the new options (the **target**).
+3. For every file that differs, apply the change to your project:
+   - files you never touched are replaced or removed;
+   - files you edited get a 3-way merge, so your edits stay;
+   - both sides adding lines at the same anchor (an import, a module) merges
+     cleanly;
+   - only real conflicts get `<<<<<<< yours` / `>>>>>>> klin` markers.
+4. Append any new `.env` variables (with fresh secrets), update `klin.json`,
+   and install dependencies.
+
+</Steps>
+
+The output shows every file with what happened to it: `+` new,
+`~` updated or merged, `!` needs your eyes, `-` removed.
+
+<Aside type="tip">
+  Run it on a clean git tree, then review with `git diff`. If the database
+  schema changed, run `pnpm db:migrate`.
+</Aside>
+
+## Dependencies between modules
+
+Some options need others, and switching one on brings them along — the
+[options reference](/docs/reference/options/) lists them. `klin remove` refuses
+to take out a module another one you have on still needs.

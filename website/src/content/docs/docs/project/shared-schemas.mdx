@@ -1,0 +1,122 @@
+---
+title: One schema everywhere
+description: How one Zod schema in packages/validators validates the form, the request and the response, and types both apps.
+---
+
+import { Tabs, TabItem } from "@astrojs/starlight/components"
+
+Every data shape in a klin project is written **once**, as a Zod schema in
+`packages/validators`, and used everywhere else:
+
+- the **web app** validates its forms with it,
+- the **API** validates requests and shapes responses with it,
+- **both** get their TypeScript types from it (`z.infer` / `z.input`).
+
+So a form that passes in the browser won't be rejected by the API, and a field
+the response schema doesn't list never leaves the API.
+
+## The schema
+
+This is what `klin generate resource billing/invoice` writes to
+`packages/validators/src/billing/invoice.ts` (trimmed):
+
+```ts title="packages/validators/src/billing/invoice.ts"
+const invoiceFields = {
+  // TODO: your fields
+  name: z.string().trim().min(1, "Name is required").max(120, "Keep it under 120 characters"),
+}
+
+export const createInvoiceSchema = z.object({
+  ...invoiceFields,
+})
+
+/** PATCH semantics: every field optional, no defaults (omitted = unchanged). */
+export const updateInvoiceSchema = z.object(invoiceFields).partial()
+
+/** What the API sends back. Fields left out here never leave the API. */
+export const invoiceSchema = z.object({
+  id: idSchema,
+  name: z.string(),
+  createdAt: isoDate(),
+  updatedAt: isoDate(),
+})
+
+export type Invoice = z.infer<typeof invoiceSchema>
+export type CreateInvoiceInput = z.input<typeof createInvoiceSchema>
+```
+
+`name` is an example: put your fields next to it, in `invoiceFields` (what
+clients send) and in `invoiceSchema` (what the API returns).
+
+## The API
+
+<Tabs>
+  <TabItem label="NestJS">
+    nestjs-zod turns the schemas into DTOs. Request DTOs are validated by the
+    global `ZodValidationPipe`; response DTOs go in `@ZodSerializerDto`, so
+    whatever a handler returns is run through the schema.
+
+    ```ts title="apps/api/src/modules/billing/invoice/invoice.dto.ts"
+    export class CreateInvoiceDto extends createZodDto(createInvoiceSchema) {}
+    export class UpdateInvoiceDto extends createZodDto(updateInvoiceSchema) {}
+    export class InvoiceDto extends createZodDto(invoiceSchema) {}
+    ```
+  </TabItem>
+  <TabItem label="Plain Express / Fastify">
+    Routes parse the body with the shared schema at the edge, and run what
+    they send back through the response schema:
+
+    ```ts
+    const input = createInvoiceSchema.parse(req.body) // a ZodError becomes a 422
+    res.json(ok(req, invoiceSchema.parse(invoice)))   // private fields never leak
+    ```
+
+    On Fastify, the schemas are the route schemas, so `request.body` is typed
+    from them.
+  </TabItem>
+</Tabs>
+
+A request that doesn't match gets a `422` in the API's one error envelope,
+with a message per field:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "name: Name is required",
+    "statusCode": 422,
+    "details": [{ "field": "name", "message": "Name is required" }]
+  },
+  "meta": { "timestamp": "…", "path": "/api/billing/invoice", "method": "POST", "requestId": "…" }
+}
+```
+
+## The form
+
+The generated form validates with the same schema the API uses, and maps the
+API's `details` back onto the inputs if the server still says no:
+
+```tsx title="apps/web/src/features/billing/invoice/invoice-form.tsx"
+const form = useAppForm({
+  defaultValues: { name: invoice?.name ?? "" } satisfies CreateInvoiceInput as CreateInvoiceInput,
+  validators: { onDynamic: createInvoiceSchema },
+  onSubmit: async ({ value }) => {
+    try {
+      if (invoice) await updateInvoice.mutateAsync({ id: invoice.id, ...value })
+      else await createInvoice.mutateAsync(value)
+    } catch (error) {
+      applyServerErrors(form, error)
+    }
+  },
+})
+```
+
+## Adding a field
+
+1. Add it to `invoiceFields` and `invoiceSchema` in `packages/validators`.
+2. Add the column to the Prisma model, then run `db:migrate`.
+3. Add a default value and an input to the form.
+
+The API's validation, its response and every type follow on their own. The
+[home page](/#schema) has a live demo of this.

@@ -1,0 +1,42 @@
+---
+title: Scripts
+description: The scripts every klin project ships with.
+---
+
+Commands are written with pnpm here; in a bun or npm project they're
+`bun run <script>` or `npm run <script>`. Turborepo runs the tasks across the
+workspace and caches what it can.
+
+| Script | Does |
+| --- | --- |
+| `dev` | Everything in watch mode, in Turborepo's split-pane view: the Prisma client is generated first, then the web app, the API and Prisma Studio start side by side |
+| `build` · `start` | Production builds, and running them |
+| `lint` · `typecheck` · `test` | ESLint, TypeScript, Vitest |
+| `test:e2e` | Playwright against production builds (run `build` first) |
+| `format` · `format:check` | Prettier |
+| `db:up` · `db:down` | Start / stop the local services in Docker (with Docker) |
+| `db:migrate` | Create and apply a migration after editing `prisma/models` |
+| `db:deploy` | Apply committed migrations (production) |
+| `db:push` · `db:reset` | Push the schema without a migration · reset the database |
+| `db:seed` | Load demo data |
+| `db:studio` | Prisma Studio on its own (it also runs inside `dev`) |
+| `email:dev` | Preview email templates at `http://localhost:3030` (with email) |
+| `ui:add <component>` | Add a shadcn/ui component |
+| `klin …` | The klin CLI, at the version that made the project |
+
+## Ports
+
+| | |
+| --- | --- |
+| Web app | 5173 |
+| API | 3000 (`API_PORT` in `.env`) |
+| Prisma Studio | 5555 |
+
+In development the web app forwards `/api` to the API, so the browser only
+ever talks to one origin.
+
+## Commits
+
+Commits follow Conventional Commits (`feat: …`, `fix(api): …`), enforced by
+commitlint. Staged files are formatted with Prettier on commit (husky +
+lint-staged).
