@@ -18,6 +18,7 @@ export function help() {
     ${flag("--backend")} ${dim("<name>")}     nest · plain
     ${flag("--server")} ${dim("<name>")}      express · fastify
     ${flag("--db")} ${dim("<name>")}          postgres · mysql · sqlite
+    ${flag("--web")} ${dim("<name>")}         vite · next ${dim("(picked once, at create)")}
     ${flag("--auth")} ${dim("<list>")}        password,google,github,magic-link,two-factor,passkey
     ${flag("--plugins")} ${dim("<list>")}     organizations,admin,api-keys ${dim("(or none)")}
     ${flag("--security")} ${dim("<list>")}    cors,helmet,rate-limit ${dim("(or none)")}

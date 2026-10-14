@@ -52,6 +52,8 @@ const DEFAULT_IGNORE = [
   "**/.env.local",
   "**/*.tsbuildinfo",
   "**/routeTree.gen.ts",
+  "**/.next/**",
+  "**/next-env.d.ts",
   "**/playwright-report/**",
   "**/test-results/**",
   "**/*.db",

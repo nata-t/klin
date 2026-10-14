@@ -40,6 +40,7 @@ export const FLAG_SPEC = {
     "backend",
     "server",
     "db",
+    "web",
     "auth",
     "plugins",
     "security",

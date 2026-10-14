@@ -65,6 +65,11 @@ export interface QuestionSpec {
   flagPrefix?: string
   /** Skip in the interactive flow unless the user opts into "customize". */
   advanced?: boolean
+  /**
+   * Picked once, when the project is created: `klin add` won't switch it
+   * (e.g. the web framework, which would rewrite the whole app).
+   */
+  locked?: boolean
   /** Short label for the option group in the interactive CLI ("Database"). */
   title?: string
   /** Optional visual sub-groups for a long option list (same options, split up). */

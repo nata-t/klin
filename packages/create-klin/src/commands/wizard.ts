@@ -265,7 +265,7 @@ export async function wizard(input: WizardInput): Promise<WizardResult | Cancel>
           id: "review",
           rows: [
             ["name", slug()],
-            ["stack", `${label(answers.backend as string)} on ${label(answers.server as string)} · ${label(answers.database as string)}`],
+            ["stack", [`${label(answers.backend as string)} on ${label(answers.server as string)}`, label(answers.database as string), answers.web && label(answers.web as string)].filter(Boolean).join(" · ")],
             listRow("sign-in", "auth"),
             listRow("power-ups", "plugins"),
             listRow("security", "security"),

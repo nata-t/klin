@@ -51,6 +51,54 @@ describe("template rendering", () => {
     }
   })
 
+  it("builds the web app with Next.js instead of Vite, for every backend and component home", async () => {
+    for (const backend of ["nest", "plain"]) {
+      for (const components of ["apps-web", "packages-ui"]) {
+        for (const extras of [["email", "i18n", "docker", "ci"], []]) {
+          const label = `next/${backend}/${components}/${extras.length ? "extras" : "bare"}`
+          const files = await renderPreset("everything", "pnpm", { web: "next", backend, components, extras })
+          for (const [path, file] of files) {
+            if (Buffer.isBuffer(file.content)) continue
+            expect(file.content, `${label}: ${path}`).not.toMatch(/klin:(if|elif|else|endif|file|only)\b/)
+            expect(file.content, `${label}: ${path}`).not.toMatch(/^\s*(\/\/|#)\? /m)
+            expect(file.content, `${label}: ${path}`).not.toMatch(/@tanstack\/react-router|import\.meta\.env/)
+            expect(path, label).not.toMatch(/^(variants\/|apps\/web\/src\/routes\/)/)
+          }
+          for (const path of ["apps/web/vite.config.ts", "apps/web/index.html", "apps/web/src/main.tsx", "apps/web/tsconfig.node.json"]) {
+            expect(files.has(path), `${label}: ${path}`).toBe(false)
+          }
+          expect(files.has("apps/web/src/app/(app)/layout.tsx"), label).toBe(true)
+          expect(files.has("apps/web/src/proxy.ts"), label).toBe(true)
+          const web = JSON.parse(text(files, "apps/web/package.json"))
+          expect(web.dependencies, label).toHaveProperty("next")
+          expect(web.devDependencies, label).not.toHaveProperty("vite")
+          expect(web.scripts.typecheck, label).toBe("next typegen && tsc --noEmit")
+          expect(JSON.parse(text(files, "apps/web/components.json")).rsc, label).toBe(true)
+          expect(JSON.parse(text(files, "packages/eslint-config/package.json")).exports, label).toHaveProperty("./next")
+          expect(files.has("apps/web/src/i18n/client.ts"), label).toBe(extras.includes("i18n"))
+          expect(files.has("apps/web/nginx/default.conf.template"), label).toBe(extras.includes("docker"))
+          const ui = components === "packages-ui" ? "packages/ui/src/components" : "apps/web/src/components/ui"
+          expect(text(files, `${ui}/dialog.tsx`), label).toMatch(/^"use client"\n\n/)
+          expect(text(files, `${ui}/button.tsx`), label).not.toContain("use client")
+        }
+      }
+    }
+  })
+
+  it("keeps Next.js out of a Vite project, and the web framework fixed after create", async () => {
+    const files = await renderPreset("everything")
+    expect([...files.keys()].some((path) => path.startsWith("apps/web/src/app/") || path.startsWith("variants/"))).toBe(false)
+    expect(files.has("packages/eslint-config/next.js")).toBe(false)
+    expect(files.has("packages/typescript-config/next.json")).toBe(false)
+    const eslint = JSON.parse(text(files, "packages/eslint-config/package.json"))
+    expect(eslint.dependencies).not.toHaveProperty("@next/eslint-plugin-next")
+    expect(eslint.exports).not.toHaveProperty("./next")
+    expect(JSON.parse(text(files, "turbo.json")).tasks.build.env).toEqual(["VITE_*"])
+    expect(JSON.parse(text(files, "apps/web/components.json")).rsc).toBe(false)
+    expect(text(files, "apps/web/src/components/ui/dialog.tsx")).not.toContain("use client")
+    expect(manifest.questions.find((q) => q.id === "web")).toMatchObject({ default: "vite", locked: true })
+  })
+
   it("wires NestJS with nestjs-zod on the chosen HTTP server", async () => {
     for (const server of ["express", "fastify"] as const) {
       const files = await renderPreset("recommended", "pnpm", { server })

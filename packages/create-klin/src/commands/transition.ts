@@ -80,7 +80,7 @@ async function changeModules(flags: Flags, mode: "add" | "remove") {
     const choices = manifest.questions
       .flatMap((q) => q.options.map((id) => ({ id, q })))
       .filter(({ id, q }) =>
-        mode === "add" ? !current.has(id) && q.id !== "accent" : current.has(id) && q.type === "multiselect"
+        mode === "add" ? !current.has(id) && q.id !== "accent" && !q.locked : current.has(id) && q.type === "multiselect"
       )
     if (choices.length === 0) bail(mode === "add" ? "Every module is already on — spotless!" : "Nothing to remove.")
     modules = guard(
@@ -103,6 +103,15 @@ async function changeModules(flags: Flags, mode: "add" | "remove") {
     const question = manifest.questions.find((q) => q.options.includes(id))
     if (!question) bail(`Unknown module "${id}". Run ${c.code("klin list")} to see them all.`)
     if (question.type === "select") {
+      if (question.locked && (mode === "remove" || next[question.id] !== id)) {
+        const what = (question.title ?? question.id).toLowerCase()
+        const picked = manifest.options[next[question.id] as string]?.label ?? next[question.id]
+        bail(
+          mode === "remove" || next[question.id] === id
+            ? `The ${what} is picked when the project is created and stays — this one uses ${picked}.`
+            : `The ${what} is picked when the project is created, and this one uses ${picked} — switching would rewrite it. Start a new project with --${question.flag ?? question.id} ${id} instead.`
+        )
+      }
       if (mode === "remove") bail(`"${id}" can't be removed — switch to another ${question.id} with \`klin add <other>\` instead.`)
       next[question.id] = id
     } else {
