@@ -26,6 +26,12 @@ export default defineConfig({
       title: "klin",
       description: "A spotless full-stack TypeScript starter: one command for an API, a web app, auth, a database and the Zod schemas they share.",
       favicon: "/favicon.svg",
+      // Relative until `site` is set; social networks need the absolute URL then.
+      head: [
+        { tag: "meta", attrs: { property: "og:image", content: "/og.png" } },
+        { tag: "meta", attrs: { name: "twitter:card", content: "summary_large_image" } },
+        { tag: "meta", attrs: { name: "theme-color", content: "#141414" } },
+      ],
       social: [{ icon: "github", label: "GitHub", href: repo }],
       editLink: { baseUrl: `${repo}/edit/master/website/` },
       lastUpdated: false,
