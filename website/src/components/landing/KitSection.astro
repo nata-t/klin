@@ -1,0 +1,395 @@
+---
+import SectionShell from "./SectionShell.astro"
+import { optionsOf } from "../../lib/manifest"
+
+const labels = (id: string) => optionsOf(id).map((o) => o.label)
+const extras = optionsOf("extras")
+const pickExtras = (ids: string[]) => extras.filter((o) => ids.includes(o.id)).map((o) => o.label)
+
+const cells = [
+  { index: "01", title: "Sign-in", sub: "Better Auth", items: [...labels("auth"), ...labels("plugins")] },
+  { index: "02", title: "API", sub: "NestJS or plain", items: [...labels("backend"), ...labels("server"), ...labels("security"), "One error envelope", "pino logs", "Health check"] },
+  { index: "03", title: "Web app", sub: "React 19", items: [...labels("web"), "TanStack Query & Form", "shadcn/ui", "Dark mode", "Error, 404 & loading states"] },
+  { index: "04", title: "Data", sub: "Prisma", items: [...labels("database"), "Models split by domain", "Seed script", "Prisma Studio"] },
+  { index: "05", title: "Modules", sub: "Switch on or off later", items: pickExtras(["email", "uploads", "queues", "i18n"]) },
+  { index: "06", title: "Ops", sub: "Turborepo", items: [...pickExtras(["docker", "ci"]), "dev in a split-pane TUI", "husky + commitlint", "Vitest + Playwright"] },
+]
+const swatches = optionsOf("accent")
+---
+
+<SectionShell id="kit" index="04" label="The kit" note={`${cells.reduce((n, c) => n + c.items.length, 0)} parts · ${swatches.length} theme colors`}>
+  <div class="section-head">
+    <h2 class="display" data-reveal>Everything a product needs on day one.</h2>
+    <p class="lede" data-reveal>
+      Auth, an API, a dashboard shell, a database, CI and Docker — wired together, tested, and typed end to end. Pick what you need;
+      the rest never shows up.
+    </p>
+  </div>
+
+  <div class="cells">
+    {
+      cells.map((cell) => (
+        <article class="cell" data-reveal>
+          <header>
+            <p class="hud">
+              <span class="idx">{cell.index}</span> {cell.title}
+            </p>
+            <p class="hud sub">{cell.sub}</p>
+          </header>
+          <ul>
+            {cell.items.map((item) => (
+              <li>
+                <span class="mark" aria-hidden="true">
+                  ◼
+                </span>
+                {item}
+              </li>
+            ))}
+          </ul>
+        </article>
+      ))
+    }
+  </div>
+
+  <div class="looks" data-reveal>
+    <p class="hud">Looks <span class="dim">· shadcn/ui · pick one</span></p>
+    <ul class="swatches">
+      {
+        swatches.map((s) => (
+          <li title={s.label}>
+            <span class="sw" style={`background:${s.swatch}`} />
+            <span class="name">{s.label}</span>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+
+  <div class="strip" data-strip-demo>
+    <div class="strip-head">
+      <h3 class="display" data-reveal>Only what you picked.</h3>
+      <p class="lede" data-reveal>
+        The template is one real project with every module on. Markers in comments say which lines belong to what, and create-klin
+        strips the rest — no dead flags, no <code>if (config.enableX)</code>. This is the template's real <code>auth.ts</code>, run
+        through the CLI's own marker engine as you pick.
+      </p>
+    </div>
+    <div class="controls" data-reveal>
+      <div class="ctrl">
+        <p class="hud">Database <span class="dim">· pick one</span></p>
+        <div class="chips" role="radiogroup" aria-label="Database" data-strip-db>
+          {
+            optionsOf("database").map((o, i) => (
+              <button class="chip" type="button" role="radio" aria-checked={i === 0 ? "true" : "false"} data-value={o.id}>
+                <span class="mark" aria-hidden="true">
+                  {i === 0 ? "●" : "○"}
+                </span>
+                {o.label}
+              </button>
+            ))
+          }
+        </div>
+      </div>
+      <div class="ctrl">
+        <p class="hud">Sign-in & power-ups <span class="dim">· pick any</span></p>
+        <div class="chips" role="group" aria-label="Sign-in and power-ups" data-strip-flags>
+          {
+            [...optionsOf("auth"), ...optionsOf("plugins")].map((o) => (
+              <button class="chip" type="button" aria-pressed={o.id === "password" ? "true" : "false"} data-value={o.id}>
+                <span class="mark" aria-hidden="true">
+                  {o.id === "password" ? "◼" : "◻"}
+                </span>
+                {o.label}
+              </button>
+            ))
+          }
+        </div>
+      </div>
+    </div>
+    <div class="panes" data-reveal>
+      <article class="pane">
+        <header><span class="hud">template/packages/auth/src/</span><span class="file">auth.ts</span><span class="tag">every module on</span></header>
+        <pre class="code" data-strip-source></pre>
+      </article>
+      <div class="arrow" aria-hidden="true"><span>create-klin</span>→</div>
+      <article class="pane">
+        <header><span class="hud">my-app/packages/auth/src/</span><span class="file">auth.ts</span><span class="tag" data-strip-count></span></header>
+        <pre class="code" data-strip-result></pre>
+      </article>
+    </div>
+  </div>
+</SectionShell>
+
+<script>
+  import { mountStripDemo } from "../../scripts/strip-demo"
+  mountStripDemo(document.querySelector<HTMLElement>("[data-strip-demo]")!)
+</script>
+
+<style>
+  .cells {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+  }
+  .cell {
+    background: var(--bg);
+    padding: 22px var(--gutter) 28px;
+    transition: background-color 200ms ease;
+  }
+  .cell:hover {
+    background: #171717;
+  }
+  .cell header {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .cell header .hud {
+    margin: 0;
+    color: var(--bright);
+  }
+  .cell .idx {
+    color: var(--line);
+    margin-right: 6px;
+  }
+  .cell header .sub {
+    color: var(--subtle);
+  }
+  .cell:hover header p:first-child {
+    background: var(--bright);
+    color: var(--bg);
+    box-shadow: 0 0 0 4px var(--bright);
+  }
+  .cell:hover .idx {
+    color: var(--subtle);
+  }
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .cell li {
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    padding: 3px 0;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text);
+  }
+  .cell li .mark {
+    font-size: 9px;
+    color: var(--subtle);
+    transform: translateY(-1px);
+  }
+  .cell:hover li .mark {
+    color: var(--bright);
+  }
+  .looks {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px 28px;
+    padding: 22px var(--gutter);
+    border-bottom: 1px solid var(--rule);
+  }
+  .looks .hud {
+    margin: 0;
+    color: var(--text);
+  }
+  .dim {
+    color: var(--subtle);
+  }
+  .swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .swatches li {
+    position: relative;
+  }
+  .sw {
+    display: block;
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+    transition: transform 160ms ease;
+  }
+  .swatches li:hover .sw {
+    transform: translateY(-3px) scale(1.12);
+  }
+  .swatches .name {
+    position: absolute;
+    left: 50%;
+    top: -24px;
+    transform: translateX(-50%);
+    padding: 1px 6px;
+    border-radius: 3px;
+    background: var(--bright);
+    color: var(--bg);
+    font-family: var(--mono);
+    font-size: 10.5px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 120ms linear;
+  }
+  .swatches li:hover .name {
+    opacity: 1;
+  }
+  .strip {
+    padding: clamp(56px, 8vw, 96px) var(--gutter) clamp(64px, 9vw, 112px);
+    display: grid;
+    gap: 26px;
+  }
+  .strip-head {
+    display: grid;
+    gap: 16px;
+  }
+  .strip-head .display {
+    font-size: clamp(28px, 4vw, 48px);
+  }
+  .strip-head code {
+    color: var(--bright);
+    font-size: 0.9em;
+  }
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px 48px;
+  }
+  .ctrl {
+    display: grid;
+    gap: 8px;
+    align-content: start;
+  }
+  .ctrl .hud {
+    margin: 0;
+    color: var(--text);
+  }
+  .ctrl .chips {
+    margin-left: -9px;
+  }
+  .panes {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 18px;
+    align-items: start;
+  }
+  .pane {
+    border: 1px solid var(--line);
+    border-radius: var(--box-radius);
+    background: rgba(14, 14, 14, 0.85);
+    overflow: hidden;
+  }
+  .pane header {
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--tint);
+    background: var(--bar);
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .pane header .hud {
+    text-transform: none;
+    letter-spacing: 0.02em;
+    font-size: 11.5px;
+  }
+  .pane header .file {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--bright);
+  }
+  .pane .tag {
+    margin-left: auto;
+    padding-left: 12px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--subtle);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .arrow {
+    align-self: center;
+    display: grid;
+    justify-items: center;
+    gap: 4px;
+    font-family: var(--mono);
+    color: var(--bright);
+    font-size: 20px;
+  }
+  .arrow span {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--subtle);
+  }
+  .code {
+    margin: 0;
+    padding: 12px 14px;
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--text);
+    overflow: auto;
+    max-height: 560px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--line) transparent;
+  }
+  .code :global(.line) {
+    display: block;
+    white-space: pre;
+    border-left: 2px solid transparent;
+    margin-left: -14px;
+    padding-left: 12px;
+    transition:
+      opacity 250ms ease,
+      color 250ms ease;
+  }
+  .code :global(.marker) {
+    color: var(--subtle);
+  }
+  .code :global(.marker .m) {
+    color: var(--muted);
+  }
+  .code :global(.drop) {
+    opacity: 0.32;
+    text-decoration: line-through;
+    text-decoration-color: rgba(255, 255, 255, 0.25);
+  }
+  .code :global(.new) {
+    animation: fresh 1.4s ease-out;
+  }
+  @keyframes fresh {
+    0% {
+      background: rgba(255, 255, 255, 0.14);
+      border-left-color: var(--bright);
+    }
+    100% {
+      background: transparent;
+      border-left-color: transparent;
+    }
+  }
+  @media (max-width: 1000px) {
+    .cells {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .panes {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .arrow {
+      transform: rotate(90deg);
+    }
+  }
+  @media (max-width: 600px) {
+    .cells {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>
