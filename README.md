@@ -10,7 +10,7 @@
 ```
 
 **A spotless full-stack TypeScript starter.**
-NestJS or plain Express/Fastify · Better Auth · Prisma · TanStack Router/Query/Form · shadcn/ui · Turborepo
+NestJS or plain Express/Fastify · Better Auth · Prisma · Vite + TanStack Router or Next.js · TanStack Query/Form · shadcn/ui · Turborepo
 
 ```bash
 npm create klin@latest
@@ -39,9 +39,10 @@ on top of it.
 **It's a good fit for** SaaS products, internal tools, dashboards and API-backed
 apps where a separate backend is a feature, not overhead.
 
-**It's not for** static sites, content-heavy marketing sites that need SSR/SEO,
-or projects that want everything in one Next.js app. Use a framework built for
-that instead.
+**It's not for** static sites, or projects that want everything — data access
+included — inside one Next.js app. klin can render the web app with Next.js
+(server-rendered pages, SEO for your public pages), but the API stays its own
+app. If you'd rather have no API at all, use a framework built for that.
 
 ## What you get
 
@@ -49,9 +50,9 @@ that instead.
 | --- | --- |
 | **Auth** (Better Auth) | sign up/in/out, verify email, forgot/reset password, sessions page · Google · GitHub · magic links · 2FA (TOTP + backup codes) · passkeys · guarded routes on both sides |
 | **API** | **NestJS 12** (on Express or Fastify) with a global auth guard, `@Public()` `@Roles()` `@CurrentUser()` and nestjs-zod DTOs — or **plain Express 5 / Fastify 5** with auth middleware and the same schemas · one error envelope · pino logs with request ids · CORS, helmet and rate limiting (each optional) · health check · seed script |
-| **Web** (Vite + React 19) | public / auth / dashboard layouts · TanStack Router `beforeLoad` guards · typed API client + query-key conventions · TanStack Form + shadcn/ui form kit (in `apps/web` or a shared `packages/ui`, `pnpm ui:add <component>`) · 18 shadcn theme colors · dark mode · error, 404 & loading states |
+| **Web** (React 19 on Vite or Next.js) | public / auth / dashboard layouts · **Vite:** TanStack Router with `beforeLoad` guards · **Next.js 16:** the App Router, signed-in pages checked on the server (`proxy.ts` + layouts) and `/api` rewritten to the API · typed API client + query-key conventions · TanStack Form + shadcn/ui form kit (in `apps/web` or a shared `packages/ui`, `pnpm ui:add <component>`) · 18 shadcn theme colors · dark mode · error, 404 & loading states |
 | **Monorepo** | Turborepo with caching and `db:*` tasks · `dev` in the split-pane TUI: Prisma client generated first, then web, API and Prisma Studio side by side · shared TS/ESLint/Prettier configs · husky + lint-staged + commitlint · Vitest + Playwright |
-| **Ops** | Docker Compose for local services · production Dockerfiles (API + nginx web) · GitHub Actions · Renovate · `.env` with generated secrets |
+| **Ops** | Docker Compose for local services · production Dockerfiles (API, and the web app on nginx or Next's standalone server) · GitHub Actions · Renovate · `.env` with generated secrets |
 | **Optional modules** | organizations & RBAC · admin dashboard · API keys · transactional email (Resend + React Email) · file uploads (S3/R2 presigned) · background jobs (BullMQ) · i18n (English to start) |
 | **Docs** | getting started, architecture, the shared-validators flow, add-a-feature walkthrough, testing, deployment, upgrading |
 
@@ -66,6 +67,7 @@ not left behind as dead flags.
 npm create klin@latest            # interactive
 pnpm create klin my-app --preset saas --backend nest --server fastify --db postgres --pm pnpm
 bunx create-klin my-app --backend plain --server express --auth password,google,passkey --plugins organizations --extras email,docker,ci -y
+bunx create-klin my-app --web next --db sqlite -y   # the web app on Next.js
 ```
 
 In a terminal, `create-klin` opens a full-screen, grayscale wizard — a step
@@ -74,7 +76,7 @@ centered — six steps, each a page of text chips you snap on and off, one list
 per group and two groups side by side when there's room:
 
 1. **Base** — name your kit (validated live: `✓ ./my-app is free to use`), package manager (bun by default), a preset to start from
-2. **Stack** — NestJS or plain · Express or Fastify · Postgres, MySQL or SQLite
+2. **Stack** — NestJS or plain · Express or Fastify · Postgres, MySQL or SQLite · Vite or Next.js for the web app
 3. **Auth** — sign-in methods and Better Auth power-ups
 4. **Toolbox** — CORS, Helmet, rate limiting (on by default, with a warning if you switch one off), email, uploads, jobs, i18n, Docker, CI
 5. **Looks** — where shadcn/ui lives (`apps/web` or `packages/ui`) and one of shadcn's 18 theme colors
@@ -106,7 +108,8 @@ pnpm klin generate frontend billing/invoice   # page, route, query hooks, form
 **The files and the wiring, not your schema:** the Zod schemas in
 `packages/validators`, a Prisma model, a Nest module with the five REST
 endpoints and nestjs-zod DTOs (or Express/Fastify routes and a service),
-TanStack Query hooks, a form, a page, a route and a sidebar entry. One example
+TanStack Query hooks, a form, a page, a route (an App Router `page.tsx` with
+Next.js, also added to `proxy.ts`'s guarded pages) and a sidebar entry. One example
 field shows where yours go; backend-only services answer 501 until you fill
 them in. Slashes make folders (`billing/invoice` goes in a `billing/` folder in
 every layer). Everything typechecks and lints as generated. Flags like
@@ -117,7 +120,7 @@ should it go?" page) or as the project's default (`klin generate paths`, saved
 in `klin.json`).
 
 ```bash
-pnpm klin add organizations email   # bolt modules on later
+pnpm klin add organizations email   # bolt modules on later (the web framework stays as picked)
 pnpm klin remove email              # …or take them out
 pnpm klin doctor                    # env, database, services, version drift
 pnpm klin list                      # what's available, what's on

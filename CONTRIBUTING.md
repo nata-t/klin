@@ -13,7 +13,7 @@ template/               the kit: a full monorepo with every module on
   klin.template.json    questions, options, steps, strip/move rules, presets
   apps/api/src/         the NestJS API (the default backend)
   apps/api/plain*/      the plain Express / Fastify APIs, merged into src/ when picked
-  variants/             files that only exist for some answers (e.g. packages/ui)
+  variants/             files that only exist for some answers (packages/ui, the Next.js web app)
 scripts/                maintenance (dependency ages, playground)
 demo/                   VHS tape for the README GIF
 ```
@@ -68,10 +68,28 @@ this way: `apps/api/plain/` (shared: services, errors, logger) plus
 (`../services/notes`). Check them in a rendered project — the playground or the
 render-matrix tests — rather than in place.
 
+The web app works the same way, with one twist. `apps/web` is the Vite app;
+`variants/next/web/` holds what only Next.js has (`next.config.ts`, `src/app/`,
+`src/proxy.ts`, its own `package.json`…) and moves over `apps/web` when `next`
+is picked, while the `vite` option's `remove` list drops the Vite-only files.
+Feature code is shared, so where it touches the router it carries a pair of
+lines — the Vite one active, the Next.js one dormant:
+
+```tsx
+import { Link } from "@tanstack/react-router" // klin:only vite
+//? import Link from "next/link" // klin:only next
+```
+
+Components a Next.js page or layout renders start with a dormant
+`//? "use client" // klin:only next`. Next.js-only files that belong to a
+module use `klin:file` (the route groups' parentheses don't mix with `remove`
+globs). Check changes to `apps/web` with both web apps rendered.
+
 ### The manifest (`klin.template.json`)
 
 - `questions`: the prompts, in order. `select` or `multiselect`, with the CLI
-  `flag` name and defaults.
+  `flag` name and defaults. A `select` marked `locked` is picked once, at
+  create: `klin add` refuses to switch it (the web app's framework).
 - `options`: every option's `label`/`hint`, `requires` (auto-enabled
   dependencies), `remove` (globs deleted when the option is **off**) and `json`
   (package.json keys deleted when it's off).
@@ -112,7 +130,8 @@ Workspace ranges become `*` for npm. For YAML/Dockerfiles, use markers with
 
 `// klin-anchor:*` comments mark insertion points for `klin generate`
 (`exports`, `module-imports`, `modules`, `route-imports`, `routes`, `nav`,
-`nav-icons`). Keep them when editing those files.
+`nav-icons`, and Next.js's `protected-routes` in `proxy.ts`). Keep them when
+editing those files.
 
 ### Dependency floors
 
