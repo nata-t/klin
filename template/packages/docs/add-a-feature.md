@@ -45,7 +45,11 @@ and the second one reuses what's there.
 | `--plural <word>` | For when the guessed plural is wrong: `pnpm klin generate resource criterion --plural criteria` |
 | `--no-model` | A resource without a Prisma model; its service is left to fill in, like a backend module's |
 | `--no-validation` | Writes nothing in `packages/validators`, for schemas that already exist. The generated code still imports them by name (`createPostSchema`, `postSchema`, …) and says which are missing |
+<!-- klin:if next -->
+| `--no-route` | No `page.tsx` for the page (render it wherever you like) — and so no sidebar entry |
+<!-- klin:else -->
 | `--no-route` | No route file for the page (render it wherever you like) — and so no sidebar entry |
+<!-- klin:endif -->
 | `--no-nav` | No sidebar entry |
 | `--dry-run` · `--force` | Show the plan without writing · overwrite generated files that exist (never the shared schema file) |
 | `--backend-dir` · `--frontend-dir` · `--validation-dir` · `--model-dir` | Put this run's files in other folders (see below) |
@@ -59,7 +63,11 @@ and the second one reuses what's there.
 <!-- klin:else -->
 | Backend | `apps/api/src` (which holds `routes/` and `services/`) | `apps/api/src` |
 <!-- klin:endif -->
+<!-- klin:if next -->
+| Frontend | `apps/web/src/features` | `apps/web/src`, but not `app/` (the App Router's folders become pages; the `page.tsx` itself always goes in `app/(app)`) |
+<!-- klin:else -->
 | Frontend | `apps/web/src/features` | `apps/web/src`, but not `routes/` (every file there becomes a route; the route file itself always goes in `routes/_app`) |
+<!-- klin:endif -->
 | Validation | `packages/validators/src` | `packages/validators/src` |
 | Prisma models | `packages/db/prisma/models` | `packages/db/prisma`, but not `migrations/` |
 
@@ -99,7 +107,12 @@ That writes and wires up:
 <!-- klin:endif -->
 | Data | `apps/web/src/features/project/api.ts` | `projectKeys`, query options, `useProjects`, `useCreateProject`, `useUpdateProject`, `useDeleteProject` |
 | UI | `apps/web/src/features/project/*` | a page that lists projects and a form to create one |
+<!-- klin:if next -->
+| Page | `apps/web/src/app/(app)/project/page.tsx` | `/project`: its title, and the feature page (a client component) |
+| Guard | `apps/web/src/proxy.ts` | `/project` joins the pages that need a session |
+<!-- klin:else -->
 | Route | `apps/web/src/routes/_app/project.tsx` | `/project`, with the list preloaded |
+<!-- klin:endif -->
 | Nav | `apps/web/src/config/nav.ts` | a sidebar entry |
 
 The name you type is used as-is for folders and URLs — `projects` gives you
@@ -304,5 +317,10 @@ The generator only writes files you could write yourself. The Notes example
 <!-- klin:else -->
 (`note.ts`, `note.prisma`, `routes/notes.ts`, `services/notes.ts`, `features/notes`,
 <!-- klin:endif -->
+<!-- klin:if next -->
+`app/(app)/notes/page.tsx`) is a finished one to compare with. The `klin-anchor`
+comments mark where new imports, modules, routes, nav items and guarded pages go.
+<!-- klin:else -->
 `routes/_app/notes.tsx`) is a finished one to compare with. The `klin-anchor`
 comments mark where new imports, modules, routes and nav items go.
+<!-- klin:endif -->

@@ -1,4 +1,9 @@
+// klin:if next
+//? import Link from "next/link"
+//? import { usePathname } from "next/navigation"
+// klin:else
 import { Link, useRouterState } from "@tanstack/react-router"
+// klin:endif
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -12,7 +17,8 @@ import type { NavItem } from "@/config/nav"
 import { useT } from "@/lib/i18n"
 
 export function NavMain({ items, label }: { items: NavItem[]; label?: string }) {
-  const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const pathname = useRouterState({ select: (s) => s.location.pathname }) // klin:only vite
+  //? const pathname = usePathname() // klin:only next
   const { isMobile, setOpenMobile } = useSidebar()
   const t = useT()
 
@@ -29,7 +35,8 @@ export function NavMain({ items, label }: { items: NavItem[]; label?: string }) 
                 <SidebarMenuButton
                   isActive={active}
                   tooltip={title}
-                  render={<Link to={item.to} onClick={() => isMobile && setOpenMobile(false)} />}
+                  render={<Link to={item.to} onClick={() => isMobile && setOpenMobile(false)} />} // klin:only vite
+                  //? render={<Link href={item.to} onClick={() => isMobile && setOpenMobile(false)} />} // klin:only next
                 >
                   <item.icon />
                   <span>{title}</span>

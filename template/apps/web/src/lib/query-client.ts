@@ -1,4 +1,5 @@
-import { MutationCache, QueryCache, QueryClient } from "@tanstack/react-query"
+import { MutationCache, QueryCache, QueryClient, type QueryClientConfig } from "@tanstack/react-query" // klin:only vite
+//? import { isServer, MutationCache, QueryCache, QueryClient, type QueryClientConfig } from "@tanstack/react-query" // klin:only next
 import { toast } from "sonner"
 import { errorMessage, isApiError } from "./api-error"
 
@@ -19,9 +20,14 @@ declare module "@tanstack/react-query" {
 function handleUnauthorized(error: unknown) {
   if (!isApiError(error) || error.status !== 401) return false
   // Session expired or was revoked elsewhere: drop it and go sign in again.
-  queryClient.setQueryData(["session"], null)
+  queryClient.setQueryData(["session"], null) // klin:only vite
+  //? getQueryClient().setQueryData(["session"], null) // klin:only next
   if (!window.location.pathname.startsWith("/sign-in")) {
     const redirect = encodeURIComponent(window.location.pathname + window.location.search)
+    // klin:if next
+    //? // A full page load on purpose: it starts the signed-out visit from scratch.
+    //? // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+    // klin:endif
     window.location.assign(`/sign-in?redirect=${redirect}`)
   }
   return true
@@ -34,7 +40,7 @@ function handleUnauthorized(error: unknown) {
  * - Errors toast automatically; opt out with `meta: { silent: true }`.
  * - Mutations can toast success with `meta: { successMessage: "Saved" }`.
  */
-export const queryClient = new QueryClient({
+const config = (): QueryClientConfig => ({
   defaultOptions: {
     queries: {
       staleTime: 30_000,
@@ -60,3 +66,18 @@ export const queryClient = new QueryClient({
     },
   }),
 })
+
+// klin:if next
+//? let browserQueryClient: QueryClient | undefined
+//?
+//? /**
+//?  * A fresh client for every request on the server, so one visitor's data never
+//?  * reaches another — and one client for the whole visit in the browser.
+//?  */
+//? export function getQueryClient() {
+//?   if (isServer) return new QueryClient(config())
+//?   return (browserQueryClient ??= new QueryClient(config()))
+//? }
+// klin:else
+export const queryClient = new QueryClient(config())
+// klin:endif

@@ -1,3 +1,4 @@
+//? "use client" // klin:only next
 
 import * as React from "react"
 

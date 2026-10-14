@@ -1,5 +1,8 @@
+//? "use client" // klin:only next
+//? // klin:only next
 import { useQueryClient } from "@tanstack/react-query"
-import { useNavigate } from "@tanstack/react-router"
+import { useNavigate } from "@tanstack/react-router" // klin:only vite
+//? import { useRouter } from "next/navigation" // klin:only next
 import { type ConfirmPasswordInput, confirmPasswordSchema } from "@repo/validators" // klin:only password
 import { useState } from "react"
 import { toast } from "sonner"
@@ -19,7 +22,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { authClient } from "@/lib/auth-client"
 
 export function DeleteAccountCard() {
-  const navigate = useNavigate()
+  const navigate = useNavigate() // klin:only vite
+  //? const router = useRouter() // klin:only next
   const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
 
@@ -31,7 +35,8 @@ export function DeleteAccountCard() {
     }
     queryClient.clear()
     toast.success("Your account has been deleted")
-    await navigate({ to: "/" })
+    await navigate({ to: "/" }) // klin:only vite
+    //? router.push("/") // klin:only next
   }
 
   // klin:if password

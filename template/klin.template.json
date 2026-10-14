@@ -1,6 +1,6 @@
 {
   "name": "klin",
-  "description": "NestJS or plain Express/Fastify + Better Auth + Prisma + TanStack (Router, Query, Form) + shadcn/ui, in a Turborepo with shared Zod validators.",
+  "description": "NestJS or plain Express/Fastify + Better Auth + Prisma + Vite (TanStack Router) or Next.js + TanStack Query/Form + shadcn/ui, in a Turborepo with shared Zod validators.",
   "tokens": {
     "klin-app": "slug",
     "klin_app": "snake",
@@ -11,8 +11,8 @@
       "id": "stack",
       "title": "Stack",
       "heading": "Pick your engine.",
-      "subtitle": "How the API is built, what serves it, and where the data lives.",
-      "questions": ["backend", "server", "database"]
+      "subtitle": "How the API is built and served, where the data lives, and what runs the web app.",
+      "questions": ["backend", "server", "database", "web"]
     },
     {
       "id": "auth",
@@ -63,6 +63,16 @@
       "message": "Where should your data live?",
       "options": ["postgres", "mysql", "sqlite"],
       "default": "postgres"
+    },
+    {
+      "id": "web",
+      "type": "select",
+      "flag": "web",
+      "title": "Web app",
+      "message": "What should run the web app?",
+      "options": ["vite", "next"],
+      "default": "vite",
+      "locked": true
     },
     {
       "id": "auth",
@@ -326,6 +336,44 @@
         }
       }
     },
+    "vite": {
+      "label": "Vite",
+      "hint": "React SPA, TanStack Router",
+      "about": "A single-page React app with TanStack Router's typed file routes and beforeLoad guards. Vite forwards /api to the API in dev, and nginx does in production.",
+      "remove": [
+        "apps/web/index.html",
+        "apps/web/vite.config.ts",
+        "apps/web/package.json",
+        "apps/web/tsconfig.json",
+        "apps/web/tsconfig.node.json",
+        "apps/web/eslint.config.js",
+        "apps/web/Dockerfile",
+        "apps/web/nginx/**",
+        "apps/web/src/main.tsx",
+        "apps/web/src/router.tsx",
+        "apps/web/src/routes/**",
+        "apps/web/src/vite-env.d.ts",
+        "apps/web/src/env.ts",
+        "apps/web/src/i18n/index.ts"
+      ],
+      "json": {
+        "packages/eslint-config/package.json": {
+          "dependencies": ["eslint-plugin-react-refresh"]
+        }
+      }
+    },
+    "next": {
+      "label": "Next.js",
+      "hint": "App Router, server-side guards",
+      "about": "The App Router: pages render on the server, signed-out visitors are redirected before anything loads, and /api is rewritten to your API. TanStack Query and Form work just like with Vite.",
+      "remove": ["variants/next/**", "packages/eslint-config/next.js", "packages/typescript-config/next.json"],
+      "json": {
+        "packages/eslint-config/package.json": {
+          "dependencies": ["@next/eslint-plugin-next"],
+          "exports": ["./next"]
+        }
+      }
+    },
     "cors": {
       "label": "CORS",
       "hint": "only your web app may call the API",
@@ -421,6 +469,7 @@
         "**/Dockerfile",
         "**/docker-entrypoint.sh",
         "apps/web/nginx/**",
+        "variants/next/web/nginx/**",
         ".dockerignore",
         "docker-compose.prod.yml"
       ]
@@ -684,6 +733,21 @@
           "dependencies": ["@fastify/rate-limit", "express-rate-limit"]
         }
       }
+    },
+    {
+      "when": "next",
+      "move": {
+        "variants/next/web/": "apps/web/"
+      },
+      "merge": {
+        "apps/web/components.json": { "rsc": true },
+        "packages/ui/components.json": { "rsc": true },
+        "packages/typescript-config/react.json": { "display": "React", "compilerOptions": { "types": ["node"] } }
+      }
+    },
+    {
+      "when": "next && !packages-ui",
+      "remove": ["packages/typescript-config/react.json"]
     },
     {
       "when": "packages-ui",

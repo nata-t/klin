@@ -1,3 +1,4 @@
+//? "use client" // klin:only next
 
 import { Separator as SeparatorPrimitive } from "@base-ui/react/separator"
 

@@ -1,3 +1,5 @@
+//? "use client" // klin:only next
+//? // klin:only next
 import { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip"
 
 import { cn } from "@/lib/utils"

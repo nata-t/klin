@@ -1,4 +1,7 @@
-import { Link } from "@tanstack/react-router"
+//? "use client" // klin:only next
+//? // klin:only next
+import { Link } from "@tanstack/react-router" // klin:only vite
+//? import Link from "next/link" // klin:only next
 import { LanguageSwitcher } from "@/components/language-switcher" // klin:only i18n
 import { Logo } from "@/components/logo"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -13,7 +16,8 @@ export function PublicHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-transparent bg-background/70 backdrop-blur supports-backdrop-filter:bg-background/50">
       <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4 sm:px-6">
-        <Link to="/" className="rounded-md">
+        <Link to="/" className="rounded-md"> {/* klin:only vite */}
+        {/*? <Link href="/" className="rounded-md"> */} {/* klin:only next */}
           <Logo />
         </Link>
         <nav className="ml-6 hidden items-center gap-5 text-sm text-muted-foreground md:flex">
@@ -28,13 +32,16 @@ export function PublicHeader() {
           <LanguageSwitcher /> {/* klin:only i18n */}
           <ThemeToggle />
           {session ? (
-            <Button render={<Link to="/dashboard" />}>{t("landing.cta.dashboard", "Dashboard")}</Button>
+            <Button render={<Link to="/dashboard" />}>{t("landing.cta.dashboard", "Dashboard")}</Button> {/* klin:only vite */}
+            {/*? <Button render={<Link href="/dashboard" />}>{t("landing.cta.dashboard", "Dashboard")}</Button> */} {/* klin:only next */}
           ) : (
             <>
-              <Button variant="ghost" render={<Link to="/sign-in" />}>
+              <Button variant="ghost" render={<Link to="/sign-in" />}> {/* klin:only vite */}
+              {/*? <Button variant="ghost" render={<Link href="/sign-in" />}> */} {/* klin:only next */}
                 {t("landing.cta.signIn", "Sign in")}
               </Button>
-              <Button render={<Link to="/sign-up" />}>{t("landing.cta.getStarted", "Get started")}</Button>
+              <Button render={<Link to="/sign-up" />}>{t("landing.cta.getStarted", "Get started")}</Button> {/* klin:only vite */}
+              {/*? <Button render={<Link href="/sign-up" />}>{t("landing.cta.getStarted", "Get started")}</Button> */} {/* klin:only next */}
             </>
           )}
         </div>

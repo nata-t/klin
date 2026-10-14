@@ -1,12 +1,12 @@
-import { queryOptions, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query"
-import { useNavigate } from "@tanstack/react-router"
+import { queryOptions, useQuery, useSuspenseQuery } from "@tanstack/react-query"
 import { authClient } from "./auth-client"
-import { queryClient } from "./query-client"
+import { queryClient } from "./query-client" // klin:only vite
+//? import { getQueryClient } from "./query-client" // klin:only next
 
 /**
- * The session lives in React Query, so route guards (beforeLoad) and
- * components read the same cached value. Invalidate it after anything that
- * changes the user: sign in/out, profile updates, switching organization.
+ * The session lives in React Query, so route guards and components read the
+ * same cached value. Invalidate it after anything that changes the user:
+ * sign in/out, profile updates, switching organization.
  */
 export const sessionQueryKey = ["session"] as const
 
@@ -28,7 +28,7 @@ export function useSession() {
 }
 
 /**
- * The signed-in user. Only use inside the `_app` layout — its guard
+ * The signed-in user. Only use inside the signed-in app layout — its guard
  * guarantees a session is already cached.
  */
 export function useCurrentUser(): User {
@@ -44,18 +44,20 @@ export function useCurrentSession(): Session {
 }
 
 export function refreshSession() {
-  return queryClient.invalidateQueries({ queryKey: sessionQueryKey })
+  return queryClient.invalidateQueries({ queryKey: sessionQueryKey }) // klin:only vite
+  //? return getQueryClient().invalidateQueries({ queryKey: sessionQueryKey }) // klin:only next
 }
 
-export function useSignOut() {
-  const navigate = useNavigate()
-  const client = useQueryClient()
-  return async () => {
-    await authClient.signOut()
-    client.setQueryData(sessionQueryKey, null)
-    client.removeQueries({ predicate: (q) => q.queryKey[0] !== "session" })
-    await navigate({ to: "/sign-in" })
-  }
+/**
+ * Signs out, then loads /sign-in from scratch: nothing from the signed-in
+ * visit (cached data, the app shell around the page) outlives it.
+ */
+export async function signOut() {
+  await authClient.signOut()
+  // klin:if next
+  //? // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+  // klin:endif
+  window.location.assign("/sign-in")
 }
 
 /** Only allow same-origin, path-only redirects (no open redirects). */

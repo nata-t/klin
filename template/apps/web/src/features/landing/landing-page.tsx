@@ -1,4 +1,7 @@
-import { Link } from "@tanstack/react-router"
+//? "use client" // klin:only next
+//? // klin:only next
+import { Link } from "@tanstack/react-router" // klin:only vite
+//? import Link from "next/link" // klin:only next
 import {
   ArrowRightIcon,
   BoxesIcon,
@@ -65,7 +68,8 @@ const STACK = [
   // klin:endif
   "Better Auth",
   "Prisma",
-  "TanStack Router",
+  "TanStack Router", // klin:only vite
+  //? "Next.js", // klin:only next
   "TanStack Query",
   "TanStack Form",
   "Zod",
@@ -95,11 +99,13 @@ export function LandingPage() {
           </p>
           <div className="mt-10 flex flex-wrap justify-center gap-3">
             {session ? (
-              <Button size="lg" className="h-11 px-5" render={<Link to="/dashboard" />}>
+              <Button size="lg" className="h-11 px-5" render={<Link to="/dashboard" />}> {/* klin:only vite */}
+              {/*? <Button size="lg" className="h-11 px-5" render={<Link href="/dashboard" />}> */} {/* klin:only next */}
                 {t("landing.cta.dashboard", "Dashboard")} <ArrowRightIcon />
               </Button>
             ) : (
-              <Button size="lg" className="h-11 px-5" render={<Link to="/sign-up" />}>
+              <Button size="lg" className="h-11 px-5" render={<Link to="/sign-up" />}> {/* klin:only vite */}
+              {/*? <Button size="lg" className="h-11 px-5" render={<Link href="/sign-up" />}> */} {/* klin:only next */}
                 {t("landing.cta.getStarted", "Get started")} <ArrowRightIcon />
               </Button>
             )}

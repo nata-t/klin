@@ -1,3 +1,5 @@
+//? "use client" // klin:only next
+//? // klin:only next
 import { type InviteMemberInput, inviteMemberSchema } from "@repo/validators"
 import { Building2Icon, MailIcon, PlusIcon, TrashIcon, XIcon } from "lucide-react"
 import { useState } from "react"

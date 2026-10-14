@@ -90,13 +90,38 @@ services:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
+      # klin:if next
+      #? args:
+      #?   API_URL: http://api:3000
+      # klin:endif
     restart: unless-stopped
     environment:
+      # klin:if next
+      #? API_URL: http://api:3000
+      # klin:else
       API_UPSTREAM: http://api:3000
     ports:
       - "8080:80"
+      # klin:endif
     depends_on:
       - api
+  # klin:if next
+
+  # nginx in front of Next.js: records each visitor's address for the API's
+  # rate limits and logs, and sends /api straight to the API.
+  proxy:
+    image: nginx:1-alpine
+    restart: unless-stopped
+    environment:
+      WEB_UPSTREAM: http://web:3000
+      API_UPSTREAM: http://api:3000
+    volumes:
+      - ./apps/web/nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+    ports:
+      - "8080:80"
+    depends_on:
+      - web
+  # klin:endif
 
 volumes:
   # klin:if postgres

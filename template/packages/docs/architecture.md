@@ -5,10 +5,18 @@
 ```mermaid
 flowchart LR
   subgraph Browser
+    <!-- klin:if next -->
+    web["apps/web<br/>Next.js · TanStack Query/Form · shadcn/ui"]
+    <!-- klin:else -->
     web["apps/web<br/>React · TanStack Router/Query/Form · shadcn/ui"]
+    <!-- klin:endif -->
   end
   subgraph Server
+    <!-- klin:if next -->
+    proxy["/api rewrite<br/>(the Next.js server)"]
+    <!-- klin:else -->
     proxy["/api proxy<br/>(Vite in dev, nginx in prod)"]
+    <!-- klin:endif -->
     <!-- klin:if nest-express -->
     api["apps/api<br/>NestJS on Express"]
     <!-- klin:elif nest-fastify -->
@@ -34,11 +42,24 @@ flowchart LR
   dbpkg["packages/db<br/>Prisma client"] -.-> api
 ```
 
+<!-- klin:if next -->
+- **The browser only talks to its own origin.** `/api/*` is forwarded to the API
+  (a rewrite in `next.config.ts`, in dev and in production; the Docker stack's
+  nginx sends it straight to the API), so auth cookies are first-party and
+  there's no CORS dance.
+- **Workspace packages ship TypeScript source.** Next.js compiles them for the
+  web app (`transpilePackages`); the API is bundled with tsup, which compiles
+  them into one file.
+- **Next.js renders the pages, the API owns the data.** Server code in
+  `apps/web` only checks the session (with the visitor's cookie); everything
+  else goes through the API, like it does from the browser.
+<!-- klin:else -->
 - **The browser only talks to its own origin.** `/api/*` is forwarded to the API
   (Vite's dev server does it locally, nginx in the production image), so auth
   cookies are first-party and there's no CORS dance.
 - **Workspace packages ship TypeScript source.** Vite compiles them for the web
   app; the API is bundled with tsup, which compiles them into one file.
+<!-- klin:endif -->
 - **There's one source of truth for each concern.** Data shapes live in
   `packages/validators`, the database schema in `packages/db`, auth config in
   `packages/auth`, and server env in `packages/env`.
@@ -157,18 +178,33 @@ The web client (`apps/web/src/lib/api-client.ts`) unwraps successes and throws a
   After `requireAuth`, the session is `request.auth` (`.user`, `.session`).
   <!-- klin:endif -->
 <!-- klin:endif -->
+<!-- klin:if next -->
+- **Web:** two checks before a signed-in page renders. `src/proxy.ts` sends
+  visitors without a session cookie to `/sign-in?redirect=…` (it only looks for
+  the cookie); then the `(app)` layout asks the API whether the session is real
+  (`lib/server-session.ts`) and hands it to React Query (`lib/session.ts`), so
+  the shell renders with the user straight away. The `(auth)` layout sends
+  signed-in users to the dashboard.
+<!-- klin:else -->
 - **Web:** the session lives in React Query (`lib/session.ts`). Route guards
   are plain `beforeLoad` functions: `_app.tsx` sends signed-out visitors to
   `/sign-in?redirect=…`; `_auth.tsx` sends signed-in users to the dashboard.
+<!-- klin:endif -->
 - **Cookies:** `HttpOnly`, `SameSite=Lax`, and `Secure` in production. Because
   of the same-origin proxy this works unchanged in dev and prod. Deploying the
-  API on a different site? See [deployment](./deployment.md#separate-origins).
+  API on a different site? See [deployment](./deployment.md#separate-origins). <!-- klin:only vite -->
+  API somewhere else? See [deployment](./deployment.md#api-on-another-host). <!-- klin:only next -->
 
 ## Web app conventions
 
 | Thing | Where | Pattern |
 | --- | --- | --- |
+<!-- klin:if next -->
+| Pages | `src/app/**` | The App Router. `(public)`, `(auth)` and `(app)` are route groups with their own layouts. Keep `page.tsx` thin: metadata plus a component from `src/features` |
+| Server vs browser | `page.tsx` and layouts run on the server | Feature pages start with `"use client"` — hooks, TanStack Query and forms live there |
+<!-- klin:else -->
 | Routes | `src/routes/**` | File-based. `_public`, `_auth`, `_app` are layouts. Keep route files thin. |
+<!-- klin:endif -->
 | Feature code | `src/features/<feature>/` | `api.ts` (query keys + hooks), components, pages |
 | Query keys | `features/*/api.ts` | `noteKeys.all / lists() / list(q) / detail(id)` — invalidate by prefix |
 | Forms | `src/components/form` | `useAppForm` + a schema from `@repo/validators` + `field.TextField` etc. |
@@ -177,8 +213,13 @@ The web client (`apps/web/src/lib/api-client.ts`) unwraps successes and throws a
 <!-- klin:else -->
 | UI kit | `src/components/ui` | shadcn/ui (Base UI). Add more with `pnpm ui:add <name>` — see [UI & theming](./ui.md) |
 <!-- klin:endif -->
+<!-- klin:if next -->
+| Errors / 404 / loading | `src/components` | `app/error.tsx` and `app/not-found.tsx` render `RouteError` and `NotFound`; `PageLoader` for waits |
+| Page titles | `export const metadata = { title }` in `page.tsx` | The browser tab; the header shows the sidebar entry you're in |
+<!-- klin:else -->
 | Errors / 404 / loading | `src/components` | Router defaults: `RouteError`, `NotFound`, `PageLoader` |
 | Page titles | route `staticData: { title }` | Shown in the header and the browser tab |
+<!-- klin:endif -->
 
 ## API conventions
 

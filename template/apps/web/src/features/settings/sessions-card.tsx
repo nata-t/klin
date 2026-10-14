@@ -1,3 +1,5 @@
+//? "use client" // klin:only next
+//? // klin:only next
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { LaptopIcon, SmartphoneIcon } from "lucide-react"
 import { Badge } from "@/components/ui/badge"

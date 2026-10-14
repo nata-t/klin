@@ -1,5 +1,12 @@
+//? "use client" // klin:only next
+//? // klin:only next
 import { useMutation, useQuery } from "@tanstack/react-query"
+// klin:if next
+//? import Link from "next/link"
+//? import { useParams, useRouter } from "next/navigation"
+// klin:else
 import { getRouteApi, Link, useNavigate } from "@tanstack/react-router"
+// klin:endif
 import { Building2Icon } from "lucide-react"
 import { Logo } from "@/components/logo"
 import { PageLoader } from "@/components/page-loader"
@@ -9,11 +16,13 @@ import { authClient, unwrap } from "@/lib/auth-client"
 import { refreshSession } from "@/lib/session"
 import { organizationKeys } from "./api"
 
-const route = getRouteApi("/accept-invitation/$invitationId")
+const route = getRouteApi("/accept-invitation/$invitationId") // klin:only vite
 
 export function AcceptInvitationPage() {
-  const { invitationId } = route.useParams()
-  const navigate = useNavigate()
+  const { invitationId } = route.useParams() // klin:only vite
+  //? const { invitationId } = useParams<{ invitationId: string }>() // klin:only next
+  const navigate = useNavigate() // klin:only vite
+  //? const router = useRouter() // klin:only next
 
   const invitation = useQuery({
     queryKey: organizationKeys.invitation(invitationId),
@@ -26,13 +35,15 @@ export function AcceptInvitationPage() {
       await unwrap(authClient.organization.acceptInvitation({ invitationId }))
       await refreshSession()
     },
-    onSuccess: () => navigate({ to: "/dashboard" }),
+    onSuccess: () => navigate({ to: "/dashboard" }), // klin:only vite
+    //? onSuccess: () => router.push("/dashboard"), // klin:only next
     meta: { successMessage: "Welcome to the team! 🎉" },
   })
 
   const decline = useMutation({
     mutationFn: () => unwrap(authClient.organization.rejectInvitation({ invitationId })),
-    onSuccess: () => navigate({ to: "/dashboard" }),
+    onSuccess: () => navigate({ to: "/dashboard" }), // klin:only vite
+    //? onSuccess: () => router.push("/dashboard"), // klin:only next
   })
 
   return (
@@ -68,7 +79,8 @@ export function AcceptInvitationPage() {
             <CardDescription>It may have expired, been cancelled, or been sent to a different email.</CardDescription>
           </CardHeader>
           <CardFooter className="justify-center">
-            <Button render={<Link to="/dashboard" />}>Go to dashboard</Button>
+            <Button render={<Link to="/dashboard" />}>Go to dashboard</Button> {/* klin:only vite */}
+            {/*? <Button render={<Link href="/dashboard" />}>Go to dashboard</Button> */} {/* klin:only next */}
           </CardFooter>
         </Card>
       )}

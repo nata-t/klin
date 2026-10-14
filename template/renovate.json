@@ -13,6 +13,9 @@
       "matchPackageNames": ["better-auth", "@better-auth/**", "@thallesp/nestjs-better-auth"]
     },
     { "groupName": "TanStack", "matchPackageNames": ["@tanstack/**"] },
+    // klin:if next
+    //? { "groupName": "Next.js", "matchPackageNames": ["next", "@next/**"] },
+    // klin:endif
     {
       "groupName": "React",
       "matchPackageNames": ["react", "react-dom", "@types/react", "@types/react-dom"]

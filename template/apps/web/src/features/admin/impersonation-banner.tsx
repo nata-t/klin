@@ -1,4 +1,5 @@
-import { useNavigate } from "@tanstack/react-router"
+import { useNavigate } from "@tanstack/react-router" // klin:only vite
+//? import { useRouter } from "next/navigation" // klin:only next
 import { VenetianMaskIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { authClient } from "@/lib/auth-client"
@@ -6,13 +7,15 @@ import { refreshSession, useCurrentSession } from "@/lib/session"
 
 export function ImpersonationBanner() {
   const { session, user } = useCurrentSession()
-  const navigate = useNavigate()
+  const navigate = useNavigate() // klin:only vite
+  //? const router = useRouter() // klin:only next
   if (!session.impersonatedBy) return null
 
   async function stop() {
     await authClient.admin.stopImpersonating()
     await refreshSession()
-    await navigate({ to: "/admin" })
+    await navigate({ to: "/admin" }) // klin:only vite
+    //? router.push("/admin") // klin:only next
   }
 
   return (

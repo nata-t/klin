@@ -1,4 +1,5 @@
-import { Link } from "@tanstack/react-router"
+import { Link } from "@tanstack/react-router" // klin:only vite
+//? import Link from "next/link" // klin:only next
 import { ArrowLeftIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -13,7 +14,8 @@ export function NotFound() {
         <p className="mt-2 text-sm text-muted-foreground">
           The link might be broken, or the page may have moved.
         </p>
-        <Button className="mt-6" variant="outline" render={<Link to="/" />}>
+        <Button className="mt-6" variant="outline" render={<Link to="/" />}> {/* klin:only vite */}
+        {/*? <Button className="mt-6" variant="outline" render={<Link href="/" />}> */} {/* klin:only next */}
           <ArrowLeftIcon /> Back home
         </Button>
       </div>

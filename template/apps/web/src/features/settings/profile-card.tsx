@@ -1,3 +1,5 @@
+//? "use client" // klin:only next
+//? // klin:only next
 import { type UpdateProfileInput, updateProfileSchema } from "@repo/validators"
 import { toast } from "sonner"
 import { AppForm, useAppForm } from "@/components/form"

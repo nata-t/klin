@@ -1,7 +1,8 @@
 import { Spinner } from "@/components/ui/spinner"
 import { cn } from "@/lib/utils"
 
-/** Shown while a route's loader runs (router default) or for any full-area wait. */
+/** Shown while a route's loader runs (router default) or for any full-area wait. */ // klin:only vite
+//? /** A full-area spinner, for a page (or a part of one) that's still loading. */ // klin:only next
 export function PageLoader({ label = "Loading…", className }: { label?: string; className?: string }) {
   return (
     <div

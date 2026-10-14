@@ -13,7 +13,11 @@ Notes for AI coding assistants (and humans in a hurry).
 <!-- klin:else -->
 - `apps/api` — Fastify 5 (ESM, bundled with tsup). `src/app.ts` wires everything; route plugins in `src/routes/<feature>.ts`, logic in `src/services/<feature>.ts`.
 <!-- klin:endif -->
+<!-- klin:if next -->
+- `apps/web` — Next.js 16 (App Router) + React 19. Pages in `src/app` (route groups `(public)`, `(auth)`, `(app)`), feature code in `src/features/<feature>`.
+<!-- klin:else -->
 - `apps/web` — Vite + React 19. Routes in `src/routes` (TanStack Router, file-based), feature code in `src/features/<feature>`.
+<!-- klin:endif -->
 <!-- klin:if packages-ui -->
 - `packages/ui` — shadcn/ui components, hooks, `cn()` and the global stylesheet/theme (`@repo/ui`).
 <!-- klin:endif -->
@@ -42,6 +46,11 @@ Notes for AI coding assistants (and humans in a hurry).
   types `request.body`/`request.query`; respond with `ok(request, thingSchema.parse(thing))` so private fields never leak.
 - Routes opt in to auth: `app.addHook("preHandler", requireAuth)`; the session is `request.auth`. Throw `notFound()` / `forbidden()` from `src/lib/http.ts`.
 - Services are plain functions using `prisma` from `@repo/db`. Paginated lists return `paginate(items, total, query)`.
+<!-- klin:endif -->
+<!-- klin:if next -->
+- Next.js: `page.tsx` files and layouts are server components — keep them thin (metadata, a session check, one feature component).
+  Feature pages start with `"use client"`. Server code talks to the API with the visitor's cookie (`lib/server-session.ts`);
+  it never imports `@repo/db`. A new signed-in page also goes in the `matcher` of `src/proxy.ts`.
 <!-- klin:endif -->
 - Web data access goes through `features/<feature>/api.ts`: a query-key factory, `queryOptions`, and hooks.
   Invalidate with the factory (`noteKeys.lists()`).

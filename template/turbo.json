@@ -12,8 +12,13 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build", "^db:generate", "db:generate"],
+      // klin:if next
+      //? "env": ["API_URL", "NEXT_OUTPUT"],
+      //? "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
+      // klin:else
       "env": ["VITE_*"],
       "outputs": ["dist/**"]
+      // klin:endif
     },
     "dev": {
       "dependsOn": ["^db:generate", "db:generate"],
