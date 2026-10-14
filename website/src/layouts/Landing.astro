@@ -1,0 +1,69 @@
+---
+import "@fontsource-variable/geist"
+import "@fontsource-variable/geist-mono"
+import "../styles/landing.css"
+import Nav from "../components/landing/Nav.astro"
+import Footer from "../components/landing/Footer.astro"
+
+interface Props {
+  title: string
+  description: string
+}
+const { title, description } = Astro.props
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#141414" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content="/og.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <script is:inline>
+      // Reveal choreography only for visitors with JS and motion on; the page is complete without it.
+      ;(function () {
+        var root = document.documentElement
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
+        root.classList.add("motion")
+        setTimeout(function () {
+          if (!root.classList.contains("motion-ready")) root.classList.remove("motion")
+        }, 4000)
+      })()
+    </script>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <Nav />
+    <main id="main">
+      <slot />
+    </main>
+    <Footer />
+    <script>
+      import "../scripts/motion"
+    </script>
+  </body>
+</html>
+
+<style>
+  .skip {
+    position: absolute;
+    left: 12px;
+    top: -60px;
+    z-index: 200;
+    padding: 8px 12px;
+    background: var(--bright);
+    color: var(--bg);
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+  .skip:focus {
+    top: 12px;
+  }
+</style>

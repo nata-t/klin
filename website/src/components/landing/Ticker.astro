@@ -1,0 +1,92 @@
+---
+// The stack, scrolling past like a marquee. Names only: no logos, no hues.
+const parts = [
+  "NestJS 12",
+  "Express 5",
+  "Fastify 5",
+  "Better Auth",
+  "Prisma",
+  "Zod 4",
+  "nestjs-zod",
+  "TanStack Router",
+  "TanStack Query",
+  "TanStack Form",
+  "Next.js 16",
+  "Vite",
+  "React 19",
+  "shadcn/ui",
+  "Turborepo",
+  "PostgreSQL",
+  "MySQL",
+  "SQLite",
+  "BullMQ",
+  "React Email",
+  "Playwright",
+  "Vitest",
+]
+---
+
+<div class="ticker" aria-label="The stack">
+  <div class="track">
+    {
+      [0, 1].map((copy) => (
+        <ul aria-hidden={copy === 1 ? "true" : undefined}>
+          {parts.map((part) => (
+            <li>
+              <span class="sep" aria-hidden="true">
+                ✦
+              </span>
+              {part}
+            </li>
+          ))}
+        </ul>
+      ))
+    }
+  </div>
+</div>
+
+<style>
+  .ticker {
+    position: relative;
+    overflow: hidden;
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+    background: rgba(10, 10, 10, 0.5);
+    mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+  }
+  .track {
+    display: flex;
+    width: max-content;
+    animation: slide 60s linear infinite;
+  }
+  .ticker:hover .track {
+    animation-play-state: paused;
+  }
+  ul {
+    display: flex;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  li {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    padding: 15px 11px;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .sep {
+    color: var(--line);
+    font-size: 9px;
+  }
+  @keyframes slide {
+    to {
+      transform: translateX(-50%);
+    }
+  }
+</style>

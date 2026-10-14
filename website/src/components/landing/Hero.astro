@@ -1,0 +1,266 @@
+---
+import { LOGO } from "@cli/ui/logo"
+import { INSTALL, VERSION } from "../../lib/site"
+
+// No-JS fallback for the canvas logo: faces in the chrome gradient, shadows in dark gray.
+const faceRows = LOGO.filter((line) => line.includes("█")).length
+const shade = (row: number) => Math.round(0xfa - (0xfa - 0xa4) * Math.min(1, row / Math.max(1, faceRows - 1)))
+const fallback = LOGO.map((line, row) =>
+  [...line].map((ch) => (ch === "█" ? { ch, color: `rgb(${shade(row)},${shade(row)},${shade(row)})` } : { ch, color: "#585858" }))
+)
+---
+
+<section id="intro" class="hero section" data-section="intro">
+  <canvas class="field" aria-hidden="true"></canvas>
+
+  <div class="corners" aria-hidden="true">
+    <p class="hud c-tl">create-klin v{VERSION}</p>
+    <p class="hud c-tr">◆ 1 / 6 · intro</p>
+    <p class="hud c-bl" data-hero-count>cells 000 / 000 swept</p>
+    <p class="hud c-br" data-hero-pointer>x 0000 · y 0000</p>
+  </div>
+
+  <div class="stage">
+    <div class="logo-slot" data-logo-slot>
+      <pre class="logo-fallback" aria-hidden="true">{fallback.map((row) => <span class="row">{row.map((c) => <span style={`color:${c.color}`}>{c.ch}</span>)}</span>)}</pre>
+      <span class="sr-only">klin</span>
+    </div>
+
+    <h1 class="display headline" data-reveal>
+      <span class="chrome sheen">Starter kits,</span><br /><span class="chrome sheen">snapped together.</span>
+    </h1>
+
+    <p class="lede" data-reveal>
+      One command hands you a TypeScript monorepo — an API, a web app, auth, a database and one set of Zod schemas shared by
+      both — wired end to end. Then klin stays in the project to keep it that way.
+    </p>
+
+    <div class="install" data-reveal>
+      <div class="chips" role="tablist" aria-label="Package manager" data-pm-tabs>
+        {
+          Object.keys(INSTALL).map((pm, i) => (
+            <button class="chip" role="tab" type="button" aria-selected={i === 0 ? "true" : "false"} data-pm={pm}>
+              <span class="mark" aria-hidden="true">
+                {i === 0 ? "●" : "○"}
+              </span>
+              {pm}
+            </button>
+          ))
+        }
+      </div>
+      <div class="cmd">
+        <code class="line"><span class="prompt">$</span><span data-install-cmd>{INSTALL.bun}</span></code>
+        <button class="copy" type="button" data-copy-from="[data-install-cmd]" aria-label="Copy the install command">
+          <span data-copy-label>Copy</span><kbd aria-hidden="true">c</kbd>
+        </button>
+      </div>
+    </div>
+
+    <div class="actions" data-reveal>
+      <a class="btn primary" href="#wizard">Try the wizard here <span class="arrow" aria-hidden="true">↓</span></a>
+      <a class="btn" href="/docs/getting-started/">Read the docs <span class="arrow" aria-hidden="true">→</span></a>
+    </div>
+
+    <p class="hud meta" data-reveal>MIT · Node ≥ 22.12 · bun · pnpm · npm · Postgres · MySQL · SQLite</p>
+  </div>
+
+  <p class="keys hud" aria-hidden="true">
+    <span><kbd>c</kbd> copy</span>
+    <span><kbd>w</kbd> wizard</span>
+    <span><kbd>d</kbd> docs</span>
+    <span class="click">click the logo · scatter it</span>
+  </p>
+</section>
+
+<script>
+  import { mountHeroField } from "../../scripts/hero-field"
+  import { INSTALL } from "../../lib/site"
+
+  const hero = document.querySelector<HTMLElement>("#intro")!
+  mountHeroField(hero)
+
+  // Package-manager chips swap the install command.
+  const tabs = hero.querySelectorAll<HTMLButtonElement>("[data-pm]")
+  const cmd = hero.querySelector<HTMLElement>("[data-install-cmd]")!
+  tabs.forEach((tab) =>
+    tab.addEventListener("click", () => {
+      tabs.forEach((t) => {
+        const on = t === tab
+        t.setAttribute("aria-selected", String(on))
+        t.querySelector(".mark")!.textContent = on ? "●" : "○"
+      })
+      cmd.textContent = INSTALL[tab.dataset.pm as keyof typeof INSTALL]
+    })
+  )
+</script>
+
+<style>
+  .hero {
+    position: relative;
+    min-height: max(720px, 100svh);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: calc(var(--nav-h) + 56px) var(--gutter) 96px;
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .field {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+  }
+  .corners .hud {
+    position: absolute;
+    margin: 0;
+    color: var(--line);
+    font-variant-numeric: tabular-nums;
+  }
+  .c-tl {
+    top: calc(var(--nav-h) + 18px);
+    left: var(--gutter);
+  }
+  .c-tr {
+    top: calc(var(--nav-h) + 18px);
+    right: var(--gutter);
+  }
+  .c-bl {
+    bottom: 22px;
+    left: var(--gutter);
+  }
+  .c-br {
+    bottom: 22px;
+    right: var(--gutter);
+  }
+  .stage {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    max-width: 920px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  .logo-slot {
+    position: relative;
+    width: min(660px, 88%);
+    aspect-ratio: 45 / 12.3;
+    display: grid;
+    place-items: center;
+    margin-bottom: clamp(18px, 3vw, 34px);
+    cursor: pointer;
+  }
+  .logo-fallback {
+    margin: 0;
+    font-size: clamp(9px, 1.75vw, 17px);
+    line-height: 1.02;
+    letter-spacing: 0;
+  }
+  .logo-fallback .row {
+    display: block;
+  }
+  :global(.hero[data-field="on"]) .logo-fallback {
+    visibility: hidden;
+  }
+  .headline {
+    font-size: clamp(36px, 5.6vw, 76px);
+  }
+  /* A band of light crosses the headline once, like the CLI logo's intro sweep. */
+  .sheen {
+    background-image:
+      linear-gradient(100deg, transparent 42%, rgba(255, 255, 255, 0.95) 50%, transparent 58%),
+      linear-gradient(180deg, #fafafa 10%, #a4a4a4 95%);
+    background-size:
+      250% 100%,
+      100% 100%;
+    background-position:
+      120% 0,
+      0 0;
+    background-repeat: no-repeat;
+  }
+  :global(html.motion) .sheen {
+    animation: sheen 1.5s cubic-bezier(0.4, 0, 0.2, 1) 1.9s both;
+  }
+  @keyframes sheen {
+    from {
+      background-position:
+        120% 0,
+        0 0;
+    }
+    to {
+      background-position:
+        -40% 0,
+        0 0;
+    }
+  }
+  .lede {
+    margin-top: 22px;
+  }
+  .install {
+    margin-top: 28px;
+    width: min(560px, 100%);
+    display: grid;
+    gap: 10px;
+    justify-items: center;
+  }
+  .install .cmd {
+    width: 100%;
+    text-align: left;
+  }
+  .install .copy kbd {
+    font-size: 10px;
+    padding: 0 5px;
+    min-width: 0;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 22px;
+  }
+  .meta {
+    margin: 26px 0 0;
+    color: var(--subtle);
+  }
+  .keys {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 20px;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 22px;
+    margin: 0;
+    color: var(--subtle);
+    pointer-events: none;
+  }
+  .keys kbd {
+    margin-right: 6px;
+    font-size: 10px;
+    min-width: 0;
+    padding: 0 5px;
+    color: var(--text);
+  }
+  @media (max-width: 860px) {
+    .c-bl,
+    .c-br {
+      display: none;
+    }
+    .keys .click {
+      display: none;
+    }
+  }
+  @media (max-width: 560px) {
+    .keys {
+      display: none;
+    }
+    .c-tr {
+      display: none;
+    }
+  }
+</style>

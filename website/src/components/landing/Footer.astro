@@ -1,0 +1,95 @@
+---
+import { NPM, REPO, VERSION } from "../../lib/site"
+---
+
+<footer class="footer">
+  <div class="rail">
+    <span class="tick tl" aria-hidden="true"></span>
+    <span class="tick tr" aria-hidden="true"></span>
+    <div class="cols">
+      <div class="sign">
+        <p class="word">✦ K L I N ✦</p>
+        <p class="hud">A spotless full-stack TypeScript starter</p>
+      </div>
+      <nav class="group" aria-label="Docs">
+        <p class="hud">Docs</p>
+        <a href="/docs/getting-started/">Getting started</a>
+        <a href="/docs/grow/generate/">klin generate</a>
+        <a href="/docs/reference/cli/">CLI reference</a>
+        <a href="/docs/reference/custom-templates/">Custom templates</a>
+      </nav>
+      <nav class="group" aria-label="Project">
+        <p class="hud">Project</p>
+        <a href={REPO} rel="noopener">GitHub</a>
+        <a href={NPM} rel="noopener">npm</a>
+        <a href="/docs/changelog/">Changelog</a>
+        <a href={`${REPO}/issues`} rel="noopener">Issues</a>
+      </nav>
+    </div>
+    <div class="base">
+      <p class="hud">create-klin v{VERSION} · MIT</p>
+      <p class="hud">Everything's in its place. Your move.</p>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    position: relative;
+    border-top: 1px solid var(--rule);
+  }
+  .cols {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 32px;
+    padding: 56px var(--gutter) 40px;
+  }
+  .word {
+    margin: 0 0 8px;
+    font-family: var(--mono);
+    font-weight: 650;
+    font-size: 15px;
+    letter-spacing: 0.06em;
+    color: var(--bright);
+  }
+  .group {
+    display: grid;
+    align-content: start;
+    gap: 8px;
+  }
+  .group .hud {
+    margin: 0 0 6px;
+  }
+  .group a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 14px;
+    width: fit-content;
+  }
+  .group a:hover {
+    color: var(--bright);
+  }
+  .base {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 18px var(--gutter);
+    border-top: 1px solid var(--rule);
+  }
+  .base .hud {
+    margin: 0;
+    color: var(--line);
+  }
+  p {
+    margin: 0;
+  }
+  @media (max-width: 720px) {
+    .cols {
+      grid-template-columns: 1fr 1fr;
+    }
+    .sign {
+      grid-column: 1 / -1;
+    }
+  }
+</style>
