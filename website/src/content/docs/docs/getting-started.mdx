@@ -1,0 +1,114 @@
+---
+title: Getting started
+description: Create your first klin project, run it, and sign in.
+---
+
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components"
+
+## Requirements
+
+| | |
+| --- | --- |
+| **Node.js** | 22.12 or newer |
+| **A package manager** | bun (the default), pnpm or npm |
+| **git** | optional — used to create the repository and make the first commit |
+| **Docker** | only for local services: Postgres or MySQL, Redis (background jobs) and S3-compatible storage (uploads). SQLite without jobs or uploads needs nothing. |
+
+## Create a project
+
+<Tabs syncKey="pm">
+  <TabItem label="bun">
+    ```bash
+    bun create klin my-app
+    ```
+  </TabItem>
+  <TabItem label="pnpm">
+    ```bash
+    pnpm create klin my-app
+    ```
+  </TabItem>
+  <TabItem label="npm">
+    ```bash
+    npm create klin@latest my-app
+    ```
+  </TabItem>
+</Tabs>
+
+In a terminal, that opens [the wizard](/docs/create/wizard/): six short pages
+where you pick the stack, the sign-in methods and the extras. Each package
+manager's `create` uses itself for the project, so `pnpm create klin` makes a
+pnpm project.
+
+When you build, klin:
+
+<Steps>
+
+1. Renders the template with your picks and strips everything you didn't pick.
+2. Writes the project and a `.env` with freshly generated secrets.
+3. Runs `git init`.
+4. Installs the dependencies and generates the Prisma client.
+5. Makes the first commit, and prints your next steps.
+
+</Steps>
+
+<Aside type="tip">
+  Want no questions? Add `-y`. A [preset](/docs/create/presets/) and
+  [flags](/docs/reference/cli/#create-flags) say what to make:
+  `bunx create-klin my-app --preset saas --web next -y`.
+</Aside>
+
+## Run it
+
+<Tabs syncKey="pm">
+  <TabItem label="bun">
+    ```bash
+    cd my-app
+    bun run db:up        # Postgres (and Redis/storage, if picked) in Docker
+    bun run db:migrate   # create the tables
+    bun run db:seed      # a demo admin and some notes
+    bun run dev          # web :5173 · API :3000 · Prisma Studio :5555
+    ```
+  </TabItem>
+  <TabItem label="pnpm">
+    ```bash
+    cd my-app
+    pnpm db:up           # Postgres (and Redis/storage, if picked) in Docker
+    pnpm db:migrate      # create the tables
+    pnpm db:seed         # a demo admin and some notes
+    pnpm dev             # web :5173 · API :3000 · Prisma Studio :5555
+    ```
+  </TabItem>
+  <TabItem label="npm">
+    ```bash
+    cd my-app
+    npm run db:up        # Postgres (and Redis/storage, if picked) in Docker
+    npm run db:migrate   # create the tables
+    npm run db:seed      # a demo admin and some notes
+    npm run dev          # web :5173 · API :3000 · Prisma Studio :5555
+    ```
+  </TabItem>
+</Tabs>
+
+Open `http://localhost:5173` and sign in with `demo@example.com` /
+`demo-password-123` — the seeded demo admin, there when email & password
+sign-in is on.
+
+With SQLite and no background jobs or uploads (the `minimal` preset) there's
+nothing to start: skip `db:up`.
+
+<Aside type="caution" title="Docker says “permission denied”">
+  On Linux, your user has to be in the `docker` group:
+  `sudo usermod -aG docker $USER`, then `newgrp docker` (or log out and back
+  in). The closing next steps and `klin doctor` tell you when this is needed.
+  More in [Troubleshooting](/docs/troubleshooting/).
+</Aside>
+
+## What next
+
+- Add a feature: `pnpm klin generate resource billing/invoice` — see
+  [klin generate](/docs/grow/generate/).
+- Switch on a module you skipped: `pnpm klin add organizations` — see
+  [klin add & remove](/docs/grow/add-remove/).
+- Something off? `pnpm klin doctor` checks your setup and says how to fix it.
+- Every project has its own guides in `packages/docs`, written for the stack
+  you picked.

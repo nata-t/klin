@@ -1,0 +1,51 @@
+---
+/** The presets from template/klin.template.json, with what each changes from the defaults. */
+import { manifest, option, presets } from "../../lib/manifest"
+
+const label = (id: string) => option(id).label
+const describe = (answers: Record<string, string | string[]>) =>
+  Object.entries(answers).map(([qid, value]) => {
+    const q = manifest.questions.find((q) => q.id === qid)
+    const values = Array.isArray(value) ? value : [value]
+    return { question: q?.title ?? qid, flag: q?.flag ?? qid, text: values.length ? values.map(label).join(", ") : "none", raw: values.join(",") || "none" }
+  })
+---
+
+<table>
+  <thead>
+    <tr>
+      <th>Preset</th>
+      <th>What's in it</th>
+    </tr>
+  </thead>
+  <tbody>
+    {
+      presets.map((p) => {
+        const changes = describe(p.answers ?? {})
+        return (
+          <tr>
+            <td>
+              <code class="klin-chip">{p.id}</code>
+              <br />
+              <span class="klin-muted">{p.label}</span>
+            </td>
+            <td>
+              {p.about}
+              {changes.length ? (
+                <ul>
+                  {changes.map((c) => (
+                    <li>
+                      {c.question}: {c.text} <span class="klin-muted">(<code>--{c.flag} {c.raw}</code>)</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p class="klin-muted">Every question at its default.</p>
+              )}
+            </td>
+          </tr>
+        )
+      })
+    }
+  </tbody>
+</table>

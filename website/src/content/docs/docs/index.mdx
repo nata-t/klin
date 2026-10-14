@@ -1,0 +1,71 @@
+---
+title: Introduction
+description: What klin is, the one idea it's built around, and where to start.
+---
+
+import { Card, CardGrid, LinkCard } from "@astrojs/starlight/components"
+
+klin is a starter for full-stack TypeScript products. One command —
+`npm create klin@latest` — hands you a monorepo with an API, a web app, sign-in,
+a database and one set of Zod schemas shared by both apps, wired end to end and
+passing its own typecheck, lint, tests and build. Then the `klin` CLI stays in
+the project to keep adding to it.
+
+```bash
+npm create klin@latest
+```
+
+You can [try the wizard on the home page](/#wizard) without installing
+anything: it's the real CLI, running in your browser.
+
+## The idea
+
+**One Zod schema should describe a piece of data everywhere.** It validates the
+form, validates the request, shapes the response and gives both apps their
+types. Schemas live in `packages/validators`; a NestJS API turns them into DTOs
+with nestjs-zod, a plain Express or Fastify API parses with them directly, and
+`klin generate` writes whole features on top of them. Read
+[One schema everywhere](/docs/project/shared-schemas/) for the details.
+
+## What you get
+
+<CardGrid>
+  <Card title="Sign-in" icon="seti:lock">
+    Better Auth: email & password, Google, GitHub, magic links, two-factor,
+    passkeys — plus organizations & roles, an admin dashboard and API keys.
+  </Card>
+  <Card title="API" icon="seti:typescript">
+    NestJS 12 or plain Express 5 / Fastify 5. One error envelope, pino logs,
+    health checks, and CORS, Helmet and rate limiting on by default.
+  </Card>
+  <Card title="Web app" icon="seti:react">
+    React 19 on Vite + TanStack Router, or Next.js 16's App Router. TanStack
+    Query and Form, shadcn/ui in 18 theme colors, dark mode.
+  </Card>
+  <Card title="Monorepo" icon="seti:folder">
+    Turborepo, Prisma on Postgres, MySQL or SQLite, Docker, GitHub Actions,
+    Renovate, husky, Vitest and Playwright — with bun, pnpm or npm.
+  </Card>
+</CardGrid>
+
+Everything you don't pick is stripped from the code, not left behind as dead
+flags.
+
+## Is it for you?
+
+**A good fit for** SaaS products, internal tools, dashboards and API-backed apps
+where a separate backend is a feature, not overhead.
+
+**Not for** static sites, or projects that want everything — data access
+included — inside one Next.js app. klin can render the web app with Next.js,
+but the API stays its own app. If you'd rather have no API at all, use a
+framework built for that.
+
+## Where to go next
+
+<CardGrid>
+  <LinkCard title="Getting started" description="Requirements, your first project, and running it." href="/docs/getting-started/" />
+  <LinkCard title="klin generate" description="Add features as skeletons: schema, model, API and page." href="/docs/grow/generate/" />
+  <LinkCard title="Choosing your stack" description="NestJS or plain, Vite or Next.js, which database." href="/docs/create/choosing-your-stack/" />
+  <LinkCard title="CLI reference" description="Every command and every flag." href="/docs/reference/cli/" />
+</CardGrid>

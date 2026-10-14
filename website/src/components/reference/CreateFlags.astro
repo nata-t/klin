@@ -1,0 +1,57 @@
+---
+/** create-klin's flags: one per question in klin.template.json, plus the CLI's own. */
+import { manifest, option, presets } from "../../lib/manifest"
+
+const values = (ids: string[]) => ids.join(" · ")
+const fromManifest = manifest.questions.map((q) => ({
+  flag: `--${q.flag ?? q.id} <${q.type === "select" ? "value" : "list"}>`,
+  text:
+    q.type === "select"
+      ? `${values(q.options)}${q.locked ? " (picked once, at create)" : ""}`
+      : `${q.options.join(",")} or none`,
+  label: q.title ?? q.id,
+  def: Array.isArray(q.default) ? q.default.join(",") || "none" : q.default,
+}))
+const own = [
+  { flag: "[name]", text: "The folder and package name.", label: "", def: "asked" },
+  { flag: "--preset <id>", text: values(presets.map((p) => p.id)), label: "Preset", def: "recommended" },
+  { flag: "--pm <name>", text: "bun · pnpm · npm", label: "Package manager", def: "the one that ran it, else bun" },
+  { flag: "--template <src>", text: "./folder or github:you/your-template[#ref]", label: "Template", def: "the bundled one" },
+  { flag: "-y, --yes", text: "Accept the defaults and ask nothing.", label: "", def: "" },
+  { flag: "--dry-run", text: "List what would be created; write nothing.", label: "", def: "" },
+  { flag: "--no-install", text: "Skip installing dependencies (and generating the Prisma client).", label: "", def: "" },
+  { flag: "--no-git", text: "Skip git init and the first commit.", label: "", def: "" },
+  { flag: "--force", text: "Use a folder that isn't empty. Its contents are deleted first.", label: "", def: "" },
+  { flag: "--no-banner", text: "Skip the logo.", label: "", def: "" },
+]
+void option
+---
+
+<table>
+  <thead>
+    <tr>
+      <th>Flag</th>
+      <th>Values</th>
+      <th>Default</th>
+    </tr>
+  </thead>
+  <tbody>
+    {
+      [...own.slice(0, 4), ...fromManifest, ...own.slice(4)].map((row) => (
+        <tr>
+          <td>
+            <code class="klin-chip">{row.flag}</code>
+            {row.label && (
+              <>
+                <br />
+                <span class="klin-muted">{row.label}</span>
+              </>
+            )}
+          </td>
+          <td>{row.text}</td>
+          <td>{row.def && <code>{row.def}</code>}</td>
+        </tr>
+      ))
+    }
+  </tbody>
+</table>

@@ -1,0 +1,97 @@
+---
+title: Custom templates
+description: Fork the template, add your own modules, and point create-klin at it.
+---
+
+import { Aside } from "@astrojs/starlight/components"
+
+The CLI is a generic engine; everything klin-specific lives in the template. So
+you can fork the template, add your own modules, and create projects from it:
+
+```bash
+npm create klin@latest my-app -- --template github:you/your-klin-template
+npm create klin@latest my-app -- --template github:you/your-klin-template#branch
+npm create klin@latest my-app -- --template ./path/to/template
+```
+
+Projects made from it record the template in `klin.json`, and `klin add`,
+`remove` and `generate` work with it.
+
+## The template is a real project
+
+[`template/`](https://github.com/nata-t/klin/tree/master/template) is a complete
+monorepo with every module switched on. Code that belongs to a module is marked
+with comments, in whatever syntax the file uses; the CLI evaluates them against
+the answers and strips the rest.
+
+## Markers
+
+Put directives in a comment on their own line, using the file's comment syntax
+(`//`, `#`, `/* */`, `{/* */}`, `<!-- -->`, `--`):
+
+| Directive | Meaning |
+| --- | --- |
+| `klin:if <expr>` · `klin:elif <expr>` · `klin:else` · `klin:endif` | A conditional block (nestable) |
+| `klin:file <expr>` | Keep the whole file only if true |
+| `<code>` + a trailing `klin:only <expr>` | Keep this one line only if true |
+| `//? code`, `#? code`, `/*? code */`, `{/*? code */}` | A *dormant* line: commented out in the template, uncommented when its branch is kept |
+
+```ts
+import { organization } from "better-auth/plugins/organization" // klin:only organizations
+
+// klin:if postgres
+provider: "postgresql",
+// klin:elif sqlite
+//? provider: "sqlite",
+// klin:endif
+```
+
+Expressions are flag names joined with `!`, `&&`, `||` and parentheses. Flags
+are option ids (`google`, `organizations`, `sqlite`), select options with their
+`flagPrefix` (`accent-violet`), the package manager (`pnpm`, `bun`, `npm`) and
+derived flags from the manifest (`oauth`, `compose`, …). An unknown flag fails
+the render with a `file:line` error, so a typo can't silently strip code.
+
+Use dormant lines for mutually exclusive variants (databases, package managers)
+so the template itself stays valid with the default variant active. When a
+variant is a different *set of files*, keep it in its own folder and `move` it
+into place with a rule — that's how the plain backends and the Next.js web app
+work.
+
+## The manifest
+
+`klin.template.json` declares everything the CLI shows and does:
+
+- **`questions`** — the prompts, in order: `select` or `multiselect`, the CLI
+  `flag`, defaults, and `locked` for picked-once choices.
+- **`options`** — each option's `label`, `hint` and `about` text, `requires`
+  (options it switches on too), `remove` (globs deleted when it's off), `json`
+  (package.json keys deleted when it's off), a `swatch` color and a `warnOff`
+  warning.
+- **`flags`** — derived flags as expressions.
+- **`rules`** — `{ when, remove?, json?, merge?, move?, replace? }`, applied when
+  `when` is true: move files into place, rewrite text, merge JSON.
+- **`steps`** — how the wizard pages the questions; keep the total at six or
+  fewer.
+- **`presets`** — named answer sets.
+- **`tokens`** — strings replaced with the project name.
+- **`env.generate`** — `.env` keys that get random values.
+
+## Package managers
+
+Write commands with **pnpm** in the template. Scripts in `package.json`, husky
+hooks and code blocks in Markdown are rewritten for bun and npm
+(`pnpm dev` → `npm run dev`, `pnpm exec x` → `bunx x`). For YAML and
+Dockerfiles, use markers with `pnpm` / `bun` / `npm` branches.
+
+## Anchors
+
+`// klin-anchor:*` comments mark where `klin generate` inserts code: `exports`,
+`module-imports`, `modules`, `route-imports`, `routes`, `nav`, `nav-icons`, and
+Next.js's `protected-routes` in `proxy.ts`. Keep them when you edit those
+files.
+
+<Aside>
+  The full template-authoring guide, including how to test a template, is in
+  [CONTRIBUTING.md](https://github.com/nata-t/klin/blob/master/CONTRIBUTING.md#template-authoring).
+</Aside>

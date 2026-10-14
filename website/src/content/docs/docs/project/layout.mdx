@@ -1,0 +1,71 @@
+---
+title: Layout
+description: What's where in a klin project, and what each package is for.
+---
+
+import { FileTree } from "@astrojs/starlight/components"
+
+A klin project is a Turborepo monorepo with two apps and a handful of shared
+packages. Modules you didn't pick don't appear at all.
+
+<FileTree>
+- apps/
+  - api/ the API: NestJS, or plain Express / Fastify (port 3000)
+  - web/ the web app: Vite + TanStack Router, or Next.js (port 5173)
+- packages/
+  - validators/ **Zod schemas shared by both apps — data shapes start here**
+  - db/ Prisma schema (`prisma/models/*.prisma`), client, migrations
+  - auth/ Better Auth server config and typed client
+  - env/ the server environment, validated on boot
+  - ui/ shadcn/ui components and theme (with `packages/ui`)
+  - email/ React Email templates (with email)
+  - docs/ guides for this codebase, written for your stack
+  - eslint-config/
+  - typescript-config/
+- docker-compose.yml local Postgres/MySQL, Redis, RustFS (with Docker)
+- docker-compose.prod.yml the production stack (with Docker)
+- .env generated with fresh secrets
+- .env.example documents every variable
+- klin.json what klin generated: version and options
+- AGENTS.md conventions for AI coding assistants
+- turbo.json
+- package.json
+</FileTree>
+
+## The apps
+
+**`apps/api`** is the API. With NestJS, feature modules live in
+`src/modules/<feature>/` (controller, service, nestjs-zod DTOs, module). With a
+plain backend, `src/app.ts` wires everything, routes live in
+`src/routes/<feature>.ts` and logic in `src/services/<feature>.ts`. Better Auth
+is mounted at `/api/auth`; `/api/health` reports on the database.
+
+**`apps/web`** is the web app. Feature code lives in `src/features/<feature>/`:
+an `api.ts` with a query-key factory, `queryOptions` and hooks, plus forms and
+pages. With Vite, routes are TanStack Router files in `src/routes`; with
+Next.js, pages are in `src/app` in `(public)`, `(auth)` and `(app)` route
+groups, and `src/proxy.ts` guards the signed-in ones.
+
+## The packages
+
+- **`validators`** — every data shape, once. See
+  [One schema everywhere](/docs/project/shared-schemas/).
+- **`db`** — the Prisma schema, split into one `.prisma` file per domain, and
+  the generated client both apps' server code imports.
+- **`auth`** — Better Auth's server config (`auth.ts`) and the typed client the
+  web app uses.
+- **`env`** — the server environment as a schema. A missing or malformed value
+  stops the app on boot with a message naming it.
+- **`docs`** — getting started, architecture, the validators flow, adding a
+  feature, UI & theming, testing, deployment and upgrading, rendered for the
+  stack you picked.
+
+## klin.json and AGENTS.md
+
+`klin.json` records the create-klin version and every answer, so
+`klin add`, `remove`, `upgrade` and `generate` know what the project is made of.
+See [klin.json](/docs/reference/klin-json/).
+
+`AGENTS.md` tells AI coding assistants how the project works: where things go,
+how validation and auth are done, and which commands to run before finishing a
+change.

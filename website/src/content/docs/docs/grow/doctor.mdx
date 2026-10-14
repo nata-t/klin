@@ -1,0 +1,43 @@
+---
+title: klin doctor
+description: Check the toolchain, .env, services, ports, the database and dependency drift.
+---
+
+```bash
+pnpm klin doctor
+```
+
+`klin doctor` checks a project and says how to fix what it finds. Each check is
+`✓` fine, `▲` worth a look, or `✖` a problem; problems come with the command
+that fixes them. It exits with code 1 when there's a problem, so it works in
+scripts.
+
+## What it checks
+
+| Group | Checks |
+| --- | --- |
+| **Toolchain** | Node.js, the package manager the project uses, installed dependencies, and the klin version against the one the project was made with |
+| **Configuration** | `.env` exists and has every key in `.env.example`, `BETTER_AUTH_SECRET` is strong, required values aren't empty, and whether OAuth and email are configured |
+| **Services** | Docker is running and your user can reach it, the database is reachable (or the SQLite file exists), Redis and object storage when you use them, and the API and web ports are free |
+| **Database** | The Prisma client is generated, and migrations exist |
+| **Dependencies** | Packages that declare the same dependency at different versions, families like Prisma that drifted apart, and modules in `klin.json` the template doesn't know |
+
+## Output
+
+A healthy project ends with:
+
+```
+13 passed · 0 warnings · 0 problems — spotless ✦
+```
+
+A missing `.env`, for example, shows up like this:
+
+```
+Configuration
+  ✖ .env is missing
+    → cp .env.example .env — then set BETTER_AUTH_SECRET
+```
+
+When Docker isn't reachable, doctor shows the one-time fix for your OS — on
+Linux, joining the `docker` group (`sudo usermod -aG docker $USER`, then
+`newgrp docker`). klin never runs `sudo` for you.

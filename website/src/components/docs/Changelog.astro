@@ -1,0 +1,23 @@
+---
+/** packages/create-klin/CHANGELOG.md, as Changesets writes it — without its "# create-klin" title. */
+import * as changelog from "../../../../packages/create-klin/CHANGELOG.md"
+
+const releases = changelog.getHeadings().filter((h) => h.depth === 2)
+const { Content } = changelog
+---
+
+{
+  releases.length ? (
+    <div class="klin-changelog">
+      <Content />
+    </div>
+  ) : (
+    <p class="klin-muted">No releases yet — the first one is on its way.</p>
+  )
+}
+
+<style>
+  .klin-changelog :global(h1:first-child) {
+    display: none;
+  }
+</style>

@@ -1,0 +1,60 @@
+---
+title: Troubleshooting
+description: Fixes for the things that most often go wrong, starting with klin doctor.
+---
+
+Start with `pnpm klin doctor` (or `bun run klin doctor`, `npx klin doctor`):
+it checks the usual suspects and prints the command that fixes each one.
+
+## Docker says “permission denied” (Linux)
+
+Your user isn't in the `docker` group yet. Once:
+
+```bash
+sudo usermod -aG docker $USER
+newgrp docker          # or log out and back in
+```
+
+Don't run `sudo pnpm db:up` instead — the containers would work, but files and
+caches end up owned by root. If you'd rather not give your user Docker access,
+use Docker Desktop for Linux or rootless Docker. On macOS and Windows, quit and
+reopen Docker Desktop (on Windows, your account must be in the `docker-users`
+group).
+
+## Docker isn't running
+
+- **Linux:** `sudo systemctl enable --now docker`
+- **macOS:** `open -a Docker`
+- **Windows:** start Docker Desktop and wait until it's running.
+
+## The install failed during create
+
+The project is still written. Fix the cause — usually the network, the
+registry, or free disk space — then run your package manager's install inside
+the project (`bun install`, `pnpm install` or `npm install`).
+
+## A port is taken
+
+The API's port is `API_PORT` in `.env`; the web app's is in
+`apps/web/package.json`. `klin doctor` tells you which one is busy.
+
+## Conflict markers after klin add, remove or upgrade
+
+They mean you and the template changed the same lines. Search for `<<<<<<<`,
+keep what you want, delete the markers, and run `pnpm typecheck`. Running these
+commands on a clean git tree makes the result easy to review with `git diff`.
+
+## The API won't start: an environment variable is missing
+
+`packages/env` validates `.env` on boot and names the variable. Compare `.env`
+with `.env.example`, or run `klin doctor`, which lists missing keys.
+
+## Google or GitHub sign-in doesn't show up
+
+OAuth providers stay off until their client id and secret are in `.env`. See
+[Environment → OAuth sign-in](/docs/project/environment/#oauth-sign-in).
+
+## Still stuck?
+
+[Open an issue](https://github.com/nata-t/klin/issues) with the output of
+`klin doctor`, your OS, and the command you ran.

@@ -1,0 +1,67 @@
+---
+title: The wizard
+description: The six pages create-klin asks you, the keys, and what happens when you build.
+---
+
+In a terminal, `create-klin` opens a full-screen, grayscale wizard: a step
+indicator on top, the KLIN logo under it (sized to fit your terminal), and one
+page per step. You can [try it on the home page](/#wizard) — it's the same
+code, running in your browser.
+
+## The six steps
+
+| Step | What you pick |
+| --- | --- |
+| **1 Base** | The name (validated as you type: `✓ ./my-app is free to use`), the package manager, and a [preset](/docs/create/presets/) to start from |
+| **2 Stack** | NestJS or plain · Express or Fastify · Postgres, MySQL or SQLite · Vite or Next.js for the web app |
+| **3 Auth** | Sign-in methods, and Better Auth power-ups (organizations, admin, API keys) |
+| **4 Toolbox** | CORS, Helmet and rate limiting, then email, uploads, background jobs, i18n, Docker and CI |
+| **5 Looks** | Where shadcn/ui lives (`apps/web` or `packages/ui`) and one of shadcn's 18 theme colors |
+| **6 Build** | A review of everything, then the build, with live progress |
+
+[Choosing your stack](/docs/create/choosing-your-stack/) explains each choice,
+and [Options & modules](/docs/reference/options/) lists every one.
+
+## Keys
+
+| Key | Does |
+| --- | --- |
+| <kbd>←</kbd> <kbd>↑</kbd> <kbd>↓</kbd> <kbd>→</kbd> | Move between options and groups |
+| <kbd>space</kbd> | Snap an option on or off |
+| <kbd>enter</kbd> | Next step (on the last one: build) |
+| <kbd>esc</kbd> | Back one step (on the first: quit) |
+| <kbd>tab</kbd> | Next group |
+| typing | Edits the name; spaces turn into dashes |
+
+The highlighted option is always explained at the bottom of the page, above
+the key hints.
+
+## Chips
+
+Options are plain text, like a terminal prompt:
+
+- `●` / `○` — pick one (the selected one is filled).
+- `◼` / `◻` — pick any.
+
+Everything is gray, except **red** for problems (an invalid name) and **amber**
+for risky choices: switching off CORS, Helmet or rate limiting shows what you
+give up, and the theme colors preview their real color.
+
+## Building
+
+When you press <kbd>enter</kbd> on the review page, the last page turns into a
+checklist while klin sweeps the template, writes the files and a fresh `.env`,
+runs `git init`, installs dependencies, generates the Prisma client and makes
+the first commit. Then it prints your next steps — including a one-time Docker
+fix for your OS if your user can't reach Docker yet.
+
+## Skipping it
+
+With `-y` (or when there's no terminal, as in CI) klin asks nothing and uses
+the preset, the flags and the defaults:
+
+```bash
+bunx create-klin my-app --preset saas --backend plain --server fastify -y
+```
+
+See [the CLI reference](/docs/reference/cli/#create-flags) for every flag.

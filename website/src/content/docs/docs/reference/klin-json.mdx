@@ -1,0 +1,42 @@
+---
+title: klin.json
+description: The file at the root of every klin project that records how it was made.
+---
+
+`klin.json` records which version of create-klin made the project and every
+answer it was made with. `klin add`, `remove`, `upgrade` and `generate` read it
+to know what the project is made of. Commit it.
+
+```json title="klin.json"
+{
+  "version": "1.0.0",
+  "template": "bundled",
+  "name": "my-app",
+  "packageManager": "pnpm@11.20.0",
+  "answers": {
+    "backend": "nest",
+    "server": "express",
+    "database": "postgres",
+    "web": "vite",
+    "auth": ["password"],
+    "plugins": [],
+    "security": ["cors", "helmet", "rate-limit"],
+    "extras": ["docker", "ci"],
+    "components": "apps-web",
+    "accent": "neutral"
+  }
+}
+```
+
+| Field | What it is |
+| --- | --- |
+| `version` | The create-klin version that made the project, or last upgraded it |
+| `template` | Where the template came from: `bundled`, a folder, or `github:owner/repo` |
+| `name` | The project's name |
+| `packageManager` | The package manager and version, e.g. `pnpm@11.20.0` |
+| `answers` | One entry per question in the template, by question id |
+| `generate.paths` | Optional: where [`klin generate`](/docs/grow/generate/#where-files-go) puts each layer, when it differs from klin's defaults |
+
+Change it through the CLI rather than by hand: `klin add` and `klin remove`
+update `answers`, `klin upgrade` updates `version`, and `klin generate paths`
+updates `generate.paths`.

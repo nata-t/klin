@@ -1,0 +1,84 @@
+---
+title: Choosing your stack
+description: NestJS or plain, Express or Fastify, which database, Vite or Next.js, and where shadcn/ui lives.
+---
+
+import { Aside } from "@astrojs/starlight/components"
+
+Every choice below keeps the same shared schemas, the same auth, the same
+response envelope and the same `klin generate`. They change how the code is
+organized, not what the app can do.
+
+## Framework: NestJS or plain
+
+**NestJS** (`--backend nest`, the default) gives you modules, controllers and
+dependency injection, with nestjs-zod turning the shared Zod schemas into DTOs.
+A global auth guard protects every route; `@Public()`, `@Roles()` and
+`@CurrentUser()` handle the exceptions. Pick it when the API will grow and a
+team wants structure.
+
+**Plain** (`--backend plain`) has no framework on top: an app file, route
+modules and plain service functions. The same schemas parse requests at the
+edge, and `requireAuth` / `requireRole()` protect routes. Less ceremony, same
+behavior.
+
+## HTTP server: Express or Fastify
+
+**Express** (the default) is the classic Node.js server with the biggest
+middleware ecosystem. **Fastify** is faster and schema-first; in plain mode,
+every route's types come straight from your Zod schemas. NestJS runs on either.
+
+## Database: PostgreSQL, MySQL or SQLite
+
+All three go through Prisma, with models split by domain in
+`packages/db/prisma/models/`.
+
+- **PostgreSQL** (recommended, the default) — Docker Compose starts a local
+  server with `db:up`, and `DATABASE_URL` already points at it.
+- **MySQL** (or MariaDB) — through Prisma's MariaDB adapter, also in Docker.
+- **SQLite** — one file at `packages/db/data/dev.db`, nothing to install or
+  start. Great for prototypes; switch later with `klin add postgres`.
+
+## Web app: Vite or Next.js
+
+**Vite** (the default) builds a single-page React app with TanStack Router's
+typed file routes and `beforeLoad` guards. Vite forwards `/api` to the API in
+development, and nginx does in production.
+
+**Next.js** uses the App Router: pages render on the server, signed-out visitors
+are redirected before anything loads (`proxy.ts` plus the signed-in layout), and
+`/api` is rewritten to your API so auth cookies stay first-party. TanStack Query
+and Form work exactly as with Vite.
+
+<Aside type="caution">
+  The web framework is picked once, at create. `klin add` won't switch it later
+  — the two apps are laid out too differently to merge.
+</Aside>
+
+Either way, the API stays its own app. If you want data access inside Next.js
+itself, klin isn't the right starter.
+
+## Security: CORS, Helmet, rate limiting
+
+All three are on by default, and the wizard warns in amber if you switch one
+off:
+
+- **CORS** — only your web app's origin (`WEB_URL`) may call the API.
+- **Helmet** — secure HTTP headers on every response.
+- **Rate limiting** — 120 requests a minute per IP; health checks are exempt.
+
+Switch one off only if something else does the job (a proxy or CDN, or one
+shared domain for CORS).
+
+## Components: apps/web or packages/ui
+
+**`apps/web`** (the default) keeps shadcn/ui components next to the app that
+uses them. **`packages/ui`** moves components, styles and the theme into a
+shared `@repo/ui` package, ready for a second app. `ui:add <component>` works
+with both.
+
+## Theme color
+
+One of shadcn's 18 theme colors, neutral first. It sets the CSS variables in
+the theme file; change them any time. The full list, with swatches, is in
+[Options & modules](/docs/reference/options/#theme-color).

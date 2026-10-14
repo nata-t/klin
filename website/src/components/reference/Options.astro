@@ -1,0 +1,68 @@
+---
+/**
+ * Questions create-klin asks and the options they offer, straight from
+ * template/klin.template.json. `only` renders one question without a heading
+ * (the page supplies it, so it shows in the table of contents); `except`
+ * renders every other question with its own heading, so a question added to
+ * the template later still appears.
+ */
+import { manifest, option } from "../../lib/manifest"
+
+interface Props {
+  only?: string
+  except?: string[]
+}
+const { only, except = [] } = Astro.props
+const questions = manifest.questions.filter((q) => (only ? q.id === only : !except.includes(q.id)))
+const steps = manifest.steps ?? []
+const stepOf = (id: string) => steps.find((s) => s.questions.includes(id))?.title
+const list = (value: string | string[]) => (Array.isArray(value) ? (value.length ? value.join(", ") : "none") : value)
+---
+
+{
+  questions.map((q) => (
+    <section>
+      {!only && <h2 id={`q-${q.id}`}>{q.title ?? q.id}</h2>}
+      <p>
+        <code>--{q.flag ?? q.id}</code> · {q.type === "select" ? "pick one" : "pick any (comma-separated, or none)"} · default{" "}
+        <code>{list(q.default)}</code>
+        {stepOf(q.id) && <span class="klin-muted"> · wizard step “{stepOf(q.id)}”</span>}
+        {q.locked && <span class="klin-muted"> · picked once, at create</span>}
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Value</th>
+            <th>What you get</th>
+          </tr>
+        </thead>
+        <tbody>
+          {q.options.map((id) => {
+            const o = option(id)
+            return (
+              <tr>
+                <td>
+                  <code class="klin-chip">{id}</code>
+                </td>
+                <td>
+                  <strong>
+                    {o.swatch && <span class="klin-swatch" style={`background:${o.swatch}`} />}
+                    {o.label}
+                  </strong>
+                  {o.hint && <span class="klin-muted"> — {o.hint}</span>}
+                  {o.about && <p>{o.about}</p>}
+                  {o.requires?.length ? (
+                    <p class="klin-muted">
+                      Also switches on: {o.requires.map((r) => option(r).label).join(", ")}.
+                    </p>
+                  ) : null}
+                  {o.warnOff && <p class="klin-muted">If you switch it off: {o.warnOff}</p>}
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </section>
+  ))
+}
