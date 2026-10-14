@@ -2,6 +2,7 @@ import gsap from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
 import Lenis from "lenis"
 import { STEPS } from "../lib/site"
+import { at } from "./intro"
 
 /**
  * Site-wide motion for the landing page: Lenis smooth scrolling, scroll
@@ -49,17 +50,22 @@ if (!still) {
   })
 
   // Content rises out of a blur as it arrives; siblings in a row cascade left to right.
+  // The hero's copy waits for the opening's copy beat instead of the scroll.
   gsap.utils.toArray<HTMLElement>("[data-reveal]").forEach((el) => {
     gsap.set(el, HIDDEN)
     const parent = el.parentElement!
+    if (el.closest("#intro")) {
+      const order = [...parent.querySelectorAll(":scope > [data-reveal]")].indexOf(el)
+      at("copy", () => gsap.to(el, { ...SHOWN, delay: order * 0.09 }))
+      return
+    }
     const rect = parent.getBoundingClientRect()
     const delay = rect.width > 0 ? ((el.getBoundingClientRect().left - rect.left) / rect.width) * 0.2 : 0
-    const inHero = Boolean(el.closest("#intro"))
     ScrollTrigger.create({
       trigger: el,
       start: "top 92%",
       once: true,
-      onEnter: () => gsap.to(el, { ...SHOWN, delay: inHero ? 1.1 + [...parent.children].indexOf(el) * 0.08 : delay }),
+      onEnter: () => gsap.to(el, { ...SHOWN, delay }),
     })
   })
 
@@ -75,6 +81,10 @@ if (!still) {
   })
 }
 root.classList.add("motion-ready")
+
+// The opening's later beats: the instrument assembles, then the headline's sheen.
+at("instrument", () => root.classList.add("at-instrument"))
+at("copy", () => document.querySelectorAll(".sheen").forEach((el) => el.classList.add("go")))
 
 function decode(el: HTMLElement, text: string) {
   const dust = "░▒▓<>/{}[]=+*#"
