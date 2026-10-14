@@ -150,7 +150,7 @@ Versioning uses [Changesets](https://github.com/changesets/changesets):
 pnpm changeset          # describe your change (patch/minor/major)
 ```
 
-On `main`, the release workflow opens a "Version packages" PR that bumps the
+On `master`, the release workflow opens a "Version packages" PR that bumps the
 version and updates `CHANGELOG.md`. Merging it publishes `create-klin` to npm
 with provenance.
 
