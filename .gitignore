@@ -7,3 +7,4 @@ dist
 packages/create-klin/template
 coverage
 *.tgz
+.astro
