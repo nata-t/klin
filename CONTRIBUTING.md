@@ -151,8 +151,22 @@ pnpm changeset          # describe your change (patch/minor/major)
 ```
 
 On `master`, the release workflow opens a "Version packages" PR that bumps the
-version and updates `CHANGELOG.md`. Merging it publishes `create-klin` to npm
-with provenance.
+version and updates `packages/create-klin/CHANGELOG.md`. Merging it publishes
+`create-klin` to npm with provenance.
+
+Publishing needs, once:
+
+- an `NPM_TOKEN` repository secret: an npm granular access token with
+  read and write access to `create-klin` that can publish without 2FA (or, once
+  the package exists, npm trusted publishing for this repository's
+  `release.yml`);
+- the repository to be public, because npm provenance is only available for
+  public source repositories;
+- Settings → Actions → General → "Allow GitHub Actions to create and approve
+  pull requests" switched on, so the workflow can open the release PR.
+
+After a release, run `npm create klin@latest` from the registry once, outside
+this checkout, before announcing it.
 
 `klin upgrade` diffs templates between published versions, so treat template
 changes as user-facing and describe them in the changeset.

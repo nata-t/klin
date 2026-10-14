@@ -15,7 +15,20 @@ Auth**, **Prisma**, and one set of **Zod** schemas shared by both sides.
 A full-stack TypeScript monorepo: **Fastify** API, **React** web app, **Better
 Auth**, **Prisma**, and one set of **Zod** schemas shared by both sides.
 <!-- klin:endif -->
-Scaffolded with [create-klin](https://github.com/klin-dev/klin).
+Scaffolded with [create-klin](https://github.com/nata-t/klin).
+
+## Requirements
+
+<!-- klin:if bun -->
+- Node.js 22.12 or newer, and bun
+<!-- klin:elif npm -->
+- Node.js 22.12 or newer (npm comes with it)
+<!-- klin:else -->
+- Node.js 22.12 or newer, and pnpm
+<!-- klin:endif -->
+<!-- klin:if compose -->
+- Docker, for the local services in `docker-compose.yml`
+<!-- klin:endif -->
 
 ## Quick start
 
@@ -31,7 +44,9 @@ pnpm db:seed      # demo@example.com / demo-password-123
 pnpm dev          # http://localhost:5173 (API on :3000, Prisma Studio on :5555)
 ```
 
-Run `pnpm klin doctor` if anything misbehaves.
+Then open http://localhost:5173. Run `pnpm klin doctor` if anything
+misbehaves: it checks your toolchain, `.env`, database and services, ports and
+dependency versions, and says how to fix what it finds.
 
 ## What's inside
 
@@ -117,6 +132,50 @@ i18n (i18next) ·
 `pnpm klin list` shows everything you can add.
 <!-- klin:endif -->
 
+## Layout
+
+```
+apps/
+  api/                  the API (:3000)
+  web/                  the web app (:5173)
+packages/
+  validators/           Zod schemas shared by both apps — data shapes start here
+  db/                   Prisma schema (prisma/models/*.prisma), client, migrations
+  auth/                 Better Auth server config and typed client
+  env/                  the server environment, validated on boot
+<!-- klin:if packages-ui -->
+  ui/                   shadcn/ui components and theme (@repo/ui)
+<!-- klin:endif -->
+<!-- klin:if email -->
+  email/                React Email templates
+<!-- klin:endif -->
+  docs/                 guides for this codebase
+klin.json               what create-klin generated (used by pnpm klin add/remove/upgrade)
+AGENTS.md               conventions for AI coding assistants
+```
+
+## Environment
+
+`.env` was created with fresh secrets; `.env.example` documents every
+variable. `packages/env` validates them on boot, and a missing or malformed
+value stops the app with a message naming it.
+<!-- klin:if oauth -->
+
+OAuth sign-in stays off until you add its keys to `.env`:
+
+<!-- klin:endif -->
+<!-- klin:if google -->
+- **Google:** create OAuth credentials at https://console.cloud.google.com/apis/credentials with the redirect URI `http://localhost:5173/api/auth/callback/google`, then set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
+<!-- klin:endif -->
+<!-- klin:if github -->
+- **GitHub:** create an OAuth app at https://github.com/settings/developers with the callback URL `http://localhost:5173/api/auth/callback/github`, then set `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`.
+<!-- klin:endif -->
+<!-- klin:if email -->
+
+Leave `RESEND_API_KEY` empty in development: emails are printed to the API
+console instead.
+<!-- klin:endif -->
+
 ## Build a feature
 
 ```bash
@@ -140,6 +199,32 @@ Need another UI component? `pnpm ui:add dialog` — see
 [UI & theming](packages/docs/ui.md). Read
 [Add a feature](packages/docs/add-a-feature.md) for the walkthrough.
 
+## Deploy
+
+<!-- klin:if docker -->
+`docker-compose.prod.yml` runs the whole stack from the production images on
+one machine. [Deployment](packages/docs/deployment.md) covers that, building
+the images to run anywhere, platform builds without Docker, and the
+environment checklist.
+<!-- klin:else -->
+[Deployment](packages/docs/deployment.md) covers platform builds, running the
+apps on a server, and the environment checklist.
+<!-- klin:endif -->
+
+## Troubleshooting
+
+<!-- klin:if compose -->
+- **Docker says "permission denied" (Linux):** add your user to the `docker`
+  group once (`sudo usermod -aG docker $USER`, then `newgrp docker` or log in
+  again). On macOS and Windows, quit and reopen Docker Desktop.
+<!-- klin:endif -->
+- **A port is taken:** the API's port is `API_PORT` in `.env`; the web app's
+  is in `apps/web/package.json`.
+- **Conflict markers after `pnpm klin add` / `remove`:** you and the template
+  changed the same lines. Resolve them like a git merge conflict, then run
+  `pnpm typecheck`.
+- **Anything else:** `pnpm klin doctor`.
+
 ## Docs
 
 [`packages/docs`](packages/docs/README.md) covers getting started,
@@ -150,7 +235,17 @@ deployment and upgrading.
 
 | | |
 | --- | --- |
-| `pnpm dev` / `build` / `start` | Develop, build, run production builds |
-| `pnpm lint` / `typecheck` / `test` / `test:e2e` | Checks |
-| `pnpm db:migrate` / `db:studio` / `db:seed` / `db:reset` | Database |
-| `pnpm klin add` / `remove` / `generate` / `doctor` | The klin CLI |
+| `pnpm dev` | Web, API and Prisma Studio side by side in Turborepo's TUI |
+| `pnpm build` / `start` | Production builds, and running them |
+| `pnpm lint` / `typecheck` / `test` / `test:e2e` | ESLint, TypeScript, Vitest, Playwright |
+| `pnpm format` / `format:check` | Prettier |
+<!-- klin:if compose -->
+| `pnpm db:up` / `db:down` | Start / stop the local services in Docker |
+<!-- klin:endif -->
+| `pnpm db:migrate` / `db:deploy` / `db:push` / `db:reset` | Database schema |
+| `pnpm db:seed` / `db:studio` | Demo data · Prisma Studio |
+| `pnpm ui:add <component>` | Add a shadcn/ui component |
+<!-- klin:if email -->
+| `pnpm email:dev` | Preview the email templates |
+<!-- klin:endif -->
+| `pnpm klin add` / `remove` / `generate` / `doctor` / `list` | The klin CLI |

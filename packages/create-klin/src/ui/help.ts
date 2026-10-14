@@ -29,7 +29,7 @@ export function help() {
     ${flag("--pm")} ${dim("<name>")}          bun ${dim("(default)")} · pnpm · npm
     ${flag("--template")} ${dim("<src>")}     ./folder or github:you/your-template[#branch]
     ${flag("-y, --yes")}            accept defaults, no questions
-    ${flag("--dry-run")}             show what would be created
+    ${flag("--dry-run")}            show what would be created
     ${flag("--no-install")} ${dim("·")} ${flag("--no-git")} ${dim("·")} ${flag("--force")} ${dim("·")} ${flag("--no-banner")}
 
   ${c.bold("Inside a project")} ${dim("(pnpm klin … · npx create-klin …)")}
@@ -56,6 +56,6 @@ export function help() {
     ${cmd("klin upgrade")} ${dim("[--from <dir>]")}   merge template improvements in ${dim("(experimental)")}
 
   ${dim(`Generated code has the schemas, endpoints and wiring; you add the fields and the logic.
-  Docs: packages/docs in your project · https://github.com/klin-dev/klin`)}
+  Docs: packages/docs in your project · https://github.com/nata-t/klin`)}
 `)
 }

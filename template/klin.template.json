@@ -420,7 +420,7 @@
     "uploads": {
       "label": "File uploads",
       "hint": "S3 / R2 presigned URLs",
-      "about": "Direct-to-storage uploads with presigned URLs for S3, R2 or any S3-compatible store. Docker Compose runs MinIO locally, and the avatar upload shows the whole flow.",
+      "about": "Direct-to-storage uploads with presigned URLs for S3, R2 or any S3-compatible store. Docker Compose runs RustFS (S3-compatible) locally, and the avatar upload shows the whole flow.",
       "remove": [
         "apps/api/src/modules/uploads/**",
         "apps/api/plain-*/routes/uploads.ts",
@@ -830,7 +830,7 @@
     "everything": {
       "label": "Kitchen sink",
       "hint": "every module, so you can see it all",
-      "about": "Every module switched on, so you can tour the whole kit and delete what you don't need. Expect Docker for Postgres, Redis and MinIO.",
+      "about": "Every module switched on, so you can tour the whole kit and delete what you don't need. Expect Docker for Postgres, Redis and RustFS.",
       "answers": {
         "auth": ["password", "google", "github", "magic-link", "two-factor", "passkey"],
         "plugins": ["organizations", "admin", "api-keys"],
