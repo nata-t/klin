@@ -48,6 +48,8 @@ jobs:
           - { preset: everything, pm: bun, db: sqlite, flags: "--backend plain --server express" }
           - { preset: everything, pm: pnpm, db: postgres, flags: "--components packages-ui" }
           - { preset: recommended, pm: pnpm, db: sqlite, flags: "--backend plain --server express --security none" }
+          - { preset: recommended, pm: pnpm, db: postgres, flags: "--web next" }
+          - { preset: everything, pm: bun, db: sqlite, flags: "--web next --backend plain --server fastify --components packages-ui" }
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
@@ -71,8 +73,7 @@ jobs:
       - name: Generate a resource and check again
         working-directory: /tmp/gen/app
         run: |
-          node $GITHUB_WORKSPACE/packages/create-klin/dist/index.js generate resource project \
-            name:string notes:text? budget:int? active:boolean due:date? status:enum:draft,active,done --yes
+          node $GITHUB_WORKSPACE/packages/create-klin/dist/index.js generate resource billing/invoice --yes
           npx --no -- turbo run typecheck lint build
 
   # klin add / remove against a project with user edits.
@@ -96,7 +97,7 @@ jobs:
           mkdir -p /tmp/t && cd /tmp/t
           node $KLIN app --preset minimal --pm pnpm --yes --no-banner
           cd app
-          node $KLIN generate resource project name:string --yes
+          node $KLIN generate resource project --yes
           node $KLIN add organizations email --yes
           pnpm turbo run typecheck lint build
           node $KLIN remove email --yes
