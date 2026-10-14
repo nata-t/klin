@@ -80,10 +80,10 @@ Sleep 1.6s
 Enter
 Sleep 24s
 
-Type "cd my-saas && pnpm klin generate resource project name:string 'budget:int?' 'due:date?' --yes"
+Type "cd my-saas && bun run klin generate resource billing/invoice --yes"
 Enter
 Sleep 7s
 
-Type "pnpm klin doctor"
+Type "bun run klin doctor"
 Enter
 Sleep 6s

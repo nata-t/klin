@@ -4,13 +4,13 @@
   "description": "Scaffold a spotless full-stack TypeScript monorepo: NestJS + Better Auth + Prisma + TanStack + shadcn, wired end to end.",
   "type": "module",
   "license": "MIT",
-  "homepage": "https://github.com/klin-dev/klin#readme",
+  "homepage": "https://github.com/nata-t/klin#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/klin-dev/klin.git",
+    "url": "git+https://github.com/nata-t/klin.git",
     "directory": "packages/create-klin"
   },
-  "bugs": "https://github.com/klin-dev/klin/issues",
+  "bugs": "https://github.com/nata-t/klin/issues",
   "bin": {
     "create-klin": "./dist/index.js",
     "klin": "./dist/index.js"
