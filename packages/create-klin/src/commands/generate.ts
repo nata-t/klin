@@ -6,7 +6,7 @@ import { pathsFor } from "../generators/paths"
 import { type GenerateOptions, type Plan, PlanError, planGenerate, type Project, type Reader } from "../generators/plan"
 import { type GenKind, KIND_LABELS, parseTarget, resolveKind, type Target, type TargetOverrides } from "../generators/target"
 import { box } from "../ui/box"
-import { centered, centeredBlock, intro, log, outro } from "../ui/log"
+import { block, centered, centeredBlock, intro, log, outro } from "../ui/log"
 import * as prompts from "../ui/prompts"
 import { task } from "../ui/task"
 import { c, padEnd, shimmer, sym, width } from "../ui/theme"
@@ -72,21 +72,20 @@ export async function generateCommand(flags: Flags) {
     bail((error as Error).message)
   }
 
-  // After the full-screen questions the result is centered, like the wizard's
-  // last page; a one-line command reads as a log down the rail.
+  // The result is centered like the full-screen pages, and opens with its own
+  // badge line, so the answers aren't echoed.
   const ask = interactive && (!kind || !rawName)
-  const out = printer(ask)
   if (ask) {
     prompts.setPromptEcho(false)
     // The "Where should it go?" page is the tallest; every page keeps its room.
     prompts.setPromptRoom(14)
-  } else intro("klin generate", c.dim(config.name))
+  }
   prompts.setPromptContext(`klin generate · ${config.name}`)
 
   if (!kind) {
     if (!interactive) bail(`Say what to generate: ${USAGE}`)
     const choice = await askKind(project)
-    if (choice === "paths") return savePaths(session, await editPaths(session, options.dirs!), out)
+    if (choice === "paths") return savePaths(session, await editPaths(session, options.dirs!))
     kind = choice
   }
 
@@ -115,17 +114,17 @@ export async function generateCommand(flags: Flags) {
 
   /* ─── Show & write ─────────────────────────────────────────────────── */
 
-  out.heading(kind, target, config.name)
-  out.tree(plan.edits.map(({ path, kind, note }) => ({ path, kind, note })))
-  for (const warning of plan.warnings) out.warn(warning)
+  intro("klin generate", `${KIND_LABELS[kind]} · ${target.path} · ${config.name}`)
+  centeredBlock([...fileTree(plan.edits.map(({ path, kind, note }) => ({ path, kind, note })), "").split("\n"), ""])
+  for (const warning of plan.warnings) log.warn(warning)
 
   if (flags["dry-run"]) {
-    out.end(c.dim("Dry run — nothing was written."))
+    outro(c.dim("Dry run — nothing was written."))
     return
   }
   if (remember) {
     writeProject(root, withDirs(config, project, options.dirs!))
-    out.note("These folders are this project's defaults now (klin.json).")
+    centered([`${c.muted(sym.info)}  These folders are this project's defaults now (klin.json).`, ""])
   }
 
   const writes = plan.edits.filter((edit) => edit.content !== undefined)
@@ -134,7 +133,7 @@ export async function generateCommand(flags: Flags) {
       await mkdir(dirname(join(root, edit.path)), { recursive: true })
       await writeFile(join(root, edit.path), edit.content!)
     }
-  }, { done: () => `Wrote ${writes.length} files`, center: ask })
+  }, { done: () => `Wrote ${writes.length} files` })
 
   // Keep types in sync right away: the Prisma client and the router's route types
   // (TanStack's route tree, or Next.js's typed routes).
@@ -149,52 +148,17 @@ export async function generateCommand(flags: Flags) {
         const [bin, ...args] = pmCommands(pm).exec(project.web === "next" ? "next typegen" : "tsr generate").split(" ")
         await run(bin!, args, { cwd: join(root, "apps/web") })
       }
-    }, { done: () => (prismaClient ? `Prisma client and ${routes} are up to date` : routes === "route tree" ? "Route tree is up to date" : "Route types are up to date"), center: ask }).catch(() => {
-      out.warn("Couldn't regenerate types automatically — they'll update on the next `dev`.")
+    }, { done: () => (prismaClient ? `Prisma client and ${routes} are up to date` : routes === "route tree" ? "Route tree is up to date" : "Route types are up to date") }).catch(() => {
+      log.warn("Couldn't regenerate types automatically — they'll update on the next `dev`.")
     })
   }
 
-  console.log(nextSteps(kind, target, project, config, options, ask))
-  out.end(shimmer(ask ? `${sym.star} ${OUTROS[kind]}` : OUTROS[kind]))
-}
-
-/** The result, either centered (after the full-screen questions) or down the rail. */
-function printer(center: boolean) {
-  return {
-    heading(kind: GenKind, target: Target, project: string) {
-      if (!center) return log.step(`${KIND_LABELS[kind]} ${c.bold(target.path)}`)
-      centered(["", `${c.badge("klin generate")}  ${c.muted(`${KIND_LABELS[kind]} · ${target.path} · ${project}`)}`, ""])
-    },
-    tree(entries: Parameters<typeof fileTree>[0]) {
-      if (center) centeredBlock([...fileTree(entries, "").split("\n"), ""])
-      else console.log(`${fileTree(entries)}\n`)
-    },
-    warn(message: string) {
-      if (center) centeredBlock(`${c.warn(sym.warn)}  ${message}`.split("\n"))
-      else log.warn(message)
-    },
-    /** What just happened: the badge line when centered, a ✓ down the rail. */
-    done(message: string, project: string) {
-      if (!center) return log.success(message)
-      centered(["", `${c.badge("klin generate")}  ${c.muted(`${message} · ${project}`)}`, ""])
-    },
-    note(message: string) {
-      if (center) centered([`${c.muted(sym.info)}  ${message}`, ""])
-      else log.info(message)
-    },
-    lines(lines: string[]) {
-      if (center) centeredBlock([...lines, ""])
-      else log.message(lines.join("\n"))
-    },
-    end(message: string) {
-      if (center) centered([message, ""])
-      else outro(message)
-    },
-  }
+  block(nextSteps(kind, target, project, config, options))
+  outro(shimmer(`${sym.star} ${OUTROS[kind]}`))
 }
 
 /** What's left for the developer: the files to fill in, then how to see it run. */
-function nextSteps(kind: GenKind, target: Target, project: Project, config: ProjectConfig, options: GenerateOptions, center: boolean) {
+function nextSteps(kind: GenKind, target: Target, project: Project, config: ProjectConfig, options: GenerateOptions) {
   const paths = pathsFor(target, options.dirs ?? defaultDirs(project), project.web)
   const backend = kind !== "frontend"
   const frontend = kind !== "backend"
@@ -238,7 +202,7 @@ function nextSteps(kind: GenKind, target: Target, project: Project, config: Proj
   if (i18n && route && options.nav !== false) {
     lines.push("", `${c.dim("i18n")}  add "nav.${target.path.replaceAll("/", "-")}" to apps/web/src/i18n/locales/*.json`)
   }
-  return box(lines, { title: `${sym.star} ${target.path} is wired up`, center })
+  return box(lines, { title: `${sym.star} ${target.path} is wired up` })
 }
 
 /* ─── Questions ────────────────────────────────────────────────────────── */
@@ -441,17 +405,16 @@ async function pathsCommand(flags: Flags, session: Session, interactive: boolean
   if (flags.reset && setting) bail("--reset puts every folder back to klin's default — leave the --…-dir flags out")
 
   const ask = interactive && !flags.reset && !setting
-  const out = printer(ask)
   if (ask) prompts.setPromptEcho(false)
-  else intro("klin generate paths", c.dim(config.name))
   prompts.setPromptContext(`klin generate · ${config.name}`)
 
-  if (flags.reset) return savePaths(session, defaultDirs(project), out, "Back to klin's default paths")
+  if (flags.reset) return savePaths(session, defaultDirs(project), "Back to klin's default paths")
   const current = runDirs({ _: [] }, session)
-  if (setting) return savePaths(session, { ...current, ...given }, out)
-  if (ask) return savePaths(session, await editPaths(session, current), out)
-  out.lines(dirsTable(current, project))
-  out.end(`Change one: ${c.code("klin generate paths --frontend-dir <folder>")} ${c.dim("·")} ${c.code("--reset")} ${c.dim("for klin's")}`)
+  if (setting) return savePaths(session, { ...current, ...given })
+  if (ask) return savePaths(session, await editPaths(session, current))
+  intro("klin generate", `Default paths · ${config.name}`)
+  centeredBlock([...dirsTable(current, project), ""])
+  outro(`Change one: ${c.code("klin generate paths --frontend-dir <folder>")} ${c.dim("·")} ${c.code("--reset")} ${c.dim("for klin's")}`)
 }
 
 /** The page behind `klin generate paths`: every layer's default folder. */
@@ -478,11 +441,11 @@ async function editPaths({ project, fs }: Session, current: Dirs): Promise<Dirs>
 }
 
 /** Writes the folders to klin.json and shows them. */
-function savePaths({ root, config, project }: Session, dirs: Dirs, out: ReturnType<typeof printer>, message = "Default paths saved in klin.json") {
+function savePaths({ root, config, project }: Session, dirs: Dirs, message = "Default paths saved in klin.json") {
   writeProject(root, withDirs(config, project, dirs))
-  out.done(message, config.name)
-  out.lines(dirsTable(dirs, project))
-  out.end(shimmer(`${sym.star} Generated files go here from now on.`))
+  intro("klin generate", `${message} · ${config.name}`)
+  centeredBlock([...dirsTable(dirs, project), ""])
+  outro(shimmer(`${sym.star} Generated files go here from now on.`))
 }
 
 /** `Backend        apps/api/src/modules   klin's default` — one row per layer. */

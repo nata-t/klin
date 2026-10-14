@@ -1,7 +1,4 @@
-import { VERSION } from "../context"
-import { intro } from "../ui/log"
 import * as prompts from "../ui/prompts"
-import { c } from "../ui/theme"
 import { findProjectRoot, readProject } from "../utils/project"
 import { type Flags, guard } from "./flags"
 
@@ -19,15 +16,10 @@ export async function menu(flags: Flags) {
     { value: "doctor", label: "Run a health check", about: "Checks Node, your package manager, .env, the database and services, and drifting versions." },
     { value: "list", label: "List modules", about: "Every module the template offers, and which ones this project has on." },
   ] as const
-  // The header and the answer go to the scrollback once the choice is made:
-  // generate closes with its own centered summary, the rest read as a log.
+  // The command picked opens its output with its own badge line, so the choice isn't echoed.
   prompts.setPromptEcho(false)
   const action = guard(await prompts.select({ message, subtitle: config.name, title: "Commands", options: [...options] }))
   prompts.setPromptEcho(true)
-  if (action !== "generate") {
-    intro("klin", c.dim(`${config.name} · v${VERSION}`))
-    prompts.echoAnswer(message, options.find((option) => option.value === action)!.label)
-  }
 
   flags._ = []
   switch (action) {

@@ -5,13 +5,13 @@ const ASCII = { tl: "+", tr: "+", bl: "+", br: "+", h: "-", v: "|" }
 
 /**
  * A rounded box with a gray border and an optional title in the top edge,
- * indented two columns (or centered in the terminal).
+ * centered in the terminal (at least two columns in).
  *
  *   ╭─ spotless! ─────────────╮
  *   │  cd my-app              │
  *   ╰─────────────────────────╯
  */
-export function box(lines: string[], options: { title?: string; padding?: number; minWidth?: number; center?: boolean } = {}) {
+export function box(lines: string[], options: { title?: string; padding?: number; minWidth?: number } = {}) {
   const g = unicode ? ROUND : ASCII
   const padding = options.padding ?? 2
   const inner = Math.max(
@@ -29,7 +29,7 @@ export function box(lines: string[], options: { title?: string; padding?: number
     (line) => edge(g.v) + " ".repeat(padding) + padEnd(line, inner - padding * 2) + " ".repeat(padding) + edge(g.v)
   )
   const bottom = edge(g.bl + g.h.repeat(inner) + g.br)
-  const indent = options.center ? Math.max(2, Math.floor(((process.stdout.columns || 80) - inner - 2) / 2)) : 2
+  const indent = Math.max(2, Math.floor(((process.stdout.columns || 80) - inner - 2) / 2))
   return ["", ...[top, ...body, bottom].map((l) => `${" ".repeat(indent)}${l}`), ""].join("\n")
 }
 

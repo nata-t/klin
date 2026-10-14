@@ -14,7 +14,7 @@ import {
 import { render } from "../engine/render"
 import { banner } from "../ui/banner"
 import { box, table } from "../ui/box"
-import { cancel, centered, intro, log, outro } from "../ui/log"
+import { block, cancel, centered, centeredBlock, intro, log, outro } from "../ui/log"
 import { isCancel } from "../ui/prompts"
 import { INSTALL_QUIPS, setTaskReporter, task } from "../ui/task"
 import { interactive } from "../ui/term"
@@ -98,7 +98,7 @@ export async function create(flags: Flags) {
 
   if (!ask) {
     intro("create-klin", "let's set up your project")
-    console.log(recipe(manifest, answers, projectName, pm, version))
+    block(recipe(manifest, answers, projectName, pm, version))
     for (const note of notes) log.info(note)
   }
 
@@ -141,7 +141,7 @@ export async function create(flags: Flags) {
 
     if (flags["dry-run"]) {
       log.step(`Dry run — this is what ${c.white(projectName)} would contain:`)
-      console.log(fileTree([...files.keys(), PROJECT_FILE, ".env"].map((path) => ({ path, kind: "create" as const }))))
+      centeredBlock([...fileTree([...files.keys(), PROJECT_FILE, ".env"].map((path) => ({ path, kind: "create" as const })), "").split("\n"), ""])
       outro(c.dim("Nothing was written."))
       return
     }
@@ -210,23 +210,17 @@ export async function create(flags: Flags) {
   const installFailed = willInstall && !installed
   // db:up needs Docker: if this user can't reach it yet, the steps say how to fix that first.
   const docker = usesCompose(answers) ? await dockerState() : "ready"
-  const steps = nextSteps({ manifest, answers, targetDir, pm, installed, installFailed, docker, center: ask })
+  const steps = nextSteps({ manifest, answers, targetDir, pm, installed, installFailed, docker })
   const optionNotes = Object.values(answers)
     .flat()
     .map((id) => manifest.options[id]?.note)
     .filter(Boolean) as string[]
   const signOff = installFailed ? c.warn("Almost there — rerun the install once the problem above is fixed.") : shimmer(`${sym.star} ${pick(SIGN_OFFS)}`)
 
-  if (ask) {
-    // The wizard's last word, centered like its pages.
-    centered([`${c.badge("create-klin")}  ${c.muted(`${projectName} is ready`)}`])
-    console.log(steps)
-    centered([...optionNotes.map((note) => `${c.muted(sym.info)}  ${note}`), ...(optionNotes.length ? [""] : []), signOff, ""])
-    return
-  }
-  console.log(steps)
-  for (const note of optionNotes) log.info(note)
-  outro(signOff)
+  // The last word, centered like the wizard's pages.
+  centered(["", `${c.badge("create-klin")}  ${c.muted(`${projectName} is ready`)}`])
+  block(steps)
+  outro(signOff, optionNotes)
 }
 
 /* ─── Helpers ──────────────────────────────────────────────────────────── */
@@ -335,7 +329,6 @@ function nextSteps({
   installed,
   installFailed,
   docker,
-  center,
 }: {
   manifest: Manifest
   answers: Answers
@@ -344,7 +337,6 @@ function nextSteps({
   installed: boolean
   installFailed: boolean
   docker: DockerState
-  center: boolean
 }) {
   const run = pmCommands(pm).run
   const has = (id: string) => Object.values(answers).flat().includes(id)
@@ -380,7 +372,7 @@ function nextSteps({
   const labelW = Math.max(...extras.map(([label]) => width(label)))
   if (extras.every(([, value]) => labelW + 2 + width(value) <= maxW)) lines.push(...table(extras, 2))
   else lines.push(...extras.flatMap(([label, value]) => [c.dim(label), `  ${value}`]))
-  return box(lines, { title: installFailed ? "almost there — next steps" : "spotless! next steps", center })
+  return box(lines, { title: installFailed ? "almost there — next steps" : "spotless! next steps" })
 }
 
 /** A command, why you'd run it, and whether it's a fix to make first (drawn in amber). */
