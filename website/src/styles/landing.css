@@ -452,10 +452,11 @@ html.motion [data-reveal] {
 }
 
 /* The opening (src/scripts/intro.ts): until its instrument beat only the hero
-   stage shows; then the nav and the HUD assemble, staggered. */
+   stage shows; then the nav, the HUD and the ruler assemble, staggered. */
 #site-nav .inner > *,
 .hero .corners,
-.hero .keys {
+.hero .keys,
+.ruler {
   transition:
     opacity 0.6s ease,
     transform 0.6s cubic-bezier(0.2, 0.9, 0.2, 1);
@@ -474,7 +475,8 @@ html.motion [data-reveal] {
 }
 html.intro:not(.at-instrument) #site-nav .inner > *,
 html.intro:not(.at-instrument) .hero .corners,
-html.intro:not(.at-instrument) .hero .keys {
+html.intro:not(.at-instrument) .hero .keys,
+html.intro:not(.at-instrument) .ruler {
   opacity: 0;
 }
 html.intro:not(.at-instrument) #site-nav .inner > * {
