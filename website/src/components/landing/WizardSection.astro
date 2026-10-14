@@ -1,0 +1,349 @@
+---
+import SectionShell from "./SectionShell.astro"
+---
+
+<SectionShell id="wizard" index="02" label="The wizard" note="Real code · runs in your browser · writes nothing">
+  <div class="section-head">
+    <h2 class="display" data-reveal>Try it before<br />you install it.</h2>
+    <p class="lede" data-reveal>
+      This is the actual create-klin wizard — the same code as the CLI, drawing into a terminal on this page. Pick your parts; when
+      you build, you get the one command that makes exactly that kit.
+    </p>
+  </div>
+
+  <div class="stage" data-reveal>
+    <div class="window">
+      <div class="bar">
+        <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+        <p class="hud title">bun create klin <span class="dim">— full-screen</span></p>
+        <button class="wake" type="button" data-term-wake>
+          <span class="dot" aria-hidden="true"></span><span data-wake-label>click to type</span>
+          <span class="size" data-term-size aria-hidden="true">112 × 34</span>
+        </button>
+      </div>
+      <div class="screen" data-terminal role="application" aria-roledescription="terminal" aria-label="The create-klin wizard. Use the arrow keys to move, space to pick, enter for the next step and escape to go back." aria-describedby="wizard-help">
+        <canvas></canvas>
+        <textarea class="sink" aria-label="Wizard keyboard input" autocapitalize="off" autocomplete="off" spellcheck="false" data-term-input></textarea>
+        <div class="done" data-term-done hidden>
+          <div class="box">
+            <p class="box-title">✦ your kit, in one line</p>
+            <p class="hud">Run this in your terminal — the wizard opens with these picks, or <code>-y</code> skips it:</p>
+            <div class="cmd">
+              <code class="line"><span class="prompt">$</span><span data-term-command></span></code>
+              <button class="copy" type="button" data-copy-from="[data-term-command]"><span data-copy-label>Copy</span></button>
+            </div>
+            <div class="row">
+              <button class="btn" type="button" data-term-restart>↻ Start over</button>
+              <a class="btn" href="/docs/getting-started/">What happens next <span class="arrow" aria-hidden="true">→</span></a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="pad" aria-label="Wizard keys">
+        <button type="button" data-key="escape">esc</button>
+        <button type="button" data-key="left" aria-label="Left">←</button>
+        <button type="button" data-key="up" aria-label="Up">↑</button>
+        <button type="button" data-key="down" aria-label="Down">↓</button>
+        <button type="button" data-key="right" aria-label="Right">→</button>
+        <button type="button" data-key="space" class="wide">space</button>
+        <button type="button" data-key="return" class="wide">enter</button>
+      </div>
+    </div>
+    <p id="wizard-help" class="hud help">
+      <span>← ↑ ↓ → move</span><span>space snap</span><span>enter next</span><span>esc back</span><span>type to rename</span>
+    </p>
+    <pre class="sr-only" aria-live="polite" data-term-text></pre>
+  </div>
+</SectionShell>
+
+<script>
+  import { mountWizard } from "../../wizard/run"
+  import { key } from "../../wizard/terminal"
+  import { screen } from "../../wizard/shims/term"
+
+  const section = document.getElementById("wizard")!
+  const host = section.querySelector<HTMLElement>("[data-terminal]")!
+  const input = section.querySelector<HTMLTextAreaElement>("[data-term-input]")!
+  const wake = section.querySelector<HTMLButtonElement>("[data-term-wake]")!
+  const done = section.querySelector<HTMLElement>("[data-term-done]")!
+  const commandEl = section.querySelector<HTMLElement>("[data-term-command]")!
+  const sizeEl = section.querySelector<HTMLElement>("[data-term-size]")!
+  const textEl = section.querySelector<HTMLElement>("[data-term-text]")!
+
+  const wizard = mountWizard(host, input, {
+    started() {
+      done.hidden = true
+    },
+    done(command) {
+      commandEl.textContent = command
+      done.hidden = false
+      done.querySelector<HTMLButtonElement>(".copy")?.focus({ preventScroll: true })
+    },
+    resized(columns, rows) {
+      sizeEl.textContent = `${columns} × ${rows}`
+    },
+  })
+
+  // Start (and play the logo's light sweep) when the terminal first comes into view.
+  let started = false
+  new IntersectionObserver(
+    ([entry], observer) => {
+      if (!entry!.isIntersecting || started) return
+      started = true
+      observer.disconnect()
+      void wizard.start()
+      wizard.playIntro()
+    },
+    { threshold: 0.35 }
+  ).observe(host)
+
+  const windowEl = section.querySelector<HTMLElement>(".window")!
+  const wakeLabel = section.querySelector<HTMLElement>("[data-wake-label]")!
+  const setAwake = (awake: boolean) => {
+    host.dataset.awake = String(awake)
+    windowEl.dataset.awake = String(awake)
+    wakeLabel.textContent = awake ? "live · tab to leave" : "click to type"
+  }
+  wake.addEventListener("click", () => {
+    if (!started) {
+      started = true
+      void wizard.start()
+    }
+    wizard.focus()
+  })
+  input.addEventListener("focus", () => setAwake(true))
+  input.addEventListener("blur", () => setAwake(false))
+
+  section.querySelector("[data-term-restart]")?.addEventListener("click", () => {
+    wizard.restart()
+    wizard.focus()
+  })
+
+  // On-screen keys for touch screens (and anyone who likes buttons).
+  section.querySelectorAll<HTMLButtonElement>("[data-key]").forEach((button) =>
+    button.addEventListener("click", () => {
+      if (!started) {
+        started = true
+        void wizard.start()
+      }
+      screen.key(key(button.dataset.key!))
+    })
+  )
+
+  // Keep a text copy of the screen for assistive tech, a moment after it settles.
+  let pending: ReturnType<typeof setTimeout> | undefined
+  input.addEventListener("keyup", () => {
+    clearTimeout(pending)
+    pending = setTimeout(() => (textEl.textContent = wizard.text()), 400)
+  })
+</script>
+
+<style>
+  .stage {
+    padding: 0 var(--gutter) clamp(56px, 8vw, 104px);
+  }
+  .window {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--bg);
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.6),
+      0 40px 120px -40px rgba(0, 0, 0, 0.9),
+      0 0 120px -60px rgba(255, 255, 255, 0.08);
+  }
+  .bar {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 14px;
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--tint);
+    background: var(--bar);
+  }
+  .dots {
+    display: flex;
+    gap: 6px;
+  }
+  .dots i {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--lift);
+  }
+  .bar .hud {
+    margin: 0;
+    font-size: 10.5px;
+  }
+  .bar .title {
+    justify-self: center;
+    color: var(--muted);
+    text-transform: none;
+    letter-spacing: 0.04em;
+    font-size: 12px;
+  }
+  .bar .dim {
+    color: var(--subtle);
+  }
+  .screen {
+    position: relative;
+    cursor: text;
+    outline: none;
+  }
+  .screen canvas {
+    width: 100%;
+  }
+  .screen[data-awake="true"] {
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  }
+  .sink {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    border: 0;
+    padding: 0;
+    resize: none;
+    pointer-events: none;
+  }
+  .wake {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    padding: 3px 9px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--bright);
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .wake:hover {
+    background: var(--lift);
+  }
+  .wake .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--subtle);
+    animation: breathe 1.8s ease-in-out infinite;
+  }
+  .wake .size {
+    color: var(--subtle);
+    font-variant-numeric: tabular-nums;
+  }
+  .window[data-awake="true"] .wake {
+    border-color: var(--subtle);
+  }
+  .window[data-awake="true"] .wake .dot {
+    background: var(--bright);
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+    animation: none;
+  }
+  @keyframes breathe {
+    50% {
+      background: var(--bright);
+    }
+  }
+  .done {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: rgba(12, 12, 12, 0.78);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    animation: rise 420ms cubic-bezier(0.2, 0.9, 0.2, 1);
+  }
+  .done[hidden] {
+    display: none;
+  }
+  .done .box {
+    width: min(760px, 100%);
+    display: grid;
+    gap: 16px;
+    padding: 28px 22px 22px;
+    background: var(--bg);
+  }
+  .done .box-title {
+    margin: 0;
+  }
+  .done .hud {
+    margin: 0;
+    text-transform: none;
+    letter-spacing: 0.02em;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .done code {
+    color: var(--bright);
+  }
+  .done .cmd {
+    font-size: 13.5px;
+  }
+  .done .row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+  }
+  .pad {
+    display: none;
+    gap: 6px;
+    padding: 10px;
+    border-top: 1px solid var(--tint);
+    background: var(--bar);
+  }
+  .pad button {
+    flex: 1;
+    min-width: 0;
+    height: 42px;
+    border: 1px solid var(--line);
+    border-bottom-width: 2px;
+    border-radius: 5px;
+    background: var(--tint);
+    color: var(--bright);
+    font-family: var(--mono);
+    font-size: 13px;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .pad button:active {
+    background: var(--lift);
+    transform: translateY(1px);
+  }
+  .pad .wide {
+    flex: 1.6;
+  }
+  @media (pointer: coarse), (max-width: 720px) {
+    .pad {
+      display: flex;
+    }
+  }
+  @media (max-width: 560px) {
+    .bar .title {
+      visibility: hidden;
+    }
+    .wake .size {
+      display: none;
+    }
+  }
+  .help {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px 22px;
+    margin: 16px 0 0;
+  }
+</style>

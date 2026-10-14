@@ -1,0 +1,30 @@
+---
+/**
+ * The frame every landing section shares: a full-bleed top rule that draws in,
+ * the content between the rails, crosshair ticks where they meet, and a sticky
+ * eyebrow — index, label, and a quiet note on the right.
+ */
+interface Props {
+  id: string
+  index: string
+  label: string
+  note?: string
+  class?: string
+}
+const { id, index, label, note, class: className } = Astro.props
+---
+
+<section id={id} class:list={["section", className]} data-choreo data-section={id}>
+  <span class="rule" aria-hidden="true"></span>
+  <div class="rail">
+    <span class="tick tl" aria-hidden="true"></span>
+    <span class="tick tr" aria-hidden="true"></span>
+    <div class="eyebrow">
+      <p class="hud" style="margin:0">
+        <span class="index">{index}</span><span class="sep">/</span><span class="label" data-decode>{label}</span>
+      </p>
+      {note && <p class="hud note" style="margin:0">{note}</p>}
+    </div>
+    <slot />
+  </div>
+</section>
