@@ -1,17 +1,23 @@
 import { Canvas } from "@cli/ui/canvas"
 import { drawLogo, logoWidth } from "@cli/ui/logo"
 import { drawGeometric, FONT_STACK } from "../wizard/glyphs"
+import { BEATS, intro } from "./intro"
 
 /**
- * The hero: code dust swept into the KLIN logo.
+ * The hero: starter kits, snapped together.
  *
  * The logo's cells come from the CLI's own drawLogo() — the same chrome
- * gradient, shadow glyphs and sparkles as the wizard's header. Each cell
- * starts out as a stray character floating in the hero. A band of light
- * crosses the logo (the CLI's intro sweep, at the same angle); as it passes,
- * every cell solidifies into its glyph and springs into place. The cursor
- * nudges cells aside, a click scatters them for another sweep, and scrolling
- * away lets them drift apart.
+ * gradient, shadow glyphs and sparkles as the wizard's header — grouped into
+ * four parts, one per letter. The opening (timed by ./intro.ts) types the
+ * create command, collapses the line like a CRT switching over, then flies
+ * K, L, I and N in from four sides; each lands with a flash, a jolt, crop
+ * marks closing on it and a burst of sparks. The shadow layer extrudes behind
+ * them, the chrome pours in top-down, the CLI's band of light sweeps across
+ * and the sparkles pop.
+ *
+ * Settled, every cell lives on its own spring: the cursor nudges cells aside
+ * and lights them, scrolling away lets them drift apart, and a click flies
+ * the parts out and snaps them back together.
  */
 
 type Kind = "face" | "shadow" | "spark"
@@ -22,17 +28,36 @@ interface Cell {
   glyph: string
   kind: Kind
   shade: number
-  /** Where the sweep reaches it, 0..1 across the logo. */
+  /** Where the band of light reaches it, 0..1 across the logo (the CLI's sweep). */
   at: number
+  /** Which letter it belongs to (K L I N), or -1 for a sparkle. */
+  part: number
   x: number
   y: number
   vx: number
   vy: number
-  dust: string
-  swept: boolean
-  sweptAt: number
   spread: [number, number]
   phase: number
+}
+
+interface Part {
+  cells: Cell[]
+  /** Where it flies in from, as a fraction of the hero, and how it's turned. */
+  from: { dx: number; dy: number; rot: number; scale: number }
+  center: { col: number; row: number }
+  box: { c0: number; c1: number; r0: number; r1: number }
+  snapped: boolean
+  snapAt: number
+}
+
+interface Spark {
+  x: number
+  y: number
+  vx: number
+  vy: number
+  born: number
+  life: number
+  glyph: string
 }
 
 interface Mote {
@@ -48,19 +73,55 @@ interface Mote {
 
 const LOGO_SIZE = 6
 const ROW_RATIO = 2.05
+const COMMAND = "npm create klin@latest"
 const DUST = "{}[]()<>;:=+*/|&!?#@$%~^.,_01xz".split("")
 const TOKENS = ["z.object()", "createZodDto", "@Public()", "useAppForm", "prisma", "klin:if", "→", "✓", "z.infer", "betterAuth", "queryOptions", "@repo/validators", "turbo dev", "pnpm", "bun", "klin:only", "// TODO", "export", "import", "<Route />"]
+const SPARK_GLYPHS = ["✦", "✧", "·", "+", "·"]
+
+/** Letter boundaries in the logo's own columns: K, L, I, N. */
+const PART_STARTS = [0, 8, 16, 19]
+const PART_FROM = [
+  { dx: -0.62, dy: 0.1, rot: -16, scale: 1.3 },
+  { dx: -0.06, dy: 0.66, rot: 11, scale: 1.3 },
+  { dx: 0.06, dy: -0.66, rot: -9, scale: 1.3 },
+  { dx: 0.62, dy: -0.12, rot: 18, scale: 1.3 },
+]
+
+/** Intro-time seconds between parts launching, and each part's flight. */
+const PART_GAP = 0.12
+const FLIGHT = 0.6
+/** The fraction of a flight at which the part lands (the rest is recoil). */
+const IMPACT = 0.5
+/** Click replay: the pull-away before the parts fly back in. */
+const PULL = 0.3
 
 const rand = (a: number, b: number) => a + Math.random() * (b - a)
 const pick = <T>(list: readonly T[]) => list[Math.floor(Math.random() * list.length)]!
 const clamp = (v: number, a = 0, b = 1) => Math.max(a, Math.min(b, v))
 const pad = (n: number, width: number) => String(Math.round(Math.max(0, n))).padStart(width, "0")
+const easeInOutCubic = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2)
+const easeOutCubic = (t: number) => 1 - (1 - t) ** 3
+const easeInCubic = (t: number) => t * t * t
+const easeOutBack = (t: number) => 1 + 2.7 * (t - 1) ** 3 + 1.7 * (t - 1) ** 2
 
-function logoCells(): { cells: Omit<Cell, "x" | "y" | "vx" | "vy" | "dust" | "swept" | "sweptAt" | "spread" | "phase">[]; columns: number; rows: number } {
+/**
+ * How far a part still is from its slot during a flight: 1 at the start pose,
+ * 0 in place. The approach accelerates into the slot; after impact a small
+ * damped recoil carries it just past and back.
+ */
+function flight(local: number) {
+  if (local <= 0) return 1
+  if (local < IMPACT) return 1 - easeInOutCubic(local / IMPACT)
+  const s = (local - IMPACT) / (1 - IMPACT)
+  if (s >= 1) return 0
+  return -0.035 * Math.sin(Math.PI * s * 1.5) * Math.exp(-4 * s)
+}
+
+function logoCells() {
   const columns = logoWidth(LOGO_SIZE) + 2
   const art = new Canvas(columns, LOGO_SIZE)
   drawLogo(art, 0, columns, 0, LOGO_SIZE)
-  const cells = []
+  const raw: Omit<Cell, "x" | "y" | "vx" | "vy" | "spread" | "phase" | "part">[] = []
   for (let row = 0; row < LOGO_SIZE; row++) {
     for (let col = 0; col < columns; col++) {
       const cell = art.cells[row * columns + col]!
@@ -68,12 +129,38 @@ function logoCells(): { cells: Omit<Cell, "x" | "y" | "vx" | "vy" | "dust" | "sw
       const fg = cell.style.fg
       const shade = Array.isArray(fg) ? fg[0] : 0xc4
       const kind: Kind = cell.ch === "█" ? "face" : "✦✧·".includes(cell.ch) ? "spark" : "shadow"
-      // Same band position as the CLI's sweep: across the columns, two per row.
-      const at = (col + row * 2) / (columns + LOGO_SIZE * 2)
-      cells.push({ col, row, glyph: cell.ch, kind, shade, at })
+      raw.push({ col, row, glyph: cell.ch, kind, shade, at: (col + row * 2) / (columns + LOGO_SIZE * 2) })
     }
   }
-  return { cells, columns, rows: LOGO_SIZE }
+  const left = Math.min(...raw.filter((c) => c.kind !== "spark").map((c) => c.col))
+  const partOf = (c: (typeof raw)[number]) => {
+    if (c.kind === "spark") return -1
+    const rel = c.col - left
+    let part = 0
+    PART_STARTS.forEach((start, i) => {
+      if (rel >= start) part = i
+    })
+    return part
+  }
+  const cells: Cell[] = raw.map((c) => ({
+    ...c,
+    part: partOf(c),
+    x: 0,
+    y: 0,
+    vx: 0,
+    vy: 0,
+    spread: [rand(-1, 1), rand(-1, 1)],
+    phase: rand(0, Math.PI * 2),
+  }))
+  const parts: Part[] = PART_FROM.map((from, i) => {
+    const own = cells.filter((c) => c.part === i)
+    const c0 = Math.min(...own.map((c) => c.col))
+    const c1 = Math.max(...own.map((c) => c.col)) + 1
+    const r0 = Math.min(...own.map((c) => c.row))
+    const r1 = Math.max(...own.map((c) => c.row)) + 1
+    return { cells: own, from, center: { col: (c0 + c1) / 2, row: (r0 + r1) / 2 }, box: { c0, c1, r0, r1 }, snapped: false, snapAt: -1 }
+  })
+  return { cells, parts, columns, faces: cells.filter((c) => c.kind !== "spark").length }
 }
 
 export function mountHeroField(hero: HTMLElement) {
@@ -81,13 +168,14 @@ export function mountHeroField(hero: HTMLElement) {
   const slot = hero.querySelector<HTMLElement>("[data-logo-slot]")!
   const countLabel = hero.querySelector<HTMLElement>("[data-hero-count]")
   const pointerLabel = hero.querySelector<HTMLElement>("[data-hero-pointer]")
-  const ctx = canvas.getContext("2d")
-  if (!ctx) return
+  const maybe = canvas.getContext("2d")
+  if (!maybe) return
+  const ctx: CanvasRenderingContext2D = maybe
   hero.dataset.field = "on"
 
   const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  const art = logoCells()
-  const faces = art.cells.filter((c) => c.kind !== "spark").length
+  const { cells, parts, columns, faces } = logoCells()
+  const sparkles = cells.filter((c) => c.kind === "spark")
 
   let width = 0
   let height = 0
@@ -96,26 +184,16 @@ export function mountHeroField(hero: HTMLElement) {
   let rh = 20
   let ox = 0
   let oy = 0
-
-  const cells: Cell[] = art.cells.map((c) => ({
-    ...c,
-    x: 0,
-    y: 0,
-    vx: 0,
-    vy: 0,
-    dust: pick(DUST),
-    swept: false,
-    sweptAt: 0,
-    spread: [rand(-1, 1), rand(-1, 1)],
-    phase: rand(0, Math.PI * 2),
-  }))
   let motes: Mote[] = []
+  const sparks: Spark[] = []
 
   const pointer = { x: -9999, y: -9999, active: false }
-  let sweepStart = performance.now() + 450
-  const SWEEP_MS = 1150
   let visible = true
   let scroll = 0
+  /** "letters" while parts fly (the opening, or a click replay); "cells" once each cell is on its spring. */
+  let mode: "letters" | "cells" = "letters"
+  let replayAt = -1
+  let snappedCount = 0
 
   function layout() {
     const rect = hero.getBoundingClientRect()
@@ -125,10 +203,10 @@ export function mountHeroField(hero: HTMLElement) {
     dpr = Math.min(2, window.devicePixelRatio || 1)
     canvas.width = Math.round(width * dpr)
     canvas.height = Math.round(height * dpr)
-    cw = s.width / art.columns
+    cw = s.width / columns
     rh = cw * ROW_RATIO
-    ox = s.left - rect.left + (s.width - cw * art.columns) / 2
-    oy = s.top - rect.top + (s.height - rh * art.rows) / 2
+    ox = s.left - rect.left + (s.width - cw * columns) / 2
+    oy = s.top - rect.top + (s.height - rh * LOGO_SIZE) / 2
     const count = Math.round(clamp((width * height) / 11000, 40, 130))
     motes = Array.from({ length: count }, () => {
       const word = Math.random() < 0.22
@@ -144,27 +222,10 @@ export function mountHeroField(hero: HTMLElement) {
         depth,
       }
     })
+    if (mode === "cells") toTargets()
   }
 
-  function scatter(fromX = width / 2, fromY = height / 2, force = 1) {
-    for (const c of cells) {
-      if (!c.x && !c.y) {
-        // First placement: anywhere in a wide band around the logo.
-        c.x = ox + c.col * cw + rand(-1, 1) * width * 0.42
-        c.y = oy + c.row * rh + rand(-0.5, 1.6) * rh * 6
-      } else {
-        const dx = c.x - fromX
-        const dy = c.y - fromY
-        const d = Math.hypot(dx, dy) || 1
-        const kick = rand(9, 22) * force
-        c.vx += (dx / d) * kick + rand(-3, 3)
-        c.vy += (dy / d) * kick + rand(-3, 3)
-      }
-      c.swept = false
-      c.dust = pick(DUST)
-    }
-  }
-
+  /** A cell's resting place, drifting apart as the hero scrolls away. */
   const target = (c: Cell) => {
     const drift = scroll * scroll
     return {
@@ -173,152 +234,378 @@ export function mountHeroField(hero: HTMLElement) {
     }
   }
 
-  function settleAll() {
+  function toTargets() {
     for (const c of cells) {
       const t = target(c)
       c.x = t.x
       c.y = t.y
-      c.swept = true
-      c.sweptAt = -1e9
+      c.vx = 0
+      c.vy = 0
     }
   }
 
-  const colorOf = (shade: number, alpha = 1) => `rgba(${shade},${shade},${shade},${alpha})`
+  const gray = (shade: number, alpha = 1) => `rgba(${shade},${shade},${shade},${alpha})`
 
-  function draw(now: number) {
-    ctx!.setTransform(dpr, 0, 0, dpr, 0, 0)
-    ctx!.clearRect(0, 0, width, height)
-    const fade = 1 - clamp(scroll * 1.2) * 0.85
-
-    // Dust motes in the air, slow and dim.
-    ctx!.textBaseline = "middle"
-    for (const m of motes) {
-      // Keep the text column in the middle clear, so the copy stays easy to read.
-      const side = clamp(Math.abs(m.x - width / 2) / (width * 0.3))
-      const clear = 0.18 + 0.82 * side * side
-      ctx!.font = `400 ${m.size}px ${FONT_STACK}`
-      ctx!.fillStyle = `rgba(200,200,200,${m.alpha * clear * (0.6 + 0.4 * fade)})`
-      ctx!.fillText(m.text, m.x, m.y - scroll * 120 * m.depth)
+  function drawCell(c: Cell, x: number, y: number, shade: number, alpha: number) {
+    const color = gray(Math.round(clamp(shade, 0, 255)), alpha)
+    if (!drawGeometric(ctx, c.glyph, x, y, cw + 0.35, rh + 0.35, color, 1)) {
+      ctx.font = `400 ${cw * 1.45}px ${FONT_STACK}`
+      ctx.fillStyle = color
+      ctx.textAlign = "center"
+      ctx.fillText(c.glyph, x + cw / 2, y + rh / 2)
+      ctx.textAlign = "left"
     }
+  }
 
-    // The band of light while a sweep runs.
-    const band = (now - sweepStart) / SWEEP_MS
+  /* ─── Looks over time ─────────────────────────────────────────────── */
+
+  /** A face's shade: flat while it flies, then the chrome pours in top-down and the band sweeps. */
+  function faceShade(c: Cell, now: number) {
+    const pour = clamp((intro.t - BEATS.chrome - c.row * 0.05) / 0.3)
+    let shade = 0xb4 + (c.shade - 0xb4) * easeOutCubic(pour)
+    const band = (intro.t - BEATS.chrome - 0.16) / 0.8
     if (band > 0 && band < 1) {
       const at = -0.3 + band * 1.6
-      const bx = ox + at * art.columns * cw
-      const gradient = ctx!.createLinearGradient(bx - cw * 6, 0, bx + cw * 6, 0)
-      gradient.addColorStop(0, "rgba(255,255,255,0)")
-      gradient.addColorStop(0.5, "rgba(255,255,255,0.05)")
-      gradient.addColorStop(1, "rgba(255,255,255,0)")
-      ctx!.fillStyle = gradient
-      ctx!.fillRect(bx - cw * 6, oy - rh * 2, cw * 12, rh * (art.rows + 4))
+      shade += (0xff - shade) * Math.max(0, 1 - Math.abs(c.at - at) * 6)
     }
+    if (pointer.active && mode === "cells") {
+      const d = Math.hypot(c.x + cw / 2 - pointer.x, c.y + rh / 2 - pointer.y)
+      shade += (0xff - shade) * clamp(1 - d / 160) * 0.8
+    }
+    const part = parts[c.part]
+    if (part && part.snapAt > 0) {
+      const flash = 1 - (now - part.snapAt) / 110
+      if (flash > 0) shade += (0xff - shade) * flash
+    }
+    return shade
+  }
 
-    // The logo's cells.
-    for (const c of cells) {
-      let shade = c.shade
-      let alpha = fade
-      let glyph = c.glyph
-      if (!c.swept) {
-        glyph = c.dust
-        shade = 0x6a
-        alpha *= 0.5
-      } else {
-        const age = now - c.sweptAt
-        // Solidify: ░ ▒ ▓ then the glyph, and a glint that settles to its shade.
-        if (c.kind === "face" && age < 150) glyph = age < 50 ? "░" : age < 100 ? "▒" : "▓"
-        const glint = clamp(1 - age / 650)
-        shade = Math.round(shade + (0xff - shade) * glint)
-        if (c.kind === "spark") alpha *= 0.55 + 0.45 * Math.sin(now / 520 + c.phase)
-      }
-      if (pointer.active && c.swept && c.kind === "face") {
-        const d = Math.hypot(c.x + cw / 2 - pointer.x, c.y + rh / 2 - pointer.y)
-        shade = Math.round(shade + (0xff - shade) * clamp(1 - d / 160) * 0.8)
-      }
-      const color = colorOf(shade, alpha)
-      if (!drawGeometric(ctx!, glyph, c.x, c.y, cw + 0.35, rh + 0.35, color, 1)) {
-        ctx!.font = `${c.kind === "spark" ? 400 : 500} ${c.swept ? cw * 1.45 : cw * 0.95}px ${FONT_STACK}`
-        ctx!.fillStyle = color
-        ctx!.textAlign = "center"
-        ctx!.fillText(glyph, c.x + cw / 2, c.y + rh / 2)
-        ctx!.textAlign = "left"
-      }
+  /** The shadow layer extrudes out from behind the faces, along the sweep's diagonal. */
+  function shadowState(c: Cell) {
+    const k = easeOutCubic(clamp((intro.t - BEATS.depth - c.at * 0.3) / 0.22))
+    return { k, dx: -(1 - k) * cw * 0.5, dy: -(1 - k) * rh * 0.3 }
+  }
+
+  /* ─── Flights ─────────────────────────────────────────────────────── */
+
+  /** How far part `i` is from its slot (1 = start pose, 0 = in place), at intro or replay time `when`. */
+  function distance(i: number, when: number, replay: boolean) {
+    if (replay) {
+      const r = when
+      if (r < PULL) return easeInCubic(r / PULL)
+      return flight((r - PULL - i * 0.07) / FLIGHT)
+    }
+    return flight((when - BEATS.parts - i * PART_GAP) / FLIGHT)
+  }
+
+  function landed(i: number, now: number) {
+    const part = parts[i]!
+    part.snapped = true
+    part.snapAt = now
+    snappedCount = Math.min(4, snappedCount + 1)
+    const x0 = ox + part.box.c0 * cw
+    const x1 = ox + part.box.c1 * cw
+    const y0 = oy + part.box.r0 * rh
+    const y1 = oy + part.box.r1 * rh
+    for (let n = 0; n < 9; n++) {
+      // Sparks leave from the part's outline, outward.
+      const side = n % 4
+      const x = side === 0 ? x0 : side === 1 ? x1 : rand(x0, x1)
+      const y = side === 2 ? y0 : side === 3 ? y1 : rand(y0, y1)
+      const cx = (x0 + x1) / 2
+      const cy = (y0 + y1) / 2
+      const d = Math.hypot(x - cx, y - cy) || 1
+      const speed = rand(140, 320)
+      sparks.push({ x, y, vx: ((x - cx) / d) * speed, vy: ((y - cy) / d) * speed, born: now, life: rand(380, 620), glyph: pick(SPARK_GLYPHS) })
     }
   }
 
-  let last = performance.now()
-  function step(now: number) {
-    const dt = Math.min(2.5, (now - last) / 16.67)
-    last = now
-    const band = -0.3 + ((now - sweepStart) / SWEEP_MS) * 1.6
-    let swept = 0
-    for (const c of cells) {
-      if (!c.swept && now > sweepStart && band >= c.at && (c.kind !== "spark" || band > 1.05)) {
-        c.swept = true
-        c.sweptAt = now
+  function drawPart(i: number, when: number, replay: boolean, now: number) {
+    const part = parts[i]!
+    const p = distance(i, when, replay)
+    if (!replay && when < BEATS.parts + i * PART_GAP) return
+    const local = replay ? (when - PULL - i * 0.07) / FLIGHT : (when - BEATS.parts - i * PART_GAP) / FLIGHT
+    if (!part.snapped && local >= IMPACT && (!replay || when >= PULL)) landed(i, now)
+
+    const cx = ox + part.center.col * cw
+    const cy = oy + part.center.row * rh - scroll * height * 0.18
+    const pose = (q: number) => {
+      const far = Math.max(q, 0)
+      return {
+        x: part.from.dx * width * q,
+        y: part.from.dy * height * q,
+        rot: (part.from.rot * Math.PI * q) / 180,
+        scale: 1 + (part.from.scale - 1) * far,
       }
-      if (c.swept && c.kind !== "spark") swept++
-      const t = target(c)
-      if (c.swept) {
-        // A damped spring to its place.
-        c.vx += (t.x - c.x) * 0.075 * dt
-        c.vy += (t.y - c.y) * 0.075 * dt
-        if (pointer.active) {
-          const dx = c.x + cw / 2 - pointer.x
-          const dy = c.y + rh / 2 - pointer.y
-          const d = Math.hypot(dx, dy)
-          const reach = cw * 5.5
-          if (d < reach && d > 0.01) {
-            const push = (1 - d / reach) ** 2 * 2.6 * dt
-            c.vx += (dx / d) * push
-            c.vy += (dy / d) * push
-          }
+    }
+    const paint = (q: number, alpha: number, ghost: boolean) => {
+      const at = pose(q)
+      ctx.save()
+      ctx.translate(cx + at.x, cy + at.y)
+      ctx.rotate(at.rot)
+      ctx.scale(at.scale, at.scale)
+      ctx.translate(-cx, -cy)
+      for (const c of part.cells) {
+        const x = ox + c.col * cw
+        const y = oy + c.row * rh - scroll * height * 0.18
+        if (c.kind === "shadow") {
+          if (ghost) continue
+          const s = shadowState(c)
+          if (s.k <= 0) continue
+          drawCell(c, x + s.dx, y + s.dy, c.shade, alpha * s.k)
+        } else {
+          drawCell(c, x, y, ghost ? 0x90 : faceShade(c, now), alpha)
         }
-        c.vx *= 0.8 ** dt
-        c.vy *= 0.8 ** dt
-      } else {
-        // Loose dust drifts and slows down.
-        c.vx = c.vx * 0.94 ** dt + rand(-0.04, 0.04)
-        c.vy = c.vy * 0.94 ** dt - 0.01
       }
-      c.x += c.vx * dt
-      c.y += c.vy * dt
+      ctx.restore()
+    }
+    // Motion trail: the part a few moments ago, fainter the further back — close enough to read as a streak.
+    if (p > 0.02) {
+      for (let k = 7; k >= 1; k--) {
+        const q = distance(i, when - k * 0.011, replay)
+        if (q > p) paint(q, 0.1 * (1 - k / 8), true)
+      }
+    }
+    paint(p, 1, false)
+  }
+
+  /** Crop marks closing on a part as it lands, the instrument's way of saying "registered". */
+  function drawCropMarks(part: Part, now: number) {
+    const age = (now - part.snapAt) / 460
+    if (part.snapAt < 0 || age >= 1) return
+    const grow = 1 + 0.4 * (1 - easeOutCubic(clamp(age * 1.6)))
+    const x0 = ox + part.box.c0 * cw
+    const x1 = ox + part.box.c1 * cw
+    const y0 = oy + part.box.r0 * rh - scroll * height * 0.18
+    const y1 = oy + part.box.r1 * rh - scroll * height * 0.18
+    const cx = (x0 + x1) / 2
+    const cy = (y0 + y1) / 2
+    const hw = ((x1 - x0) / 2 + 8) * grow
+    const hh = ((y1 - y0) / 2 + 8) * grow
+    const arm = Math.min(14, hw * 0.5)
+    ctx.strokeStyle = `rgba(238,238,238,${(1 - age) ** 0.8})`
+    ctx.lineWidth = 1
+    ctx.beginPath()
+    for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]] as const) {
+      const x = cx + sx * hw
+      const y = cy + sy * hh
+      ctx.moveTo(x - sx * arm, y)
+      ctx.lineTo(x, y)
+      ctx.lineTo(x, y - sy * arm)
+    }
+    ctx.stroke()
+  }
+
+  /* ─── The command, before anything else ───────────────────────────── */
+
+  function drawPrompt(now: number) {
+    const t = intro.t
+    if (t >= BEATS.parts + 0.2) return
+    const size = clamp(cw * 1.45, 16, 27)
+    ctx.font = `500 ${size}px ${FONT_STACK}`
+    ctx.textBaseline = "middle"
+    const typed = COMMAND.slice(0, clamp(Math.floor((t - BEATS.type) / 0.034), 0, COMMAND.length))
+    const prompt = "$ "
+    const full = ctx.measureText(prompt + COMMAND).width
+    const cx = ox + (columns * cw) / 2
+    const cy = oy + (LOGO_SIZE * rh) / 2
+    const x = cx - full / 2
+
+    if (t < BEATS.enter) {
+      ctx.fillStyle = gray(0x6a)
+      ctx.fillText(prompt, x, cy)
+      const px = x + ctx.measureText(prompt).width
+      ctx.fillStyle = gray(0xee)
+      ctx.fillText(typed, px, cy)
+      const typing = typed.length < COMMAND.length && t > BEATS.type
+      if (typing || Math.floor(now / 530) % 2 === 0) {
+        ctx.fillStyle = gray(0xee)
+        ctx.fillRect(px + ctx.measureText(typed).width + 2, cy - size * 0.55, size * 0.55, size * 1.1)
+      }
+      return
+    }
+    // Enter: the line folds into a bright seam that widens, then pinches out — a CRT switching over.
+    const fold = clamp((t - BEATS.enter) / 0.12)
+    const pinch = clamp((t - BEATS.enter - 0.12) / 0.26)
+    if (fold < 1) {
+      ctx.save()
+      ctx.translate(0, cy)
+      ctx.scale(1, 1 - fold)
+      ctx.fillStyle = gray(0xff, 1 - fold * 0.3)
+      ctx.fillText(prompt + COMMAND, x, 0)
+      ctx.restore()
+    }
+    const seam = full * (1 + fold * 0.5) * (1 - easeInCubic(pinch))
+    const glow = 1 - pinch
+    if (seam > 0.5 && glow > 0) {
+      const g = ctx.createLinearGradient(cx - seam / 2, 0, cx + seam / 2, 0)
+      g.addColorStop(0, "rgba(255,255,255,0)")
+      g.addColorStop(0.5, `rgba(255,255,255,${glow})`)
+      g.addColorStop(1, "rgba(255,255,255,0)")
+      ctx.fillStyle = g
+      ctx.fillRect(cx - seam / 2, cy - 1, seam, 2)
+      ctx.fillStyle = `rgba(255,255,255,${glow * 0.12})`
+      ctx.fillRect(cx - seam / 2, cy - 6, seam, 12)
+    }
+  }
+
+  /* ─── The frame ───────────────────────────────────────────────────── */
+
+  let last = performance.now()
+
+  function draw(now: number) {
+    const dt = Math.min(0.05, (now - last) / 1000)
+    last = now
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    ctx.clearRect(0, 0, width, height)
+
+    // A jolt as each part lands.
+    let jolt = 0
+    for (const part of parts) if (part.snapAt > 0) jolt = Math.max(jolt, 1 - (now - part.snapAt) / 170)
+    if (jolt > 0) ctx.translate(rand(-1, 1) * 3 * jolt, rand(-1, 1) * 2 * jolt)
+
+    const fade = 1 - clamp(scroll * 1.2) * 0.85
+    const airy = clamp((intro.t - BEATS.instrument) / 1.2)
+
+    // Dust in the air, once the logo has landed; the text column stays clear.
+    ctx.textBaseline = "middle"
+    if (airy > 0) {
+      for (const m of motes) {
+        const side = clamp(Math.abs(m.x - width / 2) / (width * 0.3))
+        const clear = 0.18 + 0.82 * side * side
+        ctx.font = `400 ${m.size}px ${FONT_STACK}`
+        ctx.fillStyle = `rgba(200,200,200,${m.alpha * clear * airy * (0.6 + 0.4 * fade)})`
+        ctx.fillText(m.text, m.x, m.y - scroll * 120 * m.depth)
+      }
+    }
+
+    drawPrompt(now)
+
+    const replaying = replayAt > 0
+    const replayT = replaying ? (now - replayAt) / 1000 : 0
+    if (replaying && replayT > PULL + 3 * 0.07 + FLIGHT + 0.05) {
+      replayAt = -1
+      toTargets()
+    }
+    if (mode === "letters" && !replaying && intro.t > BEATS.sparks + 0.6) {
+      mode = "cells"
+      toTargets()
+    }
+
+    ctx.globalAlpha = fade
+    if (mode === "letters" || replaying) {
+      for (let i = 0; i < parts.length; i++) drawPart(i, replaying ? replayT : intro.t, replaying, now)
+    } else {
+      for (const c of cells) {
+        if (c.kind === "spark") continue
+        if (c.kind === "shadow") {
+          const s = shadowState(c)
+          drawCell(c, c.x + s.dx, c.y + s.dy, c.shade, s.k)
+        } else {
+          drawCell(c, c.x, c.y, faceShade(c, now), 1)
+        }
+      }
+    }
+
+    // Sparkles pop in, then twinkle.
+    sparkles.forEach((c, i) => {
+      const k = clamp((intro.t - BEATS.sparks - i * 0.06) / 0.35)
+      if (k <= 0) return
+      const t = target(c)
+      const pop = easeOutBack(k)
+      ctx.save()
+      ctx.translate(t.x + cw / 2, t.y + rh / 2)
+      ctx.rotate((1 - k) * Math.PI)
+      ctx.scale(pop, pop)
+      ctx.translate(-(t.x + cw / 2), -(t.y + rh / 2))
+      drawCell(c, t.x, t.y, c.shade, 0.55 + 0.45 * Math.sin(now / 520 + c.phase))
+      ctx.restore()
+    })
+    ctx.globalAlpha = 1
+
+    for (const part of parts) drawCropMarks(part, now)
+
+    // Sparks from the landings.
+    for (let i = sparks.length - 1; i >= 0; i--) {
+      const s = sparks[i]!
+      const age = (now - s.born) / s.life
+      if (age >= 1) {
+        sparks.splice(i, 1)
+        continue
+      }
+      s.vx *= 0.9 ** (dt * 60)
+      s.vy *= 0.9 ** (dt * 60)
+      s.x += s.vx * dt
+      s.y += s.vy * dt
+      ctx.font = `400 ${clamp(cw * 1.1, 10, 18)}px ${FONT_STACK}`
+      ctx.fillStyle = gray(0xee, (1 - age) ** 1.5)
+      ctx.textAlign = "center"
+      ctx.fillText(s.glyph, s.x, s.y)
+      ctx.textAlign = "left"
+    }
+
+    if (countLabel) countLabel.textContent = `parts ${snappedCount} / 4 snapped · ${pad(faces, 3)} cells`
+  }
+
+  function step(dtFrames: number) {
+    if (mode !== "cells" || replayAt > 0) return
+    for (const c of cells) {
+      if (c.kind === "spark") continue
+      const t = target(c)
+      c.vx += (t.x - c.x) * 0.075 * dtFrames
+      c.vy += (t.y - c.y) * 0.075 * dtFrames
+      if (pointer.active) {
+        const dx = c.x + cw / 2 - pointer.x
+        const dy = c.y + rh / 2 - pointer.y
+        const d = Math.hypot(dx, dy)
+        const reach = cw * 5.5
+        if (d < reach && d > 0.01) {
+          const push = (1 - d / reach) ** 2 * 2.6 * dtFrames
+          c.vx += (dx / d) * push
+          c.vy += (dy / d) * push
+        }
+      }
+      c.vx *= 0.8 ** dtFrames
+      c.vy *= 0.8 ** dtFrames
+      c.x += c.vx * dtFrames
+      c.y += c.vy * dtFrames
     }
     for (const m of motes) {
-      m.x += m.vx * dt * (1 + scroll * 3)
-      m.y += m.vy * dt * (1 + scroll * 3)
+      m.x += m.vx * dtFrames * (1 + scroll * 3)
+      m.y += m.vy * dtFrames * (1 + scroll * 3)
       if (m.y < -20) m.y = height + 10
       if (m.x > width + 60) m.x = -60
     }
-    if (countLabel) countLabel.textContent = `cells ${pad(swept, 3)} / ${pad(faces, 3)} swept`
   }
 
+  let lastFrame = performance.now()
   function frame(now: number) {
     if (visible && !document.hidden) {
-      step(now)
+      step(Math.min(2.5, (now - lastFrame) / 16.67))
       draw(now)
     } else {
       last = now
     }
+    lastFrame = now
     requestAnimationFrame(frame)
   }
 
   layout()
   if (still) {
-    settleAll()
-    draw(performance.now())
-    if (countLabel) countLabel.textContent = `cells ${pad(faces, 3)} / ${pad(faces, 3)} swept`
+    // Reduced motion: the settled logo, drawn once (and again on resize).
+    snappedCount = 4
+    mode = "cells"
+    toTargets()
+    const paint = () => draw(performance.now())
+    paint()
     new ResizeObserver(() => {
       layout()
-      settleAll()
-      draw(performance.now())
+      paint()
     }).observe(hero)
     return
   }
 
-  scatter()
   requestAnimationFrame(frame)
-
   new ResizeObserver(() => layout()).observe(hero)
   new IntersectionObserver(([entry]) => (visible = entry!.isIntersecting)).observe(hero)
   window.addEventListener(
@@ -340,13 +627,14 @@ export function mountHeroField(hero: HTMLElement) {
     pointer.active = false
   })
 
-  let lastScatter = 0
-  slot.addEventListener("click", (event) => {
-    const now = performance.now()
-    if (now - lastScatter < 900) return
-    lastScatter = now
-    const rect = hero.getBoundingClientRect()
-    scatter(event.clientX - rect.left, event.clientY - rect.top, 1)
-    sweepStart = now + 650
+  // A click on the settled logo flies the parts out and snaps them back.
+  slot.addEventListener("click", () => {
+    if (mode !== "cells" || replayAt > 0) return
+    replayAt = performance.now()
+    snappedCount = 0
+    for (const part of parts) {
+      part.snapped = false
+      part.snapAt = -1
+    }
   })
 }

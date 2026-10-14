@@ -16,7 +16,7 @@ const fallback = LOGO.map((line, row) =>
   <div class="corners" aria-hidden="true">
     <p class="hud c-tl">create-klin v{VERSION}</p>
     <p class="hud c-tr">◆ 1 / 6 · intro</p>
-    <p class="hud c-bl" data-hero-count>cells 000 / 000 swept</p>
+    <p class="hud c-bl" data-hero-count>parts 0 / 4 snapped</p>
     <p class="hud c-br" data-hero-pointer>x 0000 · y 0000</p>
   </div>
 
@@ -180,8 +180,8 @@ const fallback = LOGO.map((line, row) =>
       0 0;
     background-repeat: no-repeat;
   }
-  :global(html.motion) .sheen {
-    animation: sheen 1.5s cubic-bezier(0.4, 0, 0.2, 1) 1.9s both;
+  :global(.sheen.go) {
+    animation: sheen 1.5s cubic-bezier(0.4, 0, 0.2, 1) 0.35s both;
   }
   @keyframes sheen {
     from {

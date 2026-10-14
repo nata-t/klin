@@ -27,14 +27,18 @@ const { title, description } = Astro.props
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <script is:inline>
-      // Reveal choreography only for visitors with JS and motion on; the page is complete without it.
+      // Reveal choreography and the opening (src/scripts/intro.ts) only for visitors with JS and motion
+      // on; the page is complete without them. If the scripts never arrive, everything shows anyway.
       ;(function () {
         var root = document.documentElement
         if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
-        root.classList.add("motion")
+        root.classList.add("motion", "intro")
         setTimeout(function () {
-          if (!root.classList.contains("motion-ready")) root.classList.remove("motion")
+          if (!root.classList.contains("motion-ready")) root.classList.remove("motion", "intro")
         }, 4000)
+        setTimeout(function () {
+          root.classList.remove("intro")
+        }, 9000)
       })()
     </script>
   </head>

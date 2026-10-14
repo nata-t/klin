@@ -451,6 +451,36 @@ html.motion [data-reveal] {
   opacity: 0;
 }
 
+/* The opening (src/scripts/intro.ts): until its instrument beat only the hero
+   stage shows; then the nav and the HUD assemble, staggered. */
+#site-nav .inner > *,
+.hero .corners,
+.hero .keys {
+  transition:
+    opacity 0.6s ease,
+    transform 0.6s cubic-bezier(0.2, 0.9, 0.2, 1);
+}
+#site-nav .inner > :nth-child(2) {
+  transition-delay: 0.08s;
+}
+#site-nav .inner > :nth-child(3) {
+  transition-delay: 0.16s;
+}
+.hero .corners {
+  transition-delay: 0.2s;
+}
+.hero .keys {
+  transition-delay: 0.5s;
+}
+html.intro:not(.at-instrument) #site-nav .inner > *,
+html.intro:not(.at-instrument) .hero .corners,
+html.intro:not(.at-instrument) .hero .keys {
+  opacity: 0;
+}
+html.intro:not(.at-instrument) #site-nav .inner > * {
+  transform: translateY(-6px);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
