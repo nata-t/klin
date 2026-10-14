@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs"
 import { dirname, resolve, sep } from "node:path"
 import { fileURLToPath } from "node:url"
 
@@ -15,6 +16,7 @@ import { fileURLToPath } from "node:url"
 const here = dirname(fileURLToPath(import.meta.url))
 export const cliSrc = resolve(here, "../packages/create-klin/src")
 const shims = resolve(here, "src/wizard/shims")
+const templateDir = resolve(here, "../template")
 
 const builtins = {
   "node:fs": `${shims}/node-fs.ts`,
@@ -40,12 +42,21 @@ export function cliBridge() {
     name: "klin-cli-bridge",
     enforce: "pre",
     async resolveId(source, importer, options) {
+      // `klin-template:<path>` imports a template file's text, untouched by any transform.
+      if (source.startsWith("klin-template:")) return `\0klin-template:${encodeURIComponent(source.slice(14)).replace(/\./g, "%2E")}`
       if (!importer || !inCli(clean(importer))) return null
       if (builtins[source]) return builtins[source]
       if (!source.startsWith(".")) return null
       const resolved = await this.resolve(source, importer, { ...options, skipSelf: true })
       const target = resolved && modules[clean(resolved.id)]
       return target ?? null
+    },
+    load(id) {
+      if (!id.startsWith("\0klin-template:")) return null
+      const path = resolve(templateDir, decodeURIComponent(id.slice("\0klin-template:".length)))
+      if (!path.startsWith(templateDir + sep)) throw new Error(`klin-template: ${path} is outside the template`)
+      this.addWatchFile(path)
+      return `export default ${JSON.stringify(readFileSync(path, "utf8"))}`
     },
     transform(code, id) {
       if (!inCli(clean(id))) return null
