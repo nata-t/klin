@@ -4,6 +4,7 @@ import "@fontsource-variable/geist-mono"
 import "../styles/landing.css"
 import Nav from "../components/landing/Nav.astro"
 import Footer from "../components/landing/Footer.astro"
+import ScrollRuler from "../components/landing/ScrollRuler.astro"
 
 interface Props {
   title: string
@@ -49,6 +50,7 @@ const { title, description } = Astro.props
       <slot />
     </main>
     <Footer />
+    <ScrollRuler />
     <script>
       import "../scripts/motion"
     </script>

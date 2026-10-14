@@ -25,7 +25,7 @@ website/
     components/reference/ tables generated from template/klin.template.json
     components/docs/      Starlight overrides (site title) and the changelog
     content/docs/docs/    the docs, served under /docs
-    scripts/              landing-page behavior: hero, motion, schema demo, strip demo, grow story
+    scripts/              landing-page behavior: the intro clock, hero, scroll ruler, motion, demos, grow story
     wizard/               the on-page terminal and the browser stand-ins for the CLI
     styles/               landing.css and docs.css
     lib/                  data the pages share (manifest, schema demo fields, grow transcripts)
@@ -61,8 +61,16 @@ Same rules as the CLI (`packages/create-klin/src/ui/theme.ts`): grayscale,
 hierarchy through brightness, weight and glyphs. The only hues are the status
 pair (red errors, amber warnings) and theme swatches. Geist Mono for structure
 and headings, Geist for reading. Motion (Lenis smooth scroll, GSAP reveals,
-the hero's sweep, the pinned story) switches off for visitors who prefer
-reduced motion, and the page reads complete without JavaScript.
+the opening, the pinned story) switches off for visitors who prefer reduced
+motion, and the page reads complete without JavaScript.
+
+The opening runs on one clock (`src/scripts/intro.ts`): the create command is
+typed, K, L, I and N fly in and snap together, then the nav, the scroll ruler
+and the copy arrive on its beats. Any input fast-forwards it, and repeat
+visitors get it compressed. The scroll ruler (`src/scripts/ruler.ts`) replaces
+the scrollbar on desktop pointers: a tick track 1:1 with the page, a needle
+that points at its own percentage, the sections on the spine, and a page map
+on hover. Phones and tablets keep their native scrollbar.
 
 ## Before launch
 

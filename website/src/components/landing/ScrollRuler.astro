@@ -1,0 +1,254 @@
+---
+/**
+ * The scroll ruler: the page's scrollbar as an instrument (see
+ * src/scripts/ruler.ts). Desktop pointers only; everyone else keeps their
+ * native scrollbar, and without JavaScript nothing changes at all.
+ */
+---
+
+<div class="ruler" data-ruler hidden></div>
+
+<script>
+  import { mountRuler } from "../../scripts/ruler"
+  mountRuler(document.querySelector<HTMLElement>("[data-ruler]")!)
+</script>
+
+<style is:global>
+  :root {
+    --ruler-w: 64px;
+  }
+  /* The instrument replaces the native scrollbar; the reduced-motion rail sits beside it. */
+  html[data-ruler="on"] {
+    scrollbar-width: none;
+  }
+  html[data-ruler="on"]::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+  /* Keep the content rails clear of the ruler when the margins get thin. */
+  html[data-ruler] body {
+    padding-right: clamp(0px, calc(var(--ruler-w) - (100vw - var(--rail)) / 2), var(--ruler-w));
+  }
+  html[data-ruler] .hero .c-tr,
+  html[data-ruler] .hero .c-br {
+    right: calc(var(--gutter) + var(--ruler-w));
+  }
+
+  .ruler {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: var(--ruler-w);
+    z-index: 40;
+    overflow: hidden;
+    cursor: crosshair;
+    user-select: none;
+    touch-action: none;
+    font-family: var(--mono);
+    color: var(--bright);
+  }
+  .ruler[hidden] {
+    display: none;
+  }
+  /* Frost: whatever passes under the rail blurs, feathering out toward the page. */
+  .ruler .frost {
+    position: absolute;
+    inset: 0;
+    background: rgba(20, 20, 20, 0.58);
+    backdrop-filter: blur(9px);
+    -webkit-backdrop-filter: blur(9px);
+    mask-image: linear-gradient(to left, #000 55%, rgba(0, 0, 0, 0.6) 75%, transparent);
+    -webkit-mask-image: linear-gradient(to left, #000 55%, rgba(0, 0, 0, 0.6) 75%, transparent);
+  }
+  .ruler .edge {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    width: 1px;
+    background: var(--rule);
+  }
+  .ruler .track {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    will-change: transform;
+  }
+  .ruler .row {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 0;
+  }
+  .ruler .tick {
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 1px;
+    background: var(--bright);
+    transform-origin: right center;
+  }
+  .ruler .num {
+    position: absolute;
+    right: 21px;
+    top: 0;
+    transform: translateY(-50%);
+    font-size: 8.5px;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    transition: opacity 0.2s linear;
+  }
+  /* A section's marker: a long rule and its name on the spine, reading down. */
+  .ruler .mark {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 30px;
+    height: 1px;
+    background: var(--bright);
+  }
+  .ruler .spine {
+    position: absolute;
+    right: 34px;
+    top: 7px;
+    writing-mode: vertical-rl;
+    font-size: 9px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--subtle);
+    transition:
+      color 0.25s linear,
+      opacity 0.2s linear;
+  }
+  .ruler .spine .glyph {
+    display: inline-block;
+    margin-bottom: 6px;
+  }
+  .ruler [data-state="here"] .spine {
+    color: var(--bright);
+    font-weight: 650;
+  }
+  .ruler [data-state="passed"] .spine {
+    color: var(--muted);
+  }
+  /* The needle: where you are, meeting its own tick. */
+  .ruler .needle {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 0;
+    will-change: transform, opacity;
+  }
+  .ruler .needle .line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 1px;
+    background: var(--white);
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.55);
+  }
+  .ruler .needle .chip {
+    position: absolute;
+    left: 4px;
+    top: 4px;
+    padding: 1px 4px;
+    border-radius: 2px;
+    background: var(--bright);
+    color: var(--bg);
+    font-size: 9px;
+    font-weight: 650;
+    letter-spacing: 0.06em;
+    line-height: 1.35;
+    display: flex;
+    align-items: center;
+    transition: top 0.18s ease;
+  }
+  .ruler .digits {
+    display: inline-flex;
+    height: 1.35em;
+    overflow: hidden;
+  }
+  .ruler .digit {
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.28s cubic-bezier(0.2, 0.9, 0.2, 1);
+  }
+  .ruler .digit span {
+    height: 1.35em;
+    font-variant-numeric: tabular-nums;
+  }
+  /* The map's "you are here": the visible slice of the page, in crop marks. */
+  .ruler .bracket {
+    position: absolute;
+    left: 6px;
+    right: 1px;
+    top: 0;
+    height: 0;
+    opacity: 0;
+    background: rgba(255, 255, 255, 0.05);
+  }
+  .ruler .bracket::before,
+  .ruler .bracket::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 7px;
+    border: 1px solid var(--bright);
+  }
+  .ruler .bracket::before {
+    top: 0;
+    border-bottom: 0;
+  }
+  .ruler .bracket::after {
+    bottom: 0;
+    border-top: 0;
+  }
+  /* The hover ghost: where a click would take you. */
+  .ruler-ghost {
+    position: fixed;
+    right: 0;
+    top: 0;
+    width: 260px;
+    height: 0;
+    z-index: 41;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s linear;
+  }
+  .ruler-ghost .line {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: var(--ruler-w);
+    height: 1px;
+    background: var(--muted);
+  }
+  .ruler-ghost .label {
+    position: absolute;
+    right: calc(var(--ruler-w) + 8px);
+    top: 0;
+    transform: translateY(-50%);
+    padding: 3px 7px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    background: rgba(20, 20, 20, 0.92);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  .ruler-ghost .label b {
+    color: var(--bright);
+    font-weight: 650;
+  }
+</style>
