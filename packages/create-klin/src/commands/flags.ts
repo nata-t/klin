@@ -24,7 +24,7 @@ export interface Flags {
 }
 
 export const FLAG_SPEC = {
-  boolean: ["help", "version", "yes", "force", "dry-run", "install", "git", "banner", "validation", "model", "route", "nav"],
+  boolean: ["help", "version", "yes", "force", "dry-run", "install", "git", "banner", "validation", "model", "route", "nav", "reset"],
   string: [
     "pm",
     "preset",
@@ -33,6 +33,10 @@ export const FLAG_SPEC = {
     "cwd",
     "url",
     "plural",
+    "backend-dir",
+    "frontend-dir",
+    "validation-dir",
+    "model-dir",
     "backend",
     "server",
     "db",

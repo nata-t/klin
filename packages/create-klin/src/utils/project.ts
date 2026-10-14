@@ -15,6 +15,8 @@ export interface ProjectConfig {
   /** e.g. "pnpm@11.20.0" */
   packageManager: string
   answers: Answers
+  /** `klin generate` settings: where each layer's files go (`klin generate paths`). */
+  generate?: { paths?: Partial<Record<"backend" | "frontend" | "validation" | "model", string>> }
 }
 
 export function findProjectRoot(from = process.cwd()): string | null {

@@ -1,6 +1,7 @@
 import type { PackageManager } from "../engine/manifest"
 import type { ChangeKind } from "../ui/tree"
 import { rewriteCommand } from "../utils/pm"
+import { type Dirs, defaultDirs } from "./dirs"
 import { importPath, pathsFor, type TemplateContext } from "./paths"
 import { commandFor, type GenKind, type Target } from "./target"
 import * as api from "./templates/api"
@@ -52,6 +53,8 @@ export interface GenerateOptions {
   route?: boolean
   /** Add a sidebar entry (`--no-nav`). */
   nav?: boolean
+  /** The layer folders, already checked with parseDir — klin's defaults when left out. */
+  dirs?: Dirs
 }
 
 /**
@@ -64,7 +67,7 @@ export function planGenerate(kind: GenKind, target: Target, project: Project, fs
   const model = kind === "resource" && options.model !== false
   const route = frontend && options.route !== false
   const nav = route && options.nav !== false
-  const paths = pathsFor(target)
+  const paths = pathsFor(target, options.dirs ?? defaultDirs(project))
   const ctx: TemplateContext = { target, kind, paths, command: commandFor(kind, target), withModel: model }
   const edits: Edit[] = []
   const warnings: string[] = []

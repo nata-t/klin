@@ -45,6 +45,11 @@ export function help() {
         ${flag("--no-validation")}           skip packages/validators ${dim("(the schemas already exist)")}
         ${flag("--no-route")} ${dim("·")} ${flag("--no-nav")}     skip the page's route ${dim("·")} skip the sidebar entry
         ${flag("--dry-run")} ${dim("·")} ${flag("--force")}       show the plan only ${dim("·")} overwrite generated files
+        ${flag("--backend-dir")} ${dim("<dir>")}       put this run's files in another folder ${dim("(inside apps/api/src)")}
+        ${flag("--frontend-dir")} ${dim("<dir>")}      ${dim("… inside apps/web/src, not routes/")}
+        ${flag("--validation-dir")} ${dim("<dir>")}    ${dim("… inside packages/validators/src")}
+        ${flag("--model-dir")} ${dim("<dir>")}         ${dim("… inside packages/db/prisma, not migrations/")}
+    ${cmd("klin generate paths")}           the default folders ${dim("· set with --…-dir · --reset for klin's")}
     ${cmd("klin list")}                     modules and what's switched on
     ${cmd("klin doctor")}                   check env, database, services & versions
     ${cmd("klin upgrade")} ${dim("[--from <dir>]")}   merge template improvements in ${dim("(experimental)")}

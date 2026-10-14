@@ -2,6 +2,7 @@ import { resolve } from "node:path"
 import { describe, expect, it } from "vitest"
 import { loadManifest, normalizeAnswers } from "../src/engine/manifest"
 import { render } from "../src/engine/render"
+import { defaultDirs, parseDir, projectDirs, withDirs } from "../src/generators/dirs"
 import { type GenerateOptions, type Plan, PlanError, planGenerate, type Project, type Reader } from "../src/generators/plan"
 import { type GenKind, parseTarget, resolveKind, type TargetOverrides } from "../src/generators/target"
 import { singularize } from "../src/utils/names"
@@ -298,5 +299,69 @@ describe("generate: flags", () => {
     const { plan } = await project()
     expect(plan("backend", "post", { nav: false, route: false }).warnings).toHaveLength(2)
     expect(plan("frontend", "post", { model: false }).warnings[0]).toMatch(/--no-model does nothing here/)
+  })
+})
+
+describe("generate: folders", () => {
+  const nest = { backend: "nest" as const }
+
+  it("normalizes a folder and keeps it inside its layer", () => {
+    expect(parseDir("frontend", "./apps/web/src/pages/")).toBe("apps/web/src/pages")
+    expect(parseDir("frontend", "apps\\web\\src\\pages")).toBe("apps/web/src/pages")
+    expect(parseDir("backend", "apps/api/src")).toBe("apps/api/src")
+    expect(parseDir("model", "packages/db/prisma/domain")).toBe("packages/db/prisma/domain")
+    expect(() => parseDir("frontend", "")).toThrow(/Give it a folder/)
+    expect(() => parseDir("frontend", "/home/me/app/src")).toThrow(/inside the project/)
+    expect(() => parseDir("frontend", "C:\\app")).toThrow(/inside the project/)
+    expect(() => parseDir("frontend", "~/app")).toThrow(/inside the project/)
+    expect(() => parseDir("frontend", "apps/web/src/../../api/src")).toThrow(/would step outside/)
+    expect(() => parseDir("frontend", "apps/web/src/my pages")).toThrow(/isn't a valid folder name/)
+    expect(() => parseDir("frontend", "apps/web/pages")).toThrow(/inside apps\/web\/src/)
+    expect(() => parseDir("validation", "packages/ui/src")).toThrow(/inside packages\/validators\/src/)
+    expect(() => parseDir("frontend", "apps/web/src/routes/features")).toThrow(/Not inside apps\/web\/src\/routes/)
+    expect(() => parseDir("model", "packages/db/prisma/migrations")).toThrow(/Not inside packages\/db\/prisma\/migrations/)
+    expect(() => parseDir("backend", "apps/api/src/main.ts", { read: () => "file" })).toThrow(/is a file/)
+  })
+
+  it("reads defaults from klin.json and saves only what differs from klin's", () => {
+    const config = { version: "0", template: "bundled", name: "x", packageManager: "bun@1", answers: {} }
+    expect(projectDirs(config, nest)).toEqual(defaultDirs(nest))
+    expect(defaultDirs({ backend: "plain" }).backend).toBe("apps/api/src")
+
+    const saved = withDirs(config, nest, { ...defaultDirs(nest), frontend: "apps/web/src/pages" })
+    expect(saved.generate).toEqual({ paths: { frontend: "apps/web/src/pages" } })
+    expect(projectDirs(saved, nest).frontend).toBe("apps/web/src/pages")
+    expect(withDirs(saved, nest, defaultDirs(nest))).not.toHaveProperty("generate")
+
+    const broken = { ...config, generate: { paths: { model: "../prisma" } } }
+    expect(() => projectDirs(broken, nest)).toThrow(/klin\.json → generate\.paths\.model/)
+  })
+
+  it("writes every layer into custom folders, with imports that still resolve (NestJS)", async () => {
+    const { plan } = await project()
+    const dirs = {
+      backend: "apps/api/src/app/features",
+      frontend: "apps/web/src/pages",
+      validation: "packages/validators/src/schemas",
+      model: "packages/db/prisma/domain",
+    }
+    const edits = byPath(plan("resource", "blog/post", { dirs }))
+    const content = (path: string) => edits.get(path)?.content ?? ""
+    expect(content("apps/api/src/app/features/blog/post/post.service.ts")).toContain('from "../../../../common"')
+    expect(content("apps/api/src/app.module.ts")).toContain('import { PostModule } from "./app/features/blog/post/post.module"')
+    expect(content("packages/validators/src/schemas/blog/post.ts")).toContain('from "../../api"')
+    expect(content("packages/validators/src/index.ts")).toContain('export * from "./schemas/blog/post"')
+    expect(edits.has("packages/db/prisma/domain/blog/post.prisma")).toBe(true)
+    expect(edits.has("apps/web/src/pages/blog/post/post-page.tsx")).toBe(true)
+    expect(content("apps/web/src/routes/_app/blog/post.tsx")).toContain('from "@/pages/blog/post/post-page"')
+  })
+
+  it("keeps routes/ and services/ inside a plain backend's folder", async () => {
+    const { plan } = await project({ backend: "plain", server: "express" })
+    const dirs = { ...defaultDirs({ backend: "plain" }), backend: "apps/api/src/http" }
+    const edits = byPath(plan("backend", "blog/post", { dirs }))
+    expect(edits.get("apps/api/src/http/routes/blog/post.ts")?.content).toContain('from "../../../lib/http"')
+    expect(edits.has("apps/api/src/http/services/blog/post.ts")).toBe(true)
+    expect(edits.get("apps/api/src/app.ts")?.content).toContain('import { postRouter } from "./http/routes/blog/post"')
   })
 })

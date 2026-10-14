@@ -1,4 +1,5 @@
 import { posix } from "node:path"
+import type { Dirs } from "./dirs"
 import type { GenKind, Target } from "./target"
 
 /** Where every generated file goes. Organization folders nest the same way in each layer. */
@@ -10,13 +11,14 @@ export interface Paths {
   web: { dir: string; api: string; page: string; form: string; route: string }
 }
 
-export function pathsFor(t: Target): Paths {
+/** `dirs` are the layer folders (klin's defaults, the project's, or this run's). */
+export function pathsFor(t: Target, dirs: Dirs): Paths {
   const entity = [...t.folders, t.one.kebab].join("/")
-  const nestDir = `apps/api/src/modules/${t.path}`
-  const webDir = `apps/web/src/features/${t.path}`
+  const nestDir = `${dirs.backend}/${t.path}`
+  const webDir = `${dirs.frontend}/${t.path}`
   return {
-    validators: `packages/validators/src/${entity}.ts`,
-    prisma: `packages/db/prisma/models/${entity}.prisma`,
+    validators: `${dirs.validation}/${entity}.ts`,
+    prisma: `${dirs.model}/${entity}.prisma`,
     nest: {
       dir: nestDir,
       module: `${nestDir}/${t.leaf.kebab}.module.ts`,
@@ -25,8 +27,9 @@ export function pathsFor(t: Target): Paths {
       service: `${nestDir}/${t.leaf.kebab}.service.ts`,
     },
     plain: {
-      routes: `apps/api/src/routes/${t.path}.ts`,
-      service: `apps/api/src/services/${t.path}.ts`,
+      // Plain backends keep the template's routes/ and services/ inside the backend folder.
+      routes: `${dirs.backend}/routes/${t.path}.ts`,
+      service: `${dirs.backend}/services/${t.path}.ts`,
     },
     web: {
       dir: webDir,
