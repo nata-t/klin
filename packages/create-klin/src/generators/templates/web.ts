@@ -2,7 +2,8 @@ import { importPath, local, type TemplateContext } from "../paths"
 
 /*
  * The frontend: TanStack Query hooks for the five endpoints, a page that
- * lists what the API returns, a form skeleton and the route that shows it.
+ * lists what the API returns, a form skeleton and the route that shows it —
+ * a TanStack Router file route, or a Next.js App Router page.
  */
 
 const q = (s: string) => JSON.stringify(s)
@@ -146,9 +147,10 @@ export function ${P}Form({ ${prop}, onDone }: { ${o.camel}?: ${P}; onDone?: () =
 `
 }
 
-export function webPageFile({ target: t, command }: TemplateContext) {
+export function webPageFile({ target: t, command, web }: TemplateContext) {
   const { one: o, many: m, list: l, leaf: L } = t
-  return `import { PlusIcon } from "lucide-react"
+  // Next.js: the page.tsx in app/ is a server component, and this is where the browser takes over.
+  return `${web === "next" ? `"use client"\n\n` : ""}import { PlusIcon } from "lucide-react"
 import { useState } from "react"
 import { PageHeader } from "@/components/page-header"
 import { Button } from "@/components/ui/button"
@@ -210,7 +212,23 @@ export function ${L.pascal}Page() {
 `
 }
 
-export function webRouteFile({ target: t, paths }: TemplateContext) {
+export function webRouteFile(ctx: TemplateContext) {
+  return ctx.web === "next" ? nextPageFile(ctx) : tanstackRouteFile(ctx)
+}
+
+function nextPageFile({ target: t, paths }: TemplateContext) {
+  return `import type { Metadata } from "next"
+import { ${t.leaf.pascal}Page } from "${alias(paths.web.page)}"
+
+export const metadata: Metadata = { title: ${q(t.many.title)} }
+
+export default function Page() {
+  return <${t.leaf.pascal}Page />
+}
+`
+}
+
+function tanstackRouteFile({ target: t, paths }: TemplateContext) {
   return `import { createFileRoute } from "@tanstack/react-router"
 import { ${t.list.camel}QueryOptions } from "${alias(paths.web.api)}"
 import { ${t.leaf.pascal}Page } from "${alias(paths.web.page)}"

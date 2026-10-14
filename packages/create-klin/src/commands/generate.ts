@@ -136,18 +136,20 @@ export async function generateCommand(flags: Flags) {
     }
   }, { done: () => `Wrote ${writes.length} files`, center: ask })
 
-  // Keep types in sync right away: the Prisma client and TanStack's route tree.
+  // Keep types in sync right away: the Prisma client and the router's route types
+  // (TanStack's route tree, or Next.js's typed routes).
   const { pm } = project
   const prismaClient = kind === "resource" && options.model !== false
-  const routeTree = kind !== "backend" && options.route !== false && existsSync(join(root, "apps/web/node_modules"))
-  if (prismaClient || routeTree) {
-    await task(prismaClient ? "Regenerating the Prisma client and routes" : "Regenerating the route tree", async () => {
+  const routeTypes = kind !== "backend" && options.route !== false && existsSync(join(root, "apps/web/node_modules"))
+  const routes = project.web === "next" ? "route types" : "route tree"
+  if (prismaClient || routeTypes) {
+    await task(prismaClient ? "Regenerating the Prisma client and routes" : `Regenerating the ${routes}`, async () => {
       if (prismaClient) await run(pm, ["run", "db:generate"], { cwd: root })
-      if (routeTree) {
-        const [bin, ...args] = pmCommands(pm).exec("tsr generate").split(" ")
+      if (routeTypes) {
+        const [bin, ...args] = pmCommands(pm).exec(project.web === "next" ? "next typegen" : "tsr generate").split(" ")
         await run(bin!, args, { cwd: join(root, "apps/web") })
       }
-    }, { done: () => (prismaClient ? "Prisma client and route tree are up to date" : "Route tree is up to date"), center: ask }).catch(() => {
+    }, { done: () => (prismaClient ? `Prisma client and ${routes} are up to date` : routes === "route tree" ? "Route tree is up to date" : "Route types are up to date"), center: ask }).catch(() => {
       out.warn("Couldn't regenerate types automatically — they'll update on the next `dev`.")
     })
   }
@@ -193,7 +195,7 @@ function printer(center: boolean) {
 
 /** What's left for the developer: the files to fill in, then how to see it run. */
 function nextSteps(kind: GenKind, target: Target, project: Project, config: ProjectConfig, options: GenerateOptions, center: boolean) {
-  const paths = pathsFor(target, options.dirs ?? defaultDirs(project))
+  const paths = pathsFor(target, options.dirs ?? defaultDirs(project), project.web)
   const backend = kind !== "frontend"
   const frontend = kind !== "backend"
   const model = kind === "resource" && options.model !== false
@@ -366,7 +368,7 @@ async function askDirs(kind: GenKind, target: Target, session: Session, options:
   }
   const chosen = (values: Record<string, string>): Dirs => {
     const next = { ...dirs }
-    for (const [layer, value] of Object.entries(values)) next[layer as Layer] = parseDir(layer as Layer, value, fs)
+    for (const [layer, value] of Object.entries(values)) next[layer as Layer] = parseDir(layer as Layer, value, fs, project.web)
     return next
   }
   const result = guard(
@@ -379,8 +381,8 @@ async function askDirs(kind: GenKind, target: Target, session: Session, options:
         value: dirs[layer],
         placeholder: builtIn[layer],
         about: aboutDir(layer, project),
-        validate: (value) => problemOf(() => parseDir(layer, value, fs)),
-        describe: (value) => lands[layer](parseDir(layer, value, fs)),
+        validate: (value) => problemOf(() => parseDir(layer, value, fs, project.web)),
+        describe: (value) => lands[layer](parseDir(layer, value, fs, project.web)),
       })),
       toggleTitle: "Defaults",
       toggles: [
@@ -407,18 +409,18 @@ function runDirs(flags: Flags, { config, project, fs }: Session): Dirs {
   } catch (error) {
     bail((error as Error).message)
   }
-  return { ...dirs, ...dirFlags(flags, fs) }
+  return { ...dirs, ...dirFlags(flags, { project, fs }) }
 }
 
 /** --backend-dir & co., each checked — a bad folder fails before any question is asked. */
-function dirFlags(flags: Flags, fs: Reader): Partial<Dirs> {
+function dirFlags(flags: Flags, { project, fs }: Pick<Session, "project" | "fs">): Partial<Dirs> {
   const given: Partial<Dirs> = {}
   for (const layer of LAYERS) {
     const raw = flags[DIR_FLAGS[layer]]
     if (raw === undefined) continue
     try {
       if (typeof raw !== "string") throw new Error("give it once, with one folder")
-      given[layer] = parseDir(layer, raw, fs)
+      given[layer] = parseDir(layer, raw, fs, project.web)
     } catch (error) {
       bail(`--${DIR_FLAGS[layer]}: ${(error as Error).message}`)
     }
@@ -434,7 +436,7 @@ function dirFlags(flags: Flags, fs: Reader): Partial<Dirs> {
 async function pathsCommand(flags: Flags, session: Session, interactive: boolean) {
   const { config, project, fs } = session
   if (flags._.length > 1) bail(`klin generate paths takes no name — set folders with ${LAYERS.map((layer) => `--${DIR_FLAGS[layer]}`).join(", ")}`)
-  const given = dirFlags(flags, fs)
+  const given = dirFlags(flags, session)
   const setting = Object.keys(given).length > 0
   if (flags.reset && setting) bail("--reset puts every folder back to klin's default — leave the --…-dir flags out")
 
@@ -465,13 +467,13 @@ async function editPaths({ project, fs }: Session, current: Dirs): Promise<Dirs>
         value: current[layer],
         placeholder: builtIn[layer],
         about: aboutDir(layer, project),
-        validate: (value) => problemOf(() => parseDir(layer, value, fs)),
-        describe: (value) => (parseDir(layer, value, fs) === builtIn[layer] ? "klin's default" : "this project's own"),
+        validate: (value) => problemOf(() => parseDir(layer, value, fs, project.web)),
+        describe: (value) => (parseDir(layer, value, fs, project.web) === builtIn[layer] ? "klin's default" : "this project's own"),
       })),
     })
   )
   const dirs = { ...current }
-  for (const layer of LAYERS) dirs[layer] = parseDir(layer, result.values[layer]!, fs)
+  for (const layer of LAYERS) dirs[layer] = parseDir(layer, result.values[layer]!, fs, project.web)
   return dirs
 }
 
@@ -501,6 +503,8 @@ function projectOf(config: ProjectConfig): Project {
     // Projects from before the backend choice are NestJS on Express.
     backend: config.answers.backend === "plain" ? "plain" : "nest",
     server: config.answers.server === "fastify" ? "fastify" : "express",
+    // Projects from before the web choice run on Vite.
+    web: config.answers.web === "next" ? "next" : "vite",
     packagesUi: enabled.has("packages-ui"),
     pm: parsePackageManager(config.packageManager).pm,
   }
