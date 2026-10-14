@@ -1,0 +1,212 @@
+---
+import SectionShell from "./SectionShell.astro"
+import { INSTALL, REPO } from "../../lib/site"
+
+const fit = [
+  ["SaaS products", "Accounts, teams and billing-shaped data behind a real API."],
+  ["Internal tools & dashboards", "Forms, tables and roles, with the boring parts done."],
+  ["API-backed apps", "Where a separate backend is a feature — mobile clients, integrations, jobs."],
+]
+const notFor = [
+  ["Static sites & blogs", "There's nothing here you'd use. Reach for a content framework."],
+  ["Everything in one Next.js app", "klin can render the web app with Next.js, but the API stays its own app."],
+  ["No backend at all", "If you don't want an API, use a framework built for that."],
+]
+---
+
+<SectionShell id="ship" index="06" label="Ship it" note="MIT · open source">
+  <div class="section-head">
+    <h2 class="display" data-reveal>Is it for you?</h2>
+    <p class="lede" data-reveal>klin has opinions. Here's where they help, and where they'd get in your way.</p>
+  </div>
+
+  <div class="fit">
+    <div class="col" data-reveal>
+      <p class="hud">Good fit</p>
+      <ul>
+        {
+          fit.map(([title, text]) => (
+            <li>
+              <span class="mark" aria-hidden="true">
+                ◼
+              </span>
+              <div>
+                <h3>{title}</h3>
+                <p>{text}</p>
+              </div>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+    <div class="col" data-reveal>
+      <p class="hud">Not for</p>
+      <ul>
+        {
+          notFor.map(([title, text]) => (
+            <li class="no">
+              <span class="mark" aria-hidden="true">
+                ◻
+              </span>
+              <div>
+                <h3>{title}</h3>
+                <p>{text}</p>
+              </div>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </div>
+
+  <div class="final">
+    <p class="spark" aria-hidden="true" data-reveal>✦</p>
+    <h2 class="display chrome" data-reveal>Everything's in its place.<br />Your move.</h2>
+    <div class="install" data-reveal>
+      <div class="chips" role="tablist" aria-label="Package manager" data-final-pm>
+        {
+          Object.keys(INSTALL).map((pm, i) => (
+            <button class="chip" role="tab" type="button" aria-selected={i === 0 ? "true" : "false"} data-pm={pm}>
+              <span class="mark" aria-hidden="true">
+                {i === 0 ? "●" : "○"}
+              </span>
+              {pm}
+            </button>
+          ))
+        }
+      </div>
+      <div class="cmd">
+        <code class="line"><span class="prompt">$</span><span data-final-cmd>{INSTALL.bun}</span></code>
+        <button class="copy" type="button" data-copy-from="[data-final-cmd]" aria-label="Copy the install command"><span data-copy-label>Copy</span></button>
+      </div>
+    </div>
+    <div class="actions" data-reveal>
+      <a class="btn primary" href="/docs/getting-started/">Get started <span class="arrow" aria-hidden="true">→</span></a>
+      <a class="btn" href={REPO} rel="noopener">Star it on GitHub <span class="arrow" aria-hidden="true">↗</span></a>
+    </div>
+  </div>
+</SectionShell>
+
+<script>
+  import { INSTALL } from "../../lib/site"
+  const tabs = document.querySelectorAll<HTMLButtonElement>("[data-final-pm] [data-pm]")
+  const cmd = document.querySelector<HTMLElement>("[data-final-cmd]")!
+  tabs.forEach((tab) =>
+    tab.addEventListener("click", () => {
+      tabs.forEach((t) => {
+        const on = t === tab
+        t.setAttribute("aria-selected", String(on))
+        t.querySelector(".mark")!.textContent = on ? "●" : "○"
+      })
+      cmd.textContent = INSTALL[tab.dataset.pm as keyof typeof INSTALL]
+    })
+  )
+</script>
+
+<style>
+  .fit {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--rule);
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+  }
+  .col {
+    background: var(--bg);
+    padding: 26px var(--gutter) 30px;
+  }
+  .col > .hud {
+    margin: 0 0 18px;
+    color: var(--bright);
+  }
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 18px;
+  }
+  li {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 14px;
+  }
+  .mark {
+    font-family: var(--mono);
+    color: var(--bright);
+    font-size: 12px;
+    line-height: 1.9;
+  }
+  .no .mark {
+    color: var(--subtle);
+  }
+  h3 {
+    margin: 0 0 2px;
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--bright);
+  }
+  .no h3 {
+    color: var(--text);
+  }
+  li p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 15px;
+  }
+  .final {
+    position: relative;
+    display: grid;
+    justify-items: center;
+    text-align: center;
+    padding: clamp(80px, 12vw, 160px) var(--gutter) clamp(88px, 12vw, 160px);
+    overflow: hidden;
+  }
+  .final::before {
+    content: "";
+    position: absolute;
+    inset: 10% 15%;
+    background: radial-gradient(closest-side, rgba(255, 255, 255, 0.06), transparent);
+    pointer-events: none;
+  }
+  .spark {
+    margin: 0 0 18px;
+    font-size: 22px;
+    color: var(--bright);
+    animation: twinkle 3.2s ease-in-out infinite;
+  }
+  @keyframes twinkle {
+    50% {
+      opacity: 0.35;
+      transform: rotate(45deg) scale(0.85);
+    }
+  }
+  .final .display {
+    font-size: clamp(34px, 5.4vw, 72px);
+  }
+  .install {
+    margin-top: 36px;
+    width: min(560px, 100%);
+    display: grid;
+    gap: 10px;
+    justify-items: center;
+  }
+  .install .cmd {
+    width: 100%;
+    text-align: left;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 22px;
+  }
+  @media (max-width: 760px) {
+    .fit {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
