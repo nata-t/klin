@@ -1,5 +1,6 @@
 import { posix } from "node:path"
 import type { Dirs } from "./dirs"
+import type { Web } from "./plan"
 import type { GenKind, Target } from "./target"
 
 /** Where every generated file goes. Organization folders nest the same way in each layer. */
@@ -12,7 +13,7 @@ export interface Paths {
 }
 
 /** `dirs` are the layer folders (klin's defaults, the project's, or this run's). */
-export function pathsFor(t: Target, dirs: Dirs): Paths {
+export function pathsFor(t: Target, dirs: Dirs, web: Web): Paths {
   const entity = [...t.folders, t.one.kebab].join("/")
   const nestDir = `${dirs.backend}/${t.path}`
   const webDir = `${dirs.frontend}/${t.path}`
@@ -36,7 +37,8 @@ export function pathsFor(t: Target, dirs: Dirs): Paths {
       api: `${webDir}/api.ts`,
       page: `${webDir}/${t.leaf.kebab}-page.tsx`,
       form: `${webDir}/${t.one.kebab}-form.tsx`,
-      route: `apps/web/src/routes/_app/${t.url}.tsx`,
+      // Page files stay where the router looks for them.
+      route: web === "next" ? `apps/web/src/app/(app)/${t.url}/page.tsx` : `apps/web/src/routes/_app/${t.url}.tsx`,
     },
   }
 }
@@ -56,6 +58,8 @@ export interface TemplateContext {
   command: string
   /** A Prisma model comes with it, so services can query it instead of leaving TODOs. */
   withModel: boolean
+  /** What runs apps/web. */
+  web: Web
 }
 
 /** A local variable name that can't shadow the code around it (`const id = … { id }`). */

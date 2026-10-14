@@ -8,10 +8,15 @@ import * as api from "./templates/api"
 import { prismaFile, schemaExports, schemaImports, validatorsFile } from "./templates/schema"
 import * as web from "./templates/web"
 
+/** What runs apps/web. */
+export type Web = "vite" | "next"
+
 /** What generation needs to know about the project (from klin.json). */
 export interface Project {
   backend: "nest" | "plain"
   server: "express" | "fastify"
+  /** What runs apps/web: Vite + TanStack Router, or the Next.js App Router. */
+  web: Web
   /** shadcn components live in packages/ui (`@repo/ui/components/*`). */
   packagesUi: boolean
   pm: PackageManager
@@ -67,8 +72,8 @@ export function planGenerate(kind: GenKind, target: Target, project: Project, fs
   const model = kind === "resource" && options.model !== false
   const route = frontend && options.route !== false
   const nav = route && options.nav !== false
-  const paths = pathsFor(target, options.dirs ?? defaultDirs(project))
-  const ctx: TemplateContext = { target, kind, paths, command: commandFor(kind, target), withModel: model }
+  const paths = pathsFor(target, options.dirs ?? defaultDirs(project), project.web)
+  const ctx: TemplateContext = { target, kind, paths, command: commandFor(kind, target), withModel: model, web: project.web }
   const edits: Edit[] = []
   const warnings: string[] = []
 
@@ -202,7 +207,17 @@ export function planGenerate(kind: GenKind, target: Target, project: Project, fs
     write(paths.web.page, shadcn(web.webPageFile(ctx)))
   }
 
-  if (route) {
+  if (route && project.web === "next") {
+    // Another page on the same URL (in any route group) would stop the build.
+    const page = fs.files("apps/web/src/app").find((file) => file !== paths.web.route && nextRoute(file) === `/${target.url}`)
+    if (page) throw new PlanError(`${page} already serves /${target.url} — ${target.url === target.path ? "pick another name, or" : "pick another"} --url`)
+    write(paths.web.route, web.webRouteFile(ctx))
+    // proxy.ts sends signed-out visitors to /sign-in before the page renders.
+    const proxy = "apps/web/src/proxy.ts"
+    const segments = target.url.split("/")
+    const covered = segments.some((_, i) => (current(proxy) ?? "").includes(`"/${segments.slice(0, i + 1).join("/")}/:path*"`))
+    if (!covered) insert(proxy, "// klin-anchor:protected-routes", `"/${target.url}/:path*",`)
+  } else if (route) {
     write(paths.web.route, web.webRouteFile(ctx))
     const parent = target.url.split("/").slice(0, -1).join("/")
     const parentRoute = `apps/web/src/routes/_app/${parent}.tsx`
@@ -223,6 +238,13 @@ export function planGenerate(kind: GenKind, target: Target, project: Project, fs
   }
 
   return { edits, warnings }
+}
+
+/** The URL an App Router page.tsx serves: route groups like (app) don't count. */
+function nextRoute(file: string) {
+  const match = /^apps\/web\/src\/app((?:\/[^/]+)*)\/page\.tsx$/.exec(file)
+  if (!match) return null
+  return `/${match[1]!.split("/").filter((s) => s && !/^\(.*\)$/.test(s) && !s.startsWith("@")).join("/")}`
 }
 
 function exportsName(text: string, name: string) {

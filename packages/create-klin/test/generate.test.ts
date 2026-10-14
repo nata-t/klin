@@ -24,6 +24,7 @@ async function project(overrides: Record<string, string | string[]> = {}) {
   const info: Project = {
     backend: answers.backend === "plain" ? "plain" : "nest",
     server: answers.server === "fastify" ? "fastify" : "express",
+    web: answers.web === "next" ? "next" : "vite",
     packagesUi: answers.components === "packages-ui",
     pm: "bun",
   }
@@ -302,8 +303,47 @@ describe("generate: flags", () => {
   })
 })
 
+describe("generate: Next.js", () => {
+  it("writes an App Router page, a client feature page and a proxy entry", async () => {
+    const { plan } = await project({ web: "next" })
+    const edits = byPath(plan("resource", "billing/invoice"))
+    const content = (path: string) => edits.get(path)?.content ?? ""
+
+    const page = content("apps/web/src/app/(app)/billing/invoice/page.tsx")
+    expect(page).toContain('import { InvoicePage } from "@/features/billing/invoice/invoice-page"')
+    expect(page).toContain('export const metadata: Metadata = { title: "Invoices" }')
+    expect(page).toContain("return <InvoicePage />")
+    expect(content("apps/web/src/features/billing/invoice/invoice-page.tsx")).toMatch(/^"use client"\n\n/)
+    expect(content("apps/web/src/features/billing/invoice/invoice-form.tsx")).not.toContain("use client")
+    expect([...edits.keys()].some((path) => path.includes("routes/_app"))).toBe(false)
+
+    const proxy = content("apps/web/src/proxy.ts")
+    expect(proxy).toMatch(/"\/billing\/invoice\/:path\*",\n\s*\/\/ klin-anchor:protected-routes/)
+    expect(content("apps/web/src/config/nav.ts")).toContain('to: "/billing/invoice"')
+  })
+
+  it("leaves the proxy alone when a parent path is already protected", async () => {
+    const { plan } = await project({ web: "next" })
+    const edits = byPath(plan("frontend", "settings/billing"))
+    expect(edits.has("apps/web/src/app/(app)/settings/billing/page.tsx")).toBe(true)
+    expect(edits.has("apps/web/src/proxy.ts")).toBe(false)
+  })
+
+  it("refuses a URL a page in another route group already serves", async () => {
+    const { plan } = await project({ web: "next" })
+    expect(() => plan("frontend", "login", { url: "sign-in" })).toThrow(/\(auth\)\/sign-in\/page\.tsx already serves \/sign-in/)
+  })
+
+  it("--no-route writes no page and no proxy entry", async () => {
+    const { plan } = await project({ web: "next" })
+    const edits = byPath(plan("frontend", "post", { route: false }))
+    expect([...edits.keys()].some((path) => path.startsWith("apps/web/src/app/"))).toBe(false)
+    expect(edits.has("apps/web/src/proxy.ts")).toBe(false)
+  })
+})
+
 describe("generate: folders", () => {
-  const nest = { backend: "nest" as const }
+  const nest = { backend: "nest" as const, web: "vite" as const }
 
   it("normalizes a folder and keeps it inside its layer", () => {
     expect(parseDir("frontend", "./apps/web/src/pages/")).toBe("apps/web/src/pages")
@@ -319,6 +359,8 @@ describe("generate: folders", () => {
     expect(() => parseDir("frontend", "apps/web/pages")).toThrow(/inside apps\/web\/src/)
     expect(() => parseDir("validation", "packages/ui/src")).toThrow(/inside packages\/validators\/src/)
     expect(() => parseDir("frontend", "apps/web/src/routes/features")).toThrow(/Not inside apps\/web\/src\/routes/)
+    expect(() => parseDir("frontend", "apps/web/src/app/features", undefined, "next")).toThrow(/Not inside apps\/web\/src\/app/)
+    expect(parseDir("frontend", "apps/web/src/app/features")).toBe("apps/web/src/app/features")
     expect(() => parseDir("model", "packages/db/prisma/migrations")).toThrow(/Not inside packages\/db\/prisma\/migrations/)
     expect(() => parseDir("backend", "apps/api/src/main.ts", { read: () => "file" })).toThrow(/is a file/)
   })
@@ -327,6 +369,8 @@ describe("generate: folders", () => {
     const config = { version: "0", template: "bundled", name: "x", packageManager: "bun@1", answers: {} }
     expect(projectDirs(config, nest)).toEqual(defaultDirs(nest))
     expect(defaultDirs({ backend: "plain" }).backend).toBe("apps/api/src")
+    const next = { ...nest, web: "next" as const }
+    expect(() => projectDirs({ ...config, generate: { paths: { frontend: "apps/web/src/app/x" } } }, next)).toThrow(/Not inside apps\/web\/src\/app/)
 
     const saved = withDirs(config, nest, { ...defaultDirs(nest), frontend: "apps/web/src/pages" })
     expect(saved.generate).toEqual({ paths: { frontend: "apps/web/src/pages" } })
