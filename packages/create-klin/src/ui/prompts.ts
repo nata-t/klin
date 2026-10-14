@@ -1,12 +1,13 @@
 import { VERSION } from "../context"
 import { type ChipItem, type Field, Form, type InputField, type Page, type Tone } from "./form"
+import { center } from "./log"
 import { screen } from "./term"
 import { c, parseColor, sym } from "./theme"
 
 /**
  * One-question prompts on the full-screen UI (used by add/remove/generate and
- * the menu). Each answer is echoed to the scrollback as `◆ question  answer`
- * once the screen closes.
+ * the menu). Each answer is echoed to the scrollback as `◆ question  answer`,
+ * centered, once the screen closes.
  */
 
 export const CANCEL = Symbol("cancel")
@@ -53,12 +54,8 @@ export function setPromptEcho(on: boolean) {
 }
 
 /** `◆ question  answer` in the scrollback — what every prompt writes unless echo is off. */
-export function echoAnswer(message: string, answer: string) {
-  screen.remember(`${c.faint("│")}\n${c.bright(sym.diamond)}  ${message}  ${c.muted(answer)}`)
-}
-
 const echo = (message: string, answer: string) => {
-  if (echoing) echoAnswer(message, answer)
+  if (echoing) screen.remember(center(`${c.bright(sym.diamond)}  ${message}  ${c.muted(answer)}`))
 }
 
 const toItems = <T extends string>(options: Option<T>[]): ChipItem[] =>

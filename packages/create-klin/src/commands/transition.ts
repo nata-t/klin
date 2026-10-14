@@ -15,7 +15,7 @@ import {
 import { type FileMap, render } from "../engine/render"
 import { box } from "../ui/box"
 import { INSTALL_QUIPS, task } from "../ui/task"
-import { cancel, intro, log, outro } from "../ui/log"
+import { block, cancel, centered, centeredBlock, intro, log, outro } from "../ui/log"
 import * as prompts from "../ui/prompts"
 import { c, shimmer, sym } from "../ui/theme"
 import { type ChangeKind, fileTree } from "../ui/tree"
@@ -237,10 +237,8 @@ async function transition(options: {
   }
 
   log.step(options.title)
-  console.log(fileTree(visible.map(({ path, kind, note }) => ({ path, kind, note }))))
-  console.log(
-    `\n  ${c.ok("+ new")}  ${c.code("~ updated/merged")}  ${c.warn("! needs your eyes")}  ${c.error("- removed")}\n`
-  )
+  centeredBlock(fileTree(visible.map(({ path, kind, note }) => ({ path, kind, note })), "").split("\n"))
+  centered(["", `${c.ok("+ new")}  ${c.code("~ updated/merged")}  ${c.warn("! needs your eyes")}  ${c.error("- removed")}`, ""])
   for (const s of skipped) log.info(`${c.dim("Skipped")} ${s.path} ${c.dim(`— ${s.note}`)}`)
 
   if (flags["dry-run"]) {
@@ -304,14 +302,13 @@ async function transition(options: {
   if (depsChanged && flags.install === false) lines.push(`${c.dim(sym.arrow)} ${c.bold(pmCommands(pm).install)}`)
   lines.push(`${c.dim(sym.arrow)} ${c.bold(run_("dev"))}  ${c.dim("and take a look")}`)
   lines.push(`${c.dim(sym.arrow)} ${c.bold("git diff")}  ${c.dim("review everything that changed")}`)
-  console.log(box(lines, { title: conflicts.length ? "almost spotless" : `${sym.star} done` }))
+  block(box(lines, { title: conflicts.length ? "almost spotless" : `${sym.star} done` }))
 
   const notes = selectedOptions(options.target.manifest, options.target.answers)
     .filter((id) => !selectedOptions(options.base.manifest, options.base.answers).includes(id))
     .map((id) => options.target.manifest.options[id]?.note)
     .filter(Boolean) as string[]
-  for (const note of notes) log.info(note)
-  outro(shimmer(conflicts.length ? "Resolve the markers and you're done." : "All tidy."))
+  outro(shimmer(conflicts.length ? "Resolve the markers and you're done." : "All tidy."), notes)
 }
 
 /**

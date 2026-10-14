@@ -4,7 +4,7 @@ import { join } from "node:path"
 import { glob } from "tinyglobby"
 import { resolveTemplate, VERSION } from "../context"
 import { loadManifest } from "../engine/manifest"
-import { intro, outro } from "../ui/log"
+import { centeredBlock, intro, outro } from "../ui/log"
 import { spinner } from "../ui/task"
 import { c, shimmer, sym } from "../ui/theme"
 import { dockerFix, dockerState } from "../utils/docker"
@@ -277,15 +277,17 @@ export async function doctorCommand(_flags: Flags) {
   spin.stop("Checked everything")
 
   /* ─── Report ───────────────────────────────────────────────────────── */
+  // One block, so the groups and their checks stay aligned with each other.
+  const report: string[] = []
   for (const group of [...new Set(checks.map((c) => c.group))]) {
-    console.log(`\n  ${c.bold(group)}`)
+    report.push("", c.bold(group))
     for (const check of checks.filter((c) => c.group === group)) {
-      console.log(`    ${ICON[check.status]} ${check.title}`)
-      if (check.detail) for (const line of check.detail.split("\n")) console.log(`      ${c.dim(line)}`)
-      if (check.hint) console.log(`      ${c.dim(sym.arrow)} ${c.code(check.hint)}`)
+      report.push(`  ${ICON[check.status]} ${check.title}`)
+      if (check.detail) for (const line of check.detail.split("\n")) report.push(`    ${c.dim(line)}`)
+      if (check.hint) report.push(`    ${c.dim(sym.arrow)} ${c.code(check.hint)}`)
     }
   }
-  console.log()
+  centeredBlock([...report, ""])
 
   const fails = checks.filter((c) => c.status === "fail").length
   const warns = checks.filter((c) => c.status === "warn").length

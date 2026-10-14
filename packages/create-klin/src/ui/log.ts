@@ -1,65 +1,86 @@
 import { screen } from "./term"
-import { c, sym, unicode, width } from "./theme"
+import { c, sym, width } from "./theme"
 
 /**
- * Line output with a quiet rail down the left, in grays:
+ * Every command's output, centered in the terminal like the full-screen pages,
+ * in grays:
  *
- *    klin add   my-app
- *   │
- *   ◆  Adding Organizations & RBAC
- *   ●  Added to .env: RESEND_API_KEY
- *   └  All tidy.
+ *                       klin add   my-app
+ *
+ *               ✓  Rendering before & after 0.3s
+ *
+ *                ◆  Adding Organizations & RBAC
+ *               ℹ  Added to .env: RESEND_API_KEY
+ *
+ *                          All tidy.
  *
  * Every call closes the full-screen UI first, so lines land in the scrollback.
  */
 
-const rail = unicode ? "│" : "|"
-const end = unicode ? "└" : "`"
+/** Whether the last line written here was empty: parts that open with a gap don't double it. */
+let gap = false
 
-function print(icon: string, message: string) {
+function write(lines: string[]) {
   screen.close()
-  const [first = "", ...rest] = message.split("\n")
-  const lines = [c.faint(rail), `${icon}  ${first}`, ...rest.map((line) => `${c.faint(rail)}  ${line}`)]
-  process.stdout.write(`${lines.join("\n")}\n`)
+  const out = gap && lines[0] === "" ? lines.slice(1) : lines
+  if (!out.length) return
+  process.stdout.write(`${out.join("\n")}\n`)
+  gap = out.at(-1) === ""
 }
 
-export const log = {
-  step: (message: string) => print(c.bright(sym.diamond), message),
-  info: (message: string) => print(c.muted(sym.info), message),
-  success: (message: string) => print(c.bright(sym.check), message),
-  warn: (message: string) => print(c.warn(sym.warn), message),
-  error: (message: string) => print(c.error(sym.cross), message),
-  message: (message: string) => print(c.faint(rail), message),
+const columns = () => process.stdout.columns || 80
+
+/** `line` with the spaces in front that center it in the terminal. */
+export function center(line: string) {
+  return line ? " ".repeat(Math.max(0, Math.floor((columns() - width(line)) / 2))) + line : ""
 }
 
-/** `  klin add   my-app` — the header of a command's output. */
-export function intro(title: string, subtitle = "") {
-  screen.close()
-  process.stdout.write(`\n  ${c.badge(title)}  ${c.muted(subtitle)}\n`)
-}
-
-/** Lines centered in the terminal — the end of the wizard, whose pages are centered too. */
+/** Lines centered in the terminal, each on its own. */
 export function centered(lines: string[]) {
-  screen.close()
-  const columns = process.stdout.columns || 80
-  const pad = (line: string) => (line ? " ".repeat(Math.max(0, Math.floor((columns - width(line)) / 2))) + line : "")
-  process.stdout.write(`${lines.map(pad).join("\n")}\n`)
+  write(lines.map(center))
 }
 
 /** Lines moved right together, so a tree or a table sits centered and keeps its own alignment. */
 export function centeredBlock(lines: string[]) {
-  screen.close()
-  const columns = process.stdout.columns || 80
-  const pad = " ".repeat(Math.max(0, Math.floor((columns - Math.max(0, ...lines.map(width))) / 2)))
-  process.stdout.write(`${lines.map((line) => (line ? pad + line : "")).join("\n")}\n`)
+  const pad = " ".repeat(Math.max(0, Math.floor((columns() - Math.max(0, ...lines.map(width))) / 2)))
+  write(lines.map((line) => (line ? pad + line : "")))
 }
 
-export function outro(message: string) {
-  screen.close()
-  process.stdout.write(`${c.faint(rail)}\n${c.faint(end)}  ${message}\n\n`)
+/** Lines already laid out, like a box, as they are. */
+export function block(text: string) {
+  write(text.split("\n"))
 }
 
+/** `icon  message`; a message over several lines is centered as a block, the rest under the first line's text. */
+function print(icon: string, message: string, around: string[] = []) {
+  const [first = "", ...rest] = message.split("\n")
+  const lines = [`${icon}  ${first}`, ...rest.map((line) => (line ? `   ${line}` : ""))]
+  if (rest.length) centeredBlock([...around, ...lines, ...around])
+  else centered([...around, ...lines, ...around])
+}
+
+export const log = {
+  /** A new part of the output, with a gap above and below. */
+  step: (message: string) => print(c.bright(sym.diamond), message, [""]),
+  info: (message: string) => print(c.muted(sym.info), message),
+  success: (message: string) => print(c.bright(sym.check), message),
+  warn: (message: string) => print(c.warn(sym.warn), message),
+  error: (message: string) => print(c.error(sym.cross), message),
+}
+
+/** ` klin add   my-app` — the badge line a command's output opens with. */
+export function intro(title: string, subtitle = "") {
+  centered(["", subtitle ? `${c.badge(title)}  ${c.muted(subtitle)}` : c.badge(title), ""])
+}
+
+/** The last word, with any notes about what was just set up above it. */
+export function outro(message: string, notes: string[] = []) {
+  centered(["", ...notes.map((note) => `${c.muted(sym.info)}  ${note}`), ...(notes.length ? [""] : []), message, ""])
+}
+
+/** Why a command stopped: an error, or a cancelled prompt. */
 export function cancel(message: string) {
-  screen.close()
-  process.stdout.write(`${c.faint(rail)}\n${c.faint(end)}  ${message}\n\n`)
+  const lines = ["", ...message.split("\n"), ""]
+  if (lines.length > 3) centeredBlock(lines)
+  else centered(lines)
 }
