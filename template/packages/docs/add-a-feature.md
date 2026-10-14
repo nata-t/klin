@@ -48,6 +48,34 @@ and the second one reuses what's there.
 | `--no-route` | No route file for the page (render it wherever you like) — and so no sidebar entry |
 | `--no-nav` | No sidebar entry |
 | `--dry-run` · `--force` | Show the plan without writing · overwrite generated files that exist (never the shared schema file) |
+| `--backend-dir` · `--frontend-dir` · `--validation-dir` · `--model-dir` | Put this run's files in other folders (see below) |
+
+**Where files go.** Each layer has a folder, and the name's folders nest inside it:
+
+| Layer | klin's default | Has to stay inside |
+| --- | --- | --- |
+<!-- klin:if nest -->
+| Backend | `apps/api/src/modules` (a folder per module) | `apps/api/src` |
+<!-- klin:else -->
+| Backend | `apps/api/src` (which holds `routes/` and `services/`) | `apps/api/src` |
+<!-- klin:endif -->
+| Frontend | `apps/web/src/features` | `apps/web/src`, but not `routes/` (every file there becomes a route; the route file itself always goes in `routes/_app`) |
+| Validation | `packages/validators/src` | `packages/validators/src` |
+| Prisma models | `packages/db/prisma/models` | `packages/db/prisma`, but not `migrations/` |
+
+`pnpm klin generate` asks "Where should it go?" with these folders filled in —
+Enter keeps them — and one-line runs take `--frontend-dir apps/web/src/pages`
+and the like. Folders are written from the project root, without `..`, and are
+checked before anything is written.
+
+To change the defaults for the project, run `pnpm klin generate paths` (or pick
+"Change default paths", or tick "Use these from now on" while generating). In a
+script: `pnpm klin generate paths --frontend-dir apps/web/src/pages`, and
+`--reset` for klin's own. They're saved in `klin.json`:
+
+```json
+"generate": { "paths": { "frontend": "apps/web/src/pages" } }
+```
 
 ## 1. Generate the slice
 

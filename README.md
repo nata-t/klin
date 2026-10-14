@@ -111,7 +111,10 @@ field shows where yours go; backend-only services answer 501 until you fill
 them in. Slashes make folders (`billing/invoice` goes in a `billing/` folder in
 every layer). Everything typechecks and lints as generated. Flags like
 `--url`, `--no-model`, `--no-validation`, `--no-route` and `--no-nav` trim or
-redirect what's written — `klin --help` lists them.
+redirect what's written — `klin --help` lists them. Each layer's folder can
+change too, for one run (`--frontend-dir apps/web/src/pages`, or on the "Where
+should it go?" page) or as the project's default (`klin generate paths`, saved
+in `klin.json`).
 
 ```bash
 pnpm klin add organizations email   # bolt modules on later
