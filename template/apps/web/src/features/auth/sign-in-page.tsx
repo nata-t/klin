@@ -1,4 +1,11 @@
+//? "use client" // klin:only next
+//? // klin:only next
+// klin:if next
+//? import Link from "next/link"
+//? import { useSearchParams } from "next/navigation"
+// klin:else
 import { getRouteApi, Link } from "@tanstack/react-router"
+// klin:endif
 import { useState } from "react" // klin:only password && magic-link
 import { Button } from "@/components/ui/button" // klin:only password && magic-link
 import { safeRedirect } from "@/lib/session"
@@ -9,11 +16,16 @@ import { PasskeySignInButton } from "./passkey-sign-in-button" // klin:only pass
 import { SignInForm } from "./sign-in-form" // klin:only password
 import { SocialButtons } from "./social-buttons" // klin:only oauth
 
-const route = getRouteApi("/_auth/sign-in")
+const route = getRouteApi("/_auth/sign-in") // klin:only vite
 
 export function SignInPage() {
+  // klin:if next
+  //? const searchParams = useSearchParams()
+  //? const redirectTo = safeRedirect(searchParams.get("redirect"))
+  // klin:else
   const search = route.useSearch()
   const redirectTo = safeRedirect(search.redirect)
+  // klin:endif
   const [useMagicLink, setUseMagicLink] = useState(false) // klin:only password && magic-link
 
   return (
@@ -38,7 +50,8 @@ export function SignInPage() {
       <PasskeySignInButton redirectTo={redirectTo} /> {/* klin:only passkey */}
       <p className="text-center text-sm text-muted-foreground">
         New here?{" "}
-        <Link to="/sign-up" className="font-medium text-foreground underline-offset-4 hover:underline">
+        <Link to="/sign-up" className="font-medium text-foreground underline-offset-4 hover:underline"> {/* klin:only vite */}
+        {/*? <Link href="/sign-up" className="font-medium text-foreground underline-offset-4 hover:underline"> */} {/* klin:only next */}
           Create an account
         </Link>
       </p>

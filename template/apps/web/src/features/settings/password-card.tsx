@@ -1,4 +1,6 @@
 // klin:file password
+//? "use client" // klin:only next
+//? // klin:only next
 import { type ChangePasswordInput, changePasswordSchema } from "@repo/validators"
 import { toast } from "sonner"
 import { AppForm, useAppForm } from "@/components/form"

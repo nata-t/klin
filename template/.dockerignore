@@ -1,6 +1,9 @@
 **/node_modules
 **/dist
 **/.turbo
+# klin:if next
+**/.next
+# klin:endif
 **/.env
 **/.env.*
 !**/.env.example

@@ -1,6 +1,10 @@
 node_modules
 dist
 .turbo
+# klin:if next
+.next
+next-env.d.ts
+# klin:endif
 coverage
 pnpm-lock.yaml
 bun.lock

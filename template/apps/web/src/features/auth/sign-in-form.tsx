@@ -1,5 +1,6 @@
 // klin:file password
-import { Link } from "@tanstack/react-router"
+import { Link } from "@tanstack/react-router" // klin:only vite
+//? import Link from "next/link" // klin:only next
 import { type SignInInput, signInSchema } from "@repo/validators"
 import { toast } from "sonner"
 import { AppForm, useAppForm } from "@/components/form"
@@ -45,7 +46,8 @@ export function SignInForm({ redirectTo }: { redirectTo: string }) {
               label="Password"
               autoComplete="current-password"
               labelAction={
-                <Link to="/forgot-password" className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
+                <Link to="/forgot-password" className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"> {/* klin:only vite */}
+                {/*? <Link href="/forgot-password" className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"> */} {/* klin:only next */}
                   Forgot password?
                 </Link>
               }

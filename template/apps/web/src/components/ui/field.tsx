@@ -1,3 +1,4 @@
+//? "use client" // klin:only next
 
 import { useMemo } from "react"
 import { cva, type VariantProps } from "class-variance-authority"

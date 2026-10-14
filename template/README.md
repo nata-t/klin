@@ -44,7 +44,11 @@ Run `pnpm klin doctor` if anything misbehaves.
 <!-- klin:else -->
 | **API** — `apps/api` | Fastify 5, Better Auth mounted at `/api/auth`, `requireAuth` / `requireRole()` hooks, route schemas that are the shared Zod schemas, consistent error envelope, pino logs, `/api/health` |
 <!-- klin:endif -->
+<!-- klin:if next -->
+| **Web** — `apps/web` | Next.js 16 (App Router) + React 19, signed-in pages checked on the server (`proxy.ts` + layouts), `/api` rewritten to the API, TanStack Query (typed client + key conventions), TanStack Form + shadcn/ui, dark mode, error/404/loading states |
+<!-- klin:else -->
 | **Web** — `apps/web` | Vite + React 19, TanStack Router (file routes, `beforeLoad` guards), TanStack Query (typed client + key conventions), TanStack Form + shadcn/ui, dark mode, error/404/loading states |
+<!-- klin:endif -->
 <!-- klin:if packages-ui -->
 | **Shared** — `packages/*` | `ui` (shadcn/ui components + theme), `validators` (Zod), `db` (Prisma), `auth` (Better Auth config + client), `env` (validated server env), TypeScript & ESLint configs |
 <!-- klin:else -->

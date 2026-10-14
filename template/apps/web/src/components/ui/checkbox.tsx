@@ -1,3 +1,4 @@
+//? "use client" // klin:only next
 
 import { Checkbox as CheckboxPrimitive } from "@base-ui/react/checkbox"
 

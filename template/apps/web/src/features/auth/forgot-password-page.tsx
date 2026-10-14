@@ -1,5 +1,8 @@
 // klin:file password
-import { Link } from "@tanstack/react-router"
+//? "use client" // klin:only next
+//? // klin:only next
+import { Link } from "@tanstack/react-router" // klin:only vite
+//? import Link from "next/link" // klin:only next
 import { type ForgotPasswordInput, forgotPasswordSchema } from "@repo/validators"
 import { ArrowLeftIcon, MailCheckIcon } from "lucide-react"
 import { useState } from "react"
@@ -50,7 +53,8 @@ export function ForgotPasswordPage() {
           </FieldGroup>
         </AppForm>
       )}
-      <Link to="/sign-in" className="inline-flex items-center justify-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+      <Link to="/sign-in" className="inline-flex items-center justify-center gap-1 text-sm text-muted-foreground hover:text-foreground"> {/* klin:only vite */}
+      {/*? <Link href="/sign-in" className="inline-flex items-center justify-center gap-1 text-sm text-muted-foreground hover:text-foreground"> */} {/* klin:only next */}
         <ArrowLeftIcon className="size-4" /> Back to sign in
       </Link>
     </div>

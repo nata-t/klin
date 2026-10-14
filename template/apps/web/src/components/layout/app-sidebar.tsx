@@ -1,4 +1,5 @@
-import { Link } from "@tanstack/react-router"
+import { Link } from "@tanstack/react-router" // klin:only vite
+//? import Link from "next/link" // klin:only next
 import { Logo } from "@/components/logo"
 import {
   Sidebar,
@@ -28,7 +29,8 @@ export function AppSidebar() {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" render={<Link to="/dashboard" />}>
+            <SidebarMenuButton size="lg" render={<Link to="/dashboard" />}> {/* klin:only vite */}
+            {/*? <SidebarMenuButton size="lg" render={<Link href="/dashboard" />}> */} {/* klin:only next */}
               <Logo />
             </SidebarMenuButton>
           </SidebarMenuItem>

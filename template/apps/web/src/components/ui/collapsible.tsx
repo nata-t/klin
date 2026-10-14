@@ -1,3 +1,4 @@
+//? "use client" // klin:only next
 
 import { Collapsible as CollapsiblePrimitive } from "@base-ui/react/collapsible"
 

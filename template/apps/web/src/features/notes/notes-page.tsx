@@ -1,6 +1,10 @@
-import { getRouteApi } from "@tanstack/react-router"
+//? "use client" // klin:only next
+//? // klin:only next
+import { getRouteApi } from "@tanstack/react-router" // klin:only vite
+//? import { useRouter, useSearchParams } from "next/navigation" // klin:only next
 import { ChevronLeftIcon, ChevronRightIcon, PlusIcon, SearchIcon, StickyNoteIcon } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useEffect, useState } from "react" // klin:only vite
+//? import { useCallback, useEffect, useState } from "react" // klin:only next
 import { PageHeader } from "@/components/page-header"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
@@ -8,15 +12,46 @@ import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTi
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+//? import { z } from "zod" // klin:only next
 import { useNotes } from "./api"
 import { NoteCard } from "./note-card"
 import { NoteForm } from "./note-form"
 
+// klin:if next
+//? /** The filters live in the URL: /notes?page=2&search=milk&pinned=true */
+//? const searchSchema = z.object({
+//?   page: z.coerce.number().int().min(1).catch(1),
+//?   search: z.string().optional().catch(undefined),
+//?   pinned: z.stringbool().optional().catch(undefined),
+//? })
+//?
+//? type NotesSearch = z.infer<typeof searchSchema>
+// klin:else
 const route = getRouteApi("/_app/notes")
+// klin:endif
 
 export function NotesPage() {
+  // klin:if next
+  //? const router = useRouter()
+  //? const searchParams = useSearchParams()
+  //? const search = searchSchema.parse(Object.fromEntries(searchParams))
+  //?
+  //? /** Changes some of the filters, keeping the rest — a new history entry, like a link. */
+  //? const setSearch = useCallback(
+  //?   (patch: Partial<NotesSearch>) => {
+  //?     const next = { ...searchSchema.parse(Object.fromEntries(searchParams)), ...patch }
+  //?     const params = new URLSearchParams()
+  //?     if (next.page > 1) params.set("page", String(next.page))
+  //?     if (next.search) params.set("search", next.search)
+  //?     if (next.pinned) params.set("pinned", "true")
+  //?     router.push(params.size ? `/notes?${params}` : "/notes", { scroll: false })
+  //?   },
+  //?   [router, searchParams]
+  //? )
+  // klin:else
   const search = route.useSearch()
   const navigate = route.useNavigate()
+  // klin:endif
   const [creating, setCreating] = useState(false)
   const [searchInput, setSearchInput] = useState(search.search ?? "")
 
@@ -27,11 +62,13 @@ export function NotesPage() {
   useEffect(() => {
     const timeout = setTimeout(() => {
       if (searchInput !== (search.search ?? "")) {
-        void navigate({ search: (prev) => ({ ...prev, search: searchInput || undefined, page: 1 }) })
+        void navigate({ search: (prev) => ({ ...prev, search: searchInput || undefined, page: 1 }) }) // klin:only vite
+        //? setSearch({ search: searchInput || undefined, page: 1 }) // klin:only next
       }
     }, 300)
     return () => clearTimeout(timeout)
-  }, [searchInput, search.search, navigate])
+  }, [searchInput, search.search, navigate]) // klin:only vite
+  //? }, [searchInput, search.search, setSearch]) // klin:only next
 
   const pagination = data?.pagination
 
@@ -70,7 +107,8 @@ export function NotesPage() {
         <Tabs
           value={search.pinned ? "pinned" : "all"}
           onValueChange={(value) =>
-            void navigate({ search: (prev) => ({ ...prev, pinned: value === "pinned" || undefined, page: 1 }) })
+            void navigate({ search: (prev) => ({ ...prev, pinned: value === "pinned" || undefined, page: 1 }) }) // klin:only vite
+            //? setSearch({ pinned: value === "pinned" || undefined, page: 1 }) // klin:only next
           }
         >
           <TabsList>
@@ -123,7 +161,8 @@ export function NotesPage() {
               variant="outline"
               size="sm"
               disabled={pagination.page <= 1}
-              onClick={() => void navigate({ search: (prev) => ({ ...prev, page: pagination.page - 1 }) })}
+              onClick={() => void navigate({ search: (prev) => ({ ...prev, page: pagination.page - 1 }) })} // klin:only vite
+              //? onClick={() => setSearch({ page: pagination.page - 1 })} // klin:only next
             >
               <ChevronLeftIcon /> Previous
             </Button>
@@ -131,7 +170,8 @@ export function NotesPage() {
               variant="outline"
               size="sm"
               disabled={pagination.page >= pagination.totalPages}
-              onClick={() => void navigate({ search: (prev) => ({ ...prev, page: pagination.page + 1 }) })}
+              onClick={() => void navigate({ search: (prev) => ({ ...prev, page: pagination.page + 1 }) })} // klin:only vite
+              //? onClick={() => setSearch({ page: pagination.page + 1 })} // klin:only next
             >
               Next <ChevronRightIcon />
             </Button>

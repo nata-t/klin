@@ -1,4 +1,6 @@
 // klin:file passkey
+//? "use client" // klin:only next
+//? // klin:only next
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { FingerprintIcon, PlusIcon, TrashIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"

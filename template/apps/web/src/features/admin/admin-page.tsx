@@ -1,4 +1,7 @@
-import { useNavigate } from "@tanstack/react-router"
+//? "use client" // klin:only next
+//? // klin:only next
+import { useNavigate } from "@tanstack/react-router" // klin:only vite
+//? import { useRouter } from "next/navigation" // klin:only next
 import {
   BanIcon,
   ChevronLeftIcon,
@@ -37,7 +40,8 @@ const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: "medium" })
 
 export function AdminPage() {
   const me = useCurrentUser()
-  const navigate = useNavigate()
+  const navigate = useNavigate() // klin:only vite
+  //? const router = useRouter() // klin:only next
   const stats = useAdminStats()
   const [page, setPage] = useState(1)
   const [searchInput, setSearchInput] = useState("")
@@ -60,7 +64,8 @@ export function AdminPage() {
     const { error } = await authClient.admin.impersonateUser({ userId })
     if (error) return void toast.error(error.message ?? "Couldn't impersonate that user")
     await refreshSession()
-    await navigate({ to: "/dashboard" })
+    await navigate({ to: "/dashboard" }) // klin:only vite
+    //? router.push("/dashboard") // klin:only next
   }
 
   const total = users.data?.total ?? 0

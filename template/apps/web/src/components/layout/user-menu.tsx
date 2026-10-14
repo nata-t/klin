@@ -1,4 +1,5 @@
-import { useNavigate } from "@tanstack/react-router"
+import { useNavigate } from "@tanstack/react-router" // klin:only vite
+//? import { useRouter } from "next/navigation" // klin:only next
 import { ChevronsUpDownIcon, LogOutIcon, SettingsIcon, ShieldCheckIcon } from "lucide-react"
 import {
   DropdownMenu,
@@ -11,13 +12,13 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar"
 import { useT } from "@/lib/i18n"
-import { useCurrentUser, useSignOut } from "@/lib/session"
+import { signOut, useCurrentUser } from "@/lib/session"
 import { UserAvatar } from "./user-avatar"
 
 export function UserMenu() {
   const user = useCurrentUser()
-  const signOut = useSignOut()
-  const navigate = useNavigate()
+  const navigate = useNavigate() // klin:only vite
+  //? const router = useRouter() // klin:only next
   const { isMobile } = useSidebar()
   const t = useT()
 
@@ -59,10 +60,12 @@ export function UserMenu() {
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem onClick={() => navigate({ to: "/settings" })}>
+              <DropdownMenuItem onClick={() => navigate({ to: "/settings" })}> {/* klin:only vite */}
+              {/*? <DropdownMenuItem onClick={() => router.push("/settings")}> */} {/* klin:only next */}
                 <SettingsIcon /> {t("menu.settings", "Settings")}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate({ to: "/settings/security" })}>
+              <DropdownMenuItem onClick={() => navigate({ to: "/settings/security" })}> {/* klin:only vite */}
+              {/*? <DropdownMenuItem onClick={() => router.push("/settings/security")}> */} {/* klin:only next */}
                 <ShieldCheckIcon /> {t("menu.security", "Security")}
               </DropdownMenuItem>
             </DropdownMenuGroup>

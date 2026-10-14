@@ -1,9 +1,9 @@
 import type { ApiErrorResponse, ApiSuccessResponse } from "@repo/validators"
-import { env } from "@/env"
+import { env } from "@/env" // klin:only vite
 import { ApiError } from "./api-error"
 
 /**
- * Typed fetch wrapper for the Nest API.
+ * Typed fetch wrapper for the API.
  *
  *   const notes = await api.get<NoteList>("/notes", { page: 2 })
  *
@@ -15,7 +15,8 @@ import { ApiError } from "./api-error"
  * exact ones the API validates against.
  */
 
-const BASE_URL = `${env.VITE_API_URL ?? ""}/api`
+const BASE_URL = `${env.VITE_API_URL ?? ""}/api` // klin:only vite
+//? const BASE_URL = "/api" // klin:only next
 
 type QueryParams = object
 

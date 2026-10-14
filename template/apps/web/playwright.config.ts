@@ -32,7 +32,9 @@ export default defineConfig({
       timeout: 60_000,
     },
     {
-      command: "vite preview",
+      command: "vite preview", // klin:only vite
+      //? command: `next start --port ${new URL(webURL).port || 5173}`, // klin:only next
+      //? env: { NODE_ENV: "production" }, // klin:only next
       url: webURL,
       reuseExistingServer: !process.env.CI,
     },

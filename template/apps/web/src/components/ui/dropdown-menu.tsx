@@ -1,3 +1,5 @@
+//? "use client" // klin:only next
+//? // klin:only next
 import * as React from "react"
 import { Menu as MenuPrimitive } from "@base-ui/react/menu"
 

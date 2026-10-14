@@ -1,4 +1,5 @@
-import type { LinkProps } from "@tanstack/react-router"
+import type { LinkProps } from "@tanstack/react-router" // klin:only vite
+//? import type { Route } from "next" // klin:only next
 import {
   LayoutDashboardIcon,
   type LucideIcon,
@@ -12,7 +13,8 @@ export interface NavItem {
   /** Also the i18n key: `nav.<id>`. */
   id: string
   title: string
-  to: LinkProps["to"]
+  to: LinkProps["to"] // klin:only vite
+  //? to: Route // klin:only next
   icon: LucideIcon
 }
 

@@ -1,4 +1,7 @@
-import { Link } from "@tanstack/react-router"
+//? "use client" // klin:only next
+//? // klin:only next
+import { Link } from "@tanstack/react-router" // klin:only vite
+//? import Link from "next/link" // klin:only next
 import { AuthDivider, AuthHeader } from "./auth-header" // klin:only oauth && (password || magic-link)
 import { AuthHeader } from "./auth-header" // klin:only !(oauth && (password || magic-link))
 import { MagicLinkForm } from "./magic-link-form" // klin:only magic-link && !password
@@ -24,7 +27,8 @@ export function SignUpPage() {
       {/* klin:endif */}
       <p className="text-center text-sm text-muted-foreground">
         Already have an account?{" "}
-        <Link to="/sign-in" className="font-medium text-foreground underline-offset-4 hover:underline">
+        <Link to="/sign-in" className="font-medium text-foreground underline-offset-4 hover:underline"> {/* klin:only vite */}
+        {/*? <Link href="/sign-in" className="font-medium text-foreground underline-offset-4 hover:underline"> */} {/* klin:only next */}
           Sign in
         </Link>
       </p>

@@ -1,4 +1,6 @@
 // klin:file two-factor
+//? "use client" // klin:only next
+//? // klin:only next
 import { type BackupCodeInput, backupCodeSchema, type TotpCodeInput, totpCodeSchema } from "@repo/validators"
 import { ShieldCheckIcon } from "lucide-react"
 import { useState } from "react"

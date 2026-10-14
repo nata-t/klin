@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, useSyncExternalStore } from "react"
 
 /** "klin" in the same block letters the CLI prints. */
 const LOGO = [
@@ -33,10 +33,26 @@ const OUTPUT: Array<[string, string]> = [
   ["db", "Prisma Studio · :5555"],
 ]
 
-/** Types `text` one character at a time (instantly for reduced motion). */
+const REDUCED_MOTION = "(prefers-reduced-motion: reduce)"
+
+function subscribe(onChange: () => void) {
+  const media = window.matchMedia(REDUCED_MOTION)
+  media.addEventListener("change", onChange)
+  return () => media.removeEventListener("change", onChange)
+}
+
+function useReducedMotion() {
+  return useSyncExternalStore(
+    subscribe,
+    () => window.matchMedia(REDUCED_MOTION).matches,
+    () => false
+  )
+}
+
+/** Types `text` one character at a time (all at once for reduced motion). */
 function useTyped(text: string, delay = 600) {
-  const [reduced] = useState(() => window.matchMedia("(prefers-reduced-motion: reduce)").matches)
-  const [count, setCount] = useState(reduced ? text.length : 0)
+  const reduced = useReducedMotion()
+  const [count, setCount] = useState(0)
   useEffect(() => {
     if (reduced) return
     let timer: ReturnType<typeof setTimeout>
@@ -47,7 +63,8 @@ function useTyped(text: string, delay = 600) {
     timer = setTimeout(() => tick(1), delay)
     return () => clearTimeout(timer)
   }, [text, delay, reduced])
-  return { typed: text.slice(0, count), done: count >= text.length }
+  const shown = reduced ? text.length : count
+  return { typed: text.slice(0, shown), done: shown >= text.length }
 }
 
 /**

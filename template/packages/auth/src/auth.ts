@@ -17,10 +17,16 @@ const APP_NAME = "Klin App"
  * Better Auth — the whole auth server. Mounted by the API at /api/auth/*
  * (via @thallesp/nestjs-better-auth on NestJS). Docs: https://www.better-auth.com/docs
  *
+ // klin:if next
+//?  * Cookies: the web app reaches the API through a same-origin /api rewrite (the
+//?  * Next.js server), so session cookies are first-party everywhere and
+//?  * `SameSite=Lax` just works, wherever the API is deployed.
+// klin:else
  * Cookies: the web app reaches the API through a same-origin /api proxy (Vite
  * in dev, nginx in prod), so session cookies are first-party everywhere and
  * `SameSite=Lax` just works. Deploying the API on another site? See
  * packages/docs/deployment.md → "Separate origins".
+// klin:endif
  */
 export const auth = betterAuth({
   appName: APP_NAME,

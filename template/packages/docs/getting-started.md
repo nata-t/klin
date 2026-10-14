@@ -53,7 +53,11 @@ apps/
 <!-- klin:else -->
   api/            Fastify API — route plugins, services, auth hooks, the Better Auth mount
 <!-- klin:endif -->
+<!-- klin:if next -->
+  web/            Next.js (App Router) + React — TanStack Query/Form
+<!-- klin:else -->
   web/            Vite + React — TanStack Router/Query/Form
+<!-- klin:endif -->
 packages/
 <!-- klin:if packages-ui -->
   ui/             shadcn/ui components, theme and global styles (@repo/ui)
@@ -97,7 +101,14 @@ for you with fresh secrets. `.env.example` documents every variable; the API
 validates them on boot (`packages/env`) and refuses to start with a clear
 message if something is missing.
 
+<!-- klin:if next -->
+The Next.js server reads the same file (`next.config.ts` loads it). Only
+`NEXT_PUBLIC_*` variables reach the browser, and the app doesn't need any: the
+browser calls `/api` on its own origin. `API_URL` tells the Next.js server
+where the API is (`http://localhost:$API_PORT` when it's empty).
+<!-- klin:else -->
 Only `VITE_*` variables reach the browser. Never put secrets in them.
+<!-- klin:endif -->
 
 ## Commits
 

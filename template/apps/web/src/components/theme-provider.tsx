@@ -22,7 +22,13 @@ function readStoredTheme(): Theme {
   }
 }
 
+// klin:if next
+//? // The server has no window: it renders light, and the theme script fixes the page before paint.
+//? const systemTheme = (): ResolvedTheme =>
+//?   typeof window !== "undefined" && window.matchMedia(MEDIA).matches ? "dark" : "light"
+// klin:else
 const systemTheme = (): ResolvedTheme => (window.matchMedia(MEDIA).matches ? "dark" : "light")
+// klin:endif
 
 /** Light / dark / system theme with persistence. Press "d" anywhere to toggle. */
 export function ThemeProvider({ children }: { children: ReactNode }) {

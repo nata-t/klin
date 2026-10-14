@@ -1,4 +1,7 @@
-import { Link } from "@tanstack/react-router"
+//? "use client" // klin:only next
+//? // klin:only next
+import { Link } from "@tanstack/react-router" // klin:only vite
+//? import Link from "next/link" // klin:only next
 import {
   ArrowRightIcon,
   CheckCircle2Icon,
@@ -29,7 +32,8 @@ export function DashboardPage() {
     {
       done: (notes.data?.pagination.total ?? 0) > 0,
       label: "Create your first note",
-      action: <Link to="/notes" className="text-brand hover:underline">Open notes</Link>,
+      action: <Link to="/notes" className="text-brand hover:underline">Open notes</Link>, // klin:only vite
+      //? action: <Link href="/notes" className="text-brand hover:underline">Open notes</Link>, // klin:only next
     },
     // klin:if password
     {
@@ -41,7 +45,8 @@ export function DashboardPage() {
     {
       done: Boolean(user.twoFactorEnabled),
       label: "Turn on two-factor authentication",
-      action: <Link to="/settings/security" className="text-brand hover:underline">Security settings</Link>,
+      action: <Link to="/settings/security" className="text-brand hover:underline">Security settings</Link>, // klin:only vite
+      //? action: <Link href="/settings/security" className="text-brand hover:underline">Security settings</Link>, // klin:only next
     },
     // klin:endif
     {
@@ -60,7 +65,8 @@ export function DashboardPage() {
         title={t("dashboard.greeting", "Welcome back, {{name}}", { name: firstName })}
         description={t("dashboard.subtitle", "Here's what's happening in your workspace.")}
         actions={
-          <Button render={<Link to="/notes" />}>
+          <Button render={<Link to="/notes" />}> {/* klin:only vite */}
+          {/*? <Button render={<Link href="/notes" />}> */} {/* klin:only next */}
             <StickyNoteIcon /> Notes
           </Button>
         }
@@ -110,7 +116,8 @@ export function DashboardPage() {
             <pre className="overflow-x-auto rounded-lg bg-zinc-950 p-3 font-mono text-xs text-zinc-100">
               pnpm klin generate resource billing/invoice
             </pre>
-            <Button variant="link" className="mt-2 px-0" render={<Link to="/notes" />}>
+            <Button variant="link" className="mt-2 px-0" render={<Link to="/notes" />}> {/* klin:only vite */}
+            {/*? <Button variant="link" className="mt-2 px-0" render={<Link href="/notes" />}> */} {/* klin:only next */}
               See the Notes example <ArrowRightIcon />
             </Button>
           </CardContent>

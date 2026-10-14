@@ -10,7 +10,8 @@ import { booleanish, idSchema, isoDate } from "./common"
  *   apps/api/src/modules/notes/*             (NestJS: nestjs-zod DTOs made from these schemas)
  *   apps/api/src/routes/notes.ts             (plain Express / Fastify: the schemas, parsed directly)
  *   apps/web/src/features/notes/*            (form validation + z.infer types)
- *   apps/web/src/routes/_app/notes.tsx
+ *   apps/web/src/routes/_app/notes.tsx // klin:only vite
+//?  *   apps/web/src/app/(app)/notes/page.tsx // klin:only next
  *
  * `klin generate resource <name>` starts a new resource in this same shape.
  */

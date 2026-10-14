@@ -1,3 +1,5 @@
+//? "use client" // klin:only next
+//? // klin:only next
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { API_KEY_EXPIRY, type CreateApiKeyInput, createApiKeySchema } from "@repo/validators"
 import { CopyIcon, KeyRoundIcon, PlusIcon, TrashIcon } from "lucide-react"
