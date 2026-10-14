@@ -70,6 +70,8 @@ export interface InputField {
   caret: number
   /** Transforms each typed character ("" drops it). */
   filter?: (char: string) => string
+  /** One row with the label beside it and the verdict under it — for pages of several inputs. */
+  compact?: boolean
   validate(value: string): { tone: Tone; message: string }
 }
 
@@ -474,7 +476,12 @@ export class Form {
       if (item?.warning && !field.isOn(item.id)) return { title: `${sym.warn} ${item.label} is off`, text: item.warning, tone: "warn" }
       if (item) return { title: item.label, text: item.about ?? "" }
     }
-    if (field?.kind === "input") return { title: field.label, text: field.about ?? "" }
+    if (field?.kind === "input") {
+      // A compact input's verdict is cut to its box, so the help line spells a problem out.
+      const verdict = field.compact ? field.validate(field.value) : undefined
+      if (verdict && verdict.tone !== "ok") return { title: `${toneIcon(verdict.tone)} ${field.label}:`, text: verdict.message, tone: verdict.tone, notice: true }
+      return { title: field.label, text: field.about ?? "" }
+    }
     if (this.page.help) return this.page.help
     return undefined
   }
@@ -496,11 +503,16 @@ export class Form {
       },
     ]
     const fields = page.fields
+    const compact = (field: Field | undefined) => field?.kind === "input" && !!field.compact
+    // Compact inputs line their boxes up behind the widest label.
+    const labelW = Math.max(0, ...fields.map((field) => (field.kind === "input" && field.compact ? width(field.label) : 0)))
     for (let index = 0; index < fields.length; index++) {
       const field = fields[index]!
       const band = blocks.length + 1
-      blocks.push(gap())
-      if (field.kind === "chips") {
+      // Their verdict row already spaces a run of compact inputs apart.
+      if (!(compact(field) && compact(fields[index - 1]))) blocks.push(gap())
+      if (field.kind === "input" && field.compact) blocks.push(this.compactInputBlock(field, index, band, labelW))
+      else if (field.kind === "chips") {
         const next = fields[index + 1]
         if (next?.kind === "chips" && sideBySide(field, next, bodyW)) {
           blocks.push(this.chipRow([field, next], [index, index + 1], bodyW, band))
@@ -597,6 +609,36 @@ export class Form {
         }
         center(canvas, x, w, y + 4, truncate(`${toneIcon(result.tone)} ${result.message}`, w), toneStyle(result.tone))
         this.placed.push({ field: index, item: 0, x: bx, y: y + 2, w: boxW, cell: [x, x + w], band })
+      },
+    }
+  }
+
+  /** `Label  › value` on one row, the verdict under the value. */
+  private compactInputBlock(field: InputField, index: number, band: number, labelW: number): Block {
+    return {
+      height: 2,
+      fields: [index],
+      draw: (canvas, x, y, w) => {
+        const focused = index === this.cursor.field
+        const result = field.validate(field.value)
+        const boxW = Math.max(16, Math.min(w - labelW - 2, 60))
+        const rowX = x + Math.max(0, Math.floor((w - labelW - 2 - boxW) / 2))
+        const bx = rowX + labelW + 2
+        const labelStyle: Style = result.tone === "error" ? { fg: hue.error, bold: true } : focused ? { fg: "white", bold: true } : { fg: "subtle", bold: true }
+        canvas.text(rowX + labelW - width(field.label), y, field.label, labelStyle)
+        canvas.fill(bx, y, boxW, 1, { bg: "bar" })
+        const inner = boxW - 4
+        // Keep the caret in view for long values.
+        const start = Math.max(0, field.caret - inner + 1)
+        const col = canvas.text(bx + 1, y, sym.caret, focused ? { fg: "white", bold: true } : S.subtle)
+        if (!field.value && field.placeholder) canvas.text(col + 1, y, field.placeholder, S.subtle, inner)
+        canvas.text(col + 1, y, field.value.slice(start, start + inner), focused ? { fg: "white", bold: true } : S.text, inner)
+        if (focused) {
+          const under = field.value[field.caret] ?? (field.value ? " " : (field.placeholder?.[0] ?? " "))
+          canvas.text(col + 1 + (field.caret - start), y, under, depth >= 256 ? { fg: "bg", bg: "bright" } : { inverse: true })
+        }
+        canvas.text(bx + 1, y + 1, truncate(`${toneIcon(result.tone)} ${result.message}`, boxW - 1), toneStyle(result.tone))
+        this.placed.push({ field: index, item: 0, x: bx, y, w: boxW, cell: [x, x + w], band })
       },
     }
   }

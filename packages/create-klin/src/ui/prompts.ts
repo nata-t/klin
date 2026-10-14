@@ -75,9 +75,15 @@ const toItems = <T extends string>(options: Option<T>[]): ChipItem[] =>
  * full eight-option list — so the logo stays one size across a run of them.
  */
 const PROMPT_ROOM = 12
+let room = PROMPT_ROOM
+
+/** A flow with a taller page keeps room for it on every page, so the logo never changes size. */
+export function setPromptRoom(rows: number) {
+  room = Math.max(PROMPT_ROOM, rows)
+}
 
 function page(message: string, subtitle: string | undefined, fields: Field[], keys: Page["keys"]): Page {
-  return { title: context, version: `v${VERSION}`, heading: message, subtitle, fields, keys, room: () => PROMPT_ROOM }
+  return { title: context, version: `v${VERSION}`, heading: message, subtitle, fields, keys, room: () => room }
 }
 
 export async function select<T extends string>(options: {
@@ -204,6 +210,91 @@ export async function text(options: {
     finish(value)
   })
   if (!isCancel(result)) echo(options.message, result || c.dim("(empty)"))
+  return result
+}
+
+export interface InputSpec {
+  id: string
+  label: string
+  value: string
+  /** Shown while empty, and what an empty input means. */
+  placeholder?: string
+  about?: string
+  /** What's wrong with a value, if anything. */
+  validate?: (value: string) => string | undefined
+  /** What a valid value means, under the input. */
+  describe?: (value: string) => string
+}
+
+/**
+ * Several one-line inputs on one page (tab or ↑↓ between them), with optional
+ * toggles under them. Enter checks every input, then `check` on the lot.
+ */
+export async function inputs(options: {
+  message: string
+  subtitle?: string
+  inputs: InputSpec[]
+  toggles?: Option<string>[]
+  toggleTitle?: string
+  check?: (values: Record<string, string>) => string | undefined
+}): Promise<{ values: Record<string, string>; toggles: string[] } | Cancel> {
+  const effective = (spec: InputSpec, value: string) => value.trim() || spec.placeholder || ""
+  const fields: InputField[] = options.inputs.map((spec) => ({
+    kind: "input",
+    id: spec.id,
+    label: spec.label,
+    about: spec.about,
+    placeholder: spec.placeholder,
+    value: spec.value,
+    caret: spec.value.length,
+    compact: true,
+    validate: (value) => {
+      const error = spec.validate?.(effective(spec, value))
+      return error ? { tone: "error", message: error } : { tone: "ok", message: spec.describe?.(effective(spec, value)) ?? "Looks good" }
+    },
+  }))
+  const picked = new Set<string>()
+  const toggles: Field[] = options.toggles?.length
+    ? [
+        {
+          kind: "chips",
+          id: "toggles",
+          title: options.toggleTitle ?? "Options",
+          multi: true,
+          items: toItems(options.toggles),
+          isOn: (id) => picked.has(id),
+          toggle: (id) => {
+            if (picked.has(id)) picked.delete(id)
+            else picked.add(id)
+          },
+        },
+      ]
+    : []
+  const p = page(options.message, options.subtitle, [...fields, ...toggles], [
+    ["space", toggles.length ? "snap" : "edit"],
+    ["tab", "next"],
+    ["enter", "done"],
+    ["esc", "cancel"],
+  ])
+  const form = new Form(p)
+  const result = await ask<{ values: Record<string, string>; toggles: string[] }>(form, (action, finish) => {
+    if (action === "back") return finish(CANCEL)
+    if (action !== "submit") return
+    const values: Record<string, string> = {}
+    for (const [i, spec] of options.inputs.entries()) {
+      const value = effective(spec, fields[i]!.value)
+      const error = spec.validate?.(value)
+      if (error) {
+        form.focus(spec.id)
+        return form.say("error", `${spec.label}: ${error}`)
+      }
+      values[spec.id] = value
+    }
+    const problem = options.check?.(values)
+    if (problem) return form.say("error", problem)
+    finish({ values, toggles: [...picked] })
+  })
+  if (!isCancel(result)) echo(options.message, options.inputs.map((spec) => result.values[spec.id]).join(c.dim(" · ")))
   return result
 }
 
