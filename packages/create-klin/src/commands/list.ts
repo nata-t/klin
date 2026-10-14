@@ -15,7 +15,8 @@ export async function listCommand(_flags: Flags) {
 
   intro("klin list", c.dim(config ? config.name : "template modules"))
   for (const question of manifest.questions) {
-    console.log(`\n  ${c.white(question.title ?? question.id)} ${c.dim(question.type === "select" ? "(pick one)" : "")}`)
+    const kind = question.locked ? "(picked when the project is created)" : question.type === "select" ? "(pick one)" : ""
+    console.log(`\n  ${c.white(question.title ?? question.id)} ${c.dim(kind)}`)
     for (const id of question.options) {
       const option = manifest.options[id]!
       const mark = on.has(id) ? c.white(sym.check) : c.faint(sym.dot)
