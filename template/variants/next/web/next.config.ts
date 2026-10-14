@@ -26,6 +26,8 @@ const nextConfig: NextConfig = {
   ],
   // <Link href> and router.push() only accept routes that exist.
   typedRoutes: true,
+  // Next's dev tools button goes bottom right; TanStack Query's sits bottom left.
+  devIndicators: { position: "bottom-right" },
   // Same-origin API: the browser only ever talks to this origin, and /api is
   // forwarded to the API. Auth cookies stay first-party, no CORS.
   async rewrites() {
