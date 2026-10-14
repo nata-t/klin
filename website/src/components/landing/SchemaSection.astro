@@ -1,0 +1,318 @@
+---
+import SectionShell from "./SectionShell.astro"
+import { FIELDS } from "../../lib/schema-demo"
+---
+
+<SectionShell id="schema" index="03" label="One schema" note="packages/validators → form · API · types">
+  <div class="section-head">
+    <h2 class="display" data-reveal>Write the shape once.</h2>
+    <p class="lede" data-reveal>
+      In a klin project, one Zod schema validates the form, validates the request, shapes the response and types both apps. <code
+        >klin generate</code
+      > writes the example <code>name</code> field — snap on the fields you'd add and watch each one reach every layer.
+    </p>
+  </div>
+
+  <div class="demo" data-schema-demo>
+    <div class="fields" data-reveal>
+      <p class="hud group">Fields <span class="hint">· pick any</span></p>
+      <div class="chips" role="group" aria-label="Fields in the schema">
+        {
+          FIELDS.map((field) => (
+            <button
+              class="chip"
+              type="button"
+              data-field={field.id}
+              aria-pressed={field.always ? "true" : "false"}
+              disabled={field.always}
+              title={field.always ? "The example field klin generate writes" : undefined}
+            >
+              <span class="mark" aria-hidden="true">
+                {field.always ? "◼" : "◻"}
+              </span>
+              {field.id}
+            </button>
+          ))
+        }
+      </div>
+    </div>
+
+    <div class="grid">
+      <article class="card source" data-reveal>
+        <header><span class="hud">packages/validators/src/billing/</span><span class="file">invoice.ts</span></header>
+        <pre class="code" data-schema-code></pre>
+      </article>
+
+      <svg class="wires" aria-hidden="true" data-wires></svg>
+
+      <div class="consumers">
+        <article class="card" data-reveal data-target="form">
+          <header><span class="hud">apps/web · features/billing/invoice/</span><span class="file">invoice-form.tsx</span></header>
+          <form class="preview" data-schema-form novalidate>
+            <div class="inputs" data-schema-inputs></div>
+            <div class="foot">
+              <span class="hud" data-schema-form-state>validated with createInvoiceSchema</span>
+              <button class="btn primary small" type="submit">Create invoice</button>
+            </div>
+          </form>
+        </article>
+
+        <article class="card" data-reveal data-target="api">
+          <header><span class="hud">apps/api · modules/billing/invoice/</span><span class="file">invoice.dto.ts</span></header>
+          <pre class="code dto"><span class="k">export class</span> <span class="t">CreateInvoiceDto</span> <span class="k">extends</span> createZodDto(<span class="t">createInvoiceSchema</span>) {"{}"}</pre>
+          <div class="exchange">
+            <pre class="code req" data-schema-request></pre>
+            <pre class="code res" data-schema-response></pre>
+          </div>
+        </article>
+
+        <article class="card" data-reveal data-target="types">
+          <header><span class="hud">both apps · </span><span class="file">z.input&lt;typeof createInvoiceSchema&gt;</span></header>
+          <pre class="code" data-schema-type></pre>
+        </article>
+      </div>
+    </div>
+  </div>
+</SectionShell>
+
+<script>
+  import { mountSchemaDemo } from "../../scripts/schema-demo"
+  mountSchemaDemo(document.querySelector<HTMLElement>("[data-schema-demo]")!)
+</script>
+
+<style>
+  .section-head code,
+  .lede code {
+    font-size: 0.9em;
+    color: var(--bright);
+  }
+  .demo {
+    padding: 0 var(--gutter) clamp(64px, 9vw, 112px);
+    display: grid;
+    gap: 22px;
+  }
+  .fields {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 18px;
+  }
+  .fields .group {
+    margin: 0;
+    color: var(--text);
+  }
+  .fields .hint {
+    color: var(--subtle);
+  }
+  .chip:disabled {
+    cursor: default;
+    opacity: 1;
+  }
+  .grid {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
+    gap: 28px 72px;
+    align-items: start;
+  }
+  .wires {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: visible;
+  }
+  .consumers {
+    display: grid;
+    gap: 22px;
+  }
+  .card {
+    position: relative;
+    border: 1px solid var(--line);
+    border-radius: var(--box-radius);
+    background: rgba(14, 14, 14, 0.85);
+    overflow: hidden;
+    transition:
+      border-color 300ms ease,
+      box-shadow 300ms ease;
+  }
+  .card[data-lit="true"] {
+    border-color: var(--muted);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 0 40px -12px rgba(255, 255, 255, 0.18);
+  }
+  .card header {
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--tint);
+    background: var(--bar);
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .card header .hud {
+    text-transform: none;
+    letter-spacing: 0.02em;
+    font-size: 11.5px;
+  }
+  .card header .file {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--bright);
+  }
+  .source {
+    position: sticky;
+    top: calc(var(--nav-h) + 60px);
+  }
+  .code {
+    margin: 0;
+    padding: 14px 16px;
+    font-size: 12.5px;
+    line-height: 1.7;
+    color: var(--text);
+    overflow-x: auto;
+    tab-size: 2;
+  }
+  .code :global(.line) {
+    display: block;
+    border-left: 2px solid transparent;
+    margin-left: -16px;
+    padding-left: 14px;
+  }
+  .code :global(.line.new) {
+    animation: fresh 1.6s ease-out;
+  }
+  @keyframes fresh {
+    0% {
+      background: rgba(255, 255, 255, 0.14);
+      border-left-color: var(--bright);
+    }
+    100% {
+      background: transparent;
+      border-left-color: transparent;
+    }
+  }
+  .code :global(.k) {
+    color: var(--bright);
+    font-weight: 600;
+  }
+  .code :global(.t) {
+    color: var(--bright);
+  }
+  .code :global(.s) {
+    color: var(--muted);
+  }
+  .code :global(.c) {
+    color: var(--subtle);
+    font-style: italic;
+  }
+  .code :global(.p) {
+    color: var(--subtle);
+  }
+  .code :global(.ok) {
+    color: var(--bright);
+  }
+  .code :global(.err) {
+    color: var(--error);
+  }
+  .dto {
+    border-bottom: 1px solid var(--tint);
+    white-space: pre-wrap;
+  }
+  .exchange {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .exchange .req {
+    border-right: 1px solid var(--tint);
+  }
+  .preview {
+    padding: 16px;
+    display: grid;
+    gap: 14px;
+  }
+  .inputs {
+    display: grid;
+    gap: 12px;
+  }
+  .inputs :global(label) {
+    display: grid;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+  }
+  .inputs :global(.new) {
+    animation: rise 500ms cubic-bezier(0.2, 0.9, 0.2, 1);
+  }
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(-6px);
+    }
+  }
+  .inputs :global(input),
+  .inputs :global(select) {
+    height: 36px;
+    padding: 0 10px;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    background: var(--bg);
+    color: var(--bright);
+    font-family: var(--sans);
+    font-size: 14px;
+    color-scheme: dark;
+  }
+  .inputs :global(input:focus),
+  .inputs :global(select:focus) {
+    outline: none;
+    border-color: var(--muted);
+  }
+  .inputs :global([aria-invalid="true"]) {
+    border-color: var(--error);
+  }
+  .inputs :global(.msg) {
+    font-family: var(--sans);
+    font-size: 12px;
+    color: var(--error);
+    min-height: 0;
+  }
+  .foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .foot .hud {
+    text-transform: none;
+    letter-spacing: 0.02em;
+  }
+  .btn.small {
+    height: 34px;
+    padding: 0 14px;
+    font-size: 12px;
+  }
+  @media (max-width: 960px) {
+    .grid {
+      grid-template-columns: 1fr;
+    }
+    .source {
+      position: relative;
+      top: 0;
+    }
+    .wires {
+      display: none;
+    }
+  }
+  @media (max-width: 560px) {
+    .exchange {
+      grid-template-columns: 1fr;
+    }
+    .exchange .req {
+      border-right: 0;
+      border-bottom: 1px solid var(--tint);
+    }
+  }
+</style>
