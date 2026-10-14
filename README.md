@@ -360,6 +360,7 @@ pnpm install
 pnpm build              # CLI → packages/create-klin/dist, template copied in
 pnpm test               # engine, merge, rendering matrix
 pnpm playground saas    # render + install a preset into .playground/saas
+pnpm site:dev           # the website and docs (website/), on :4321
 node packages/create-klin/dist/index.js --help
 ```
 
