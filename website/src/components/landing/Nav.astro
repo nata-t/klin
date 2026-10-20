@@ -1,13 +1,12 @@
 ---
+import KlinLockup from "../brand/KlinLockup.astro"
 import { REPO, STEPS, VERSION } from "../../lib/site"
 ---
 
 <header class="nav" id="site-nav">
   <div class="inner">
     <a class="brand" href="#intro" aria-label="klin, back to the top">
-      <span class="spark" aria-hidden="true">✦</span>
-      <span class="word">K L I N</span>
-      <span class="spark" aria-hidden="true">✦</span>
+      <KlinLockup class="lockup" />
     </a>
 
     <nav class="steps" aria-label="Sections">
@@ -68,20 +67,17 @@ import { REPO, STEPS, VERSION } from "../../lib/site"
   .brand {
     display: inline-flex;
     align-items: center;
-    gap: 9px;
-    color: var(--bright);
+    color: var(--text);
     text-decoration: none;
-    font-weight: 650;
-    letter-spacing: 0.08em;
+    transition: color 160ms linear;
   }
-  .brand .spark {
-    color: var(--muted);
-    font-size: 10px;
-    transition: transform 400ms ease;
+  .brand:hover {
+    color: var(--white);
   }
-  .brand:hover .spark {
-    transform: rotate(90deg);
-    color: var(--bright);
+  .brand .lockup {
+    display: block;
+    height: 20px;
+    width: auto;
   }
   .steps {
     justify-self: center;
@@ -173,11 +169,6 @@ import { REPO, STEPS, VERSION } from "../../lib/site"
     }
     .inner {
       gap: 12px;
-    }
-  }
-  @media (max-width: 400px) {
-    .brand .word {
-      letter-spacing: 0;
     }
   }
 </style>

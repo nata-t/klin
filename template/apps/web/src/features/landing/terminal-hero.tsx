@@ -1,14 +1,38 @@
 import { useEffect, useState, useSyncExternalStore } from "react"
 
-/** "klin" in the same block letters the CLI prints. */
+/**
+ * The klin logo in the same pixel art the CLI prints: the mark (a K drawn as
+ * a dependency graph) and "klin", two square pixels per character.
+ */
 const LOGO = [
-  "██╗  ██╗██╗     ██╗███╗   ██╗",
-  "██║ ██╔╝██║     ██║████╗  ██║",
-  "█████╔╝ ██║     ██║██╔██╗ ██║",
-  "██╔═██╗ ██║     ██║██║╚██╗██║",
-  "██║  ██╗███████╗██║██║ ╚████║",
-  "╚═╝  ╚═╝╚══════╝╚═╝╚═╝  ╚═══╝",
+  "██   ██",
+  "█  ▄▀      ██      ██  ██",
+  "█▄▀        ██  ▄▄  ██  ▄▄  ▄▄▄▄▄",
+  "█▀▄        ██▄█▀   ██  ██  ██▀▀██",
+  "█  ▀▄      ███▄    ██  ██  ██  ██",
+  "██   ██    ██ ▀█▄  ██  ██  ██  ██",
 ]
+/** Which cells of LOGO are the mark's wires (`+`), drawn quieter than the nodes and letters. */
+const WIRES = [
+  "",
+  "+  ++",
+  "  +",
+  "  +",
+  "+  ++",
+  "",
+]
+
+/** Splits a row into runs of wire and solid cells, so each run gets one color. */
+function runs(line: string, wires: string) {
+  const out: Array<{ text: string; wire: boolean }> = []
+  ;[...line].forEach((ch, i) => {
+    const wire = wires[i] === "+"
+    const last = out[out.length - 1]
+    if (last && last.wire === wire) last.text += ch
+    else out.push({ text: ch, wire })
+  })
+  return out
+}
 
 // klin:if pnpm
 const DEV_COMMAND = "pnpm dev"
@@ -86,18 +110,12 @@ export function TerminalHero() {
         <pre aria-label="klin" className="mx-auto w-fit max-w-full overflow-hidden text-[6.5px] leading-none min-[400px]:text-[8px] sm:text-xs">
           {LOGO.map((line, row) => (
             <span key={row} className="block" aria-hidden>
-              {/* Solid blocks in white, the box-drawing shadow in gray — like the CLI banner. */}
-              {line.split(/(█+)/).map((part, i) =>
-                part.startsWith("█") ? (
-                  <span key={i} className="text-neutral-50">
-                    {part}
-                  </span>
-                ) : (
-                  <span key={i} className="text-neutral-600">
-                    {part}
-                  </span>
-                )
-              )}
+              {/* Nodes and letters in white, the wires between the nodes in gray — like the CLI. */}
+              {runs(line, WIRES[row] ?? "").map((run, i) => (
+                <span key={i} className={run.wire ? "text-neutral-500" : "text-neutral-50"}>
+                  {run.text}
+                </span>
+              ))}
             </span>
           ))}
         </pre>

@@ -1,7 +1,7 @@
 import { setTimeout as sleep } from "node:timers/promises"
 import { center } from "./log"
-import { LOGO } from "./logo"
-import { c, colorEnabled, gray, paint, pick, RESET, sgr, sym, unicode } from "./theme"
+import { logoArt, logoShade } from "./logo"
+import { c, colorEnabled, paint, pick, RESET, sgr, sym, unicode } from "./theme"
 
 const TAGLINES = [
   "a spotless full-stack starter",
@@ -13,29 +13,25 @@ const TAGLINES = [
 ]
 
 /**
- * One frame of the logo: solid blocks in white, the box-drawing shadow in
- * gray, and a band of light that sweeps diagonally across (`at` 0..1).
+ * One frame of the logo — nodes and letters in the chrome gradient, wires in
+ * gray — with a band of light sweeping diagonally across (`at` 0..1).
  */
-function frame(at: number) {
-  return LOGO.map((line, row) => {
-    let out = ""
-    ;[...line].forEach((char, col) => {
-      if (char === " ") {
-        out += " "
-        return
-      }
-      const position = (col + row * 2) / (line.length + LOGO.length * 2)
-      const glow = Math.max(0, 1 - Math.abs(position - at) * 6)
-      const base = char === "█" ? gray.bright - 0x18 : gray.subtle
-      const level = Math.round(base + (gray.white - base) * glow)
-      out += `${sgr({ fg: [level, level, level] })}${char}`
-    })
-    return out + RESET
-  })
+function frame(at: number | null) {
+  const art = logoArt(6)
+  const rows = art.lines.map((line) => [...line].map(() => " "))
+  for (const cell of art.cells) {
+    let level = logoShade(cell.kind, cell.row, art.height)
+    if (at !== null) {
+      const position = (cell.col + cell.row * 2) / (art.width + art.height * 2)
+      level = Math.round(level + (0xff - level) * Math.max(0, 1 - Math.abs(position - at) * 6))
+    }
+    rows[cell.row]![cell.col] = colorEnabled ? `${sgr({ fg: [level, level, level] })}${cell.ch}` : cell.ch
+  }
+  return rows.map((row) => row.join("") + (colorEnabled ? RESET : ""))
 }
 
 /**
- * The big "KLIN" logo, centered. In an interactive terminal a band of light
+ * The klin logo, centered. In an interactive terminal a band of light
  * sweeps across it once; everywhere else (CI, pipes, --no-banner, narrow
  * terminals) it's a single line.
  */
@@ -45,16 +41,16 @@ export async function banner(version: string, options: { compact?: boolean } = {
   const interactive = process.stdout.isTTY && !process.env.CI
 
   if (options.compact || !unicode || columns < 44 || !interactive) {
-    console.log(`\n${center(`${c.white(`${sym.star} klin`)} ${c.dim(`v${version}`)} ${c.faint(sym.dot)} ${c.muted(tagline)}`)}`)
+    console.log(`\n${center(`${c.white("klin")} ${c.dim(`v${version}`)} ${c.faint(sym.dot)} ${c.muted(tagline)}`)}`)
     return
   }
 
   console.log()
   // The logo's rows are all one width, so they move right together.
-  const pad = " ".repeat(Math.max(2, Math.floor((columns - LOGO[0]!.length) / 2)))
+  const pad = " ".repeat(Math.max(2, Math.floor((columns - logoArt(6).width) / 2)))
   const frames = colorEnabled ? 18 : 1
   for (let i = 0; i < frames; i++) {
-    const lines = frames > 1 ? frame(-0.2 + (i / (frames - 1)) * 1.4) : LOGO
+    const lines = frame(frames > 1 ? -0.2 + (i / (frames - 1)) * 1.4 : null)
     if (i > 0) process.stdout.write(`\x1b[${lines.length}A`)
     process.stdout.write(lines.map((l) => `\x1b[2K${pad}${l}`).join("\n") + "\n")
     if (frames > 1) await sleep(26)

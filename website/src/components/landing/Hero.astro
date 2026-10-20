@@ -1,13 +1,16 @@
 ---
-import { LOGO } from "@cli/ui/logo"
+import { logoArt, logoShade } from "@cli/ui/logo"
 import { INSTALL, VERSION } from "../../lib/site"
 
-// No-JS fallback for the canvas logo: faces in the chrome gradient, shadows in dark gray.
-const faceRows = LOGO.filter((line) => line.includes("█")).length
-const shade = (row: number) => Math.round(0xfa - (0xfa - 0xa4) * Math.min(1, row / Math.max(1, faceRows - 1)))
-const fallback = LOGO.map((line, row) =>
-  [...line].map((ch) => (ch === "█" ? { ch, color: `rgb(${shade(row)},${shade(row)},${shade(row)})` } : { ch, color: "#585858" }))
-)
+// No-JS fallback for the canvas logo: nodes and letters in the chrome gradient, wires in gray.
+const art = logoArt(10)
+const fallback = art.lines.map((line) => [...line.padEnd(art.width)].map((ch) => ({ ch, color: "transparent" })))
+for (const cell of art.cells) {
+  const level = logoShade(cell.kind, cell.row, art.height)
+  fallback[cell.row]![cell.col] = { ch: cell.ch, color: `rgb(${level},${level},${level})` }
+}
+// The slot keeps the art's shape: columns wide, rows × the cell's height-to-width ratio tall.
+const slotShape = `--cols: ${art.width}; aspect-ratio: ${art.width} / ${(art.height * 2.05).toFixed(2)}`
 ---
 
 <section id="intro" class="hero section" data-section="intro">
@@ -16,12 +19,12 @@ const fallback = LOGO.map((line, row) =>
   <div class="corners" aria-hidden="true">
     <p class="hud c-tl">create-klin v{VERSION}</p>
     <p class="hud c-tr">◆ 1 / 6 · intro</p>
-    <p class="hud c-bl" data-hero-count>parts 0 / 4 snapped</p>
+    <p class="hud c-bl" data-hero-count>parts 0 / {art.parts} snapped</p>
     <p class="hud c-br" data-hero-pointer>x 0000 · y 0000</p>
   </div>
 
   <div class="stage">
-    <div class="logo-slot" data-logo-slot>
+    <div class="logo-slot" data-logo-slot style={slotShape}>
       <pre class="logo-fallback" aria-hidden="true">{fallback.map((row) => <span class="row">{row.map((c) => <span style={`color:${c.color}`}>{c.ch}</span>)}</span>)}</pre>
       <span class="sr-only">klin</span>
     </div>
@@ -145,8 +148,7 @@ const fallback = LOGO.map((line, row) =>
   }
   .logo-slot {
     position: relative;
-    width: min(660px, 88%);
-    aspect-ratio: 45 / 12.3;
+    width: min(500px, 86%);
     display: grid;
     place-items: center;
     margin-bottom: clamp(18px, 3vw, 34px);
@@ -154,7 +156,8 @@ const fallback = LOGO.map((line, row) =>
   }
   .logo-fallback {
     margin: 0;
-    font-size: clamp(9px, 1.75vw, 17px);
+    /* One monospace cell (≈0.6em wide) per column of the slot. */
+    font-size: min(calc(500px / var(--cols) / 0.6), calc(86vw / var(--cols) / 0.6));
     line-height: 1.02;
     letter-spacing: 0;
   }

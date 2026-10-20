@@ -49,7 +49,7 @@ describe("full-screen form", () => {
       if (w < 40 || h < 12) expect(text).toContain("more room")
       else {
         // The header (steps + logo) stays put even when the body scrolls.
-        expect(text).toMatch(/K L I N|▄█▀|██╗/)
+        expect(text).toMatch(/klin|█▄▀|████    ████/)
         expect(text).toContain("TOOLBOX")
         if (h >= 24) expect(text).toContain("Fill the toolbox.")
         if (h >= 24) expect(text).toContain("SECURITY")
@@ -108,33 +108,35 @@ function grid() {
 }
 
 const rowOf = (text: string, needle: string) => text.split("\n").findIndex((line) => line.includes(needle))
+/** Which logo a screen shows: the big lockup, the regular one, the compact one, or the one-liner. */
+const logoIn = (text: string) => (text.includes("████    ████") ? 10 : text.includes("█▄▀") ? 6 : /███ +klin/.test(text) ? 3 : 1)
 
 describe("full-screen layout", () => {
   it("puts the logo under the step indicator and shrinks it to fit", () => {
     const form = new Form(page().p)
     const big = form.render(120, 40).toString()
-    expect(rowOf(big, "TOOLBOX")).toBeLessThan(rowOf(big, "██╗"))
+    expect(logoIn(big)).toBe(10)
+    expect(rowOf(big, "TOOLBOX")).toBeLessThan(rowOf(big, "████    ████"))
     expect(big).not.toMatch(/TOOLBOX.*██/)
-    expect(form.render(80, 28).toString()).toContain("▄█▀")
-    expect(form.render(60, 20).toString()).toContain("K L I N")
+    expect(logoIn(form.render(80, 28).toString())).toBe(3)
+    expect(logoIn(form.render(60, 20).toString())).toBe(1)
   })
 
   it("draws the tallest logo that fits, down to one line", () => {
-    expect([8, 7, 6, 5, 3, 2].map((rows) => logoSizeFor(rows, 120))).toEqual([8, 6, 6, 3, 3, 1])
-    // Too narrow for the tall letters and their sparkles: the regular ones.
-    expect(logoSizeFor(8, 48)).toBe(6)
-    expect(new Form(page().p).render(120, 44).toString()).toContain("██║  ██╔╝")
+    expect([10, 9, 6, 5, 3, 2].map((rows) => logoSizeFor(rows, 120))).toEqual([10, 6, 6, 3, 3, 1])
+    // Too narrow for the big lockup: the regular one.
+    expect(logoSizeFor(10, 46)).toBe(6)
+    expect(logoIn(new Form(page().p).render(120, 44).toString())).toBe(10)
   })
 
   it("keeps the logo one size across the pages of a flow", () => {
     const short = page().p
     const tall = grid().p
-    const logo = (text: string) => (text.includes("██╗") ? 6 : text.includes("▄█▀") ? 3 : 1)
     // On their own, a short page gets a bigger logo than a tall one at this height…
-    expect(logo(new Form(short).render(100, 28).toString())).toBeGreaterThan(logo(new Form(tall).render(100, 28).toString()))
+    expect(logoIn(new Form(short).render(100, 28).toString())).toBeGreaterThan(logoIn(new Form(tall).render(100, 28).toString()))
     // …but with the flow's room they match.
     const room = (width: number) => Math.max(new Form(short).bodyHeight(width), new Form(tall).bodyHeight(width))
-    const sizes = [short, tall].map((p) => logo(new Form({ ...p, room }).render(100, 28).toString()))
+    const sizes = [short, tall].map((p) => logoIn(new Form({ ...p, room }).render(100, 28).toString()))
     expect(sizes[0]).toBe(sizes[1])
   })
 

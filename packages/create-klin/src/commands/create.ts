@@ -258,7 +258,7 @@ function recipe(manifest: Manifest, answers: Answers, name: string, pm: PackageM
         : optionLabels(manifest, value)
     rows.push([(question.title ?? question.id).toLowerCase(), text])
   }
-  rows.push(["tooling", `${pm} ${c.dim(`v${version}`)}`])
+  rows.push(["tooling", `${pm} ${c.dim(version)}`])
   return box(table(rows), { title: "your recipe" })
 }
 

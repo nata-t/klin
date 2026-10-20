@@ -70,9 +70,10 @@ header.header {
   border-inline-end: 1px solid var(--sl-color-hairline);
 }
 
-/* Sidebar group labels: mono micro-labels, like the CLI's group titles. */
+/* Sidebar group labels (and "On this page"): mono micro-labels, like the CLI's group titles. */
 .sidebar-content .group-label .large,
-.sidebar-content summary .group-label span {
+.sidebar-content summary .group-label span,
+.right-sidebar-panel h2 {
   font-family: var(--sl-font-mono);
   font-size: 0.7rem;
   font-weight: 600;
@@ -183,12 +184,16 @@ h1#_top {
   color: var(--sl-color-white);
 }
 
-/* Cards and link cards. */
+/* Cards and link cards. Starlight rotates card icons through its hues; here they stay gray. */
 .card,
 .sl-link-card {
   border-radius: var(--klin-radius) !important;
   border-color: var(--sl-color-gray-5) !important;
   background: transparent !important;
+}
+.card {
+  --sl-card-border: var(--sl-color-gray-5);
+  --sl-card-bg: var(--sl-color-gray-6);
 }
 .sl-link-card:hover {
   border-color: var(--sl-color-gray-3) !important;
@@ -227,26 +232,18 @@ site-search button[data-open-modal] {
 .klin-title {
   display: inline-flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: 0.7rem;
   color: var(--sl-color-white);
   text-decoration: none;
   font-family: var(--sl-font-mono);
-  font-size: 0.85rem;
-  font-weight: 650;
-  letter-spacing: 0.08em;
   white-space: nowrap;
 }
-.klin-title .spark {
-  color: var(--sl-color-gray-3);
-  font-size: 0.65rem;
-  transition: transform 400ms ease;
-}
-.klin-title:hover .spark {
-  transform: rotate(90deg);
-  color: var(--sl-color-white);
+.klin-title .lockup {
+  display: block;
+  height: 1.3rem;
+  width: auto;
 }
 .klin-title .tag {
-  margin-inline-start: 0.3rem;
   padding: 0.05rem 0.4rem;
   border: 1px solid var(--sl-color-gray-5);
   border-radius: 4px;

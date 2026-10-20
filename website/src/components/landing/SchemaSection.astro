@@ -67,7 +67,7 @@ import { FIELDS } from "../../lib/schema-demo"
         </article>
 
         <article class="card" data-reveal data-target="types">
-          <header><span class="hud">both apps · </span><span class="file">z.input&lt;typeof createInvoiceSchema&gt;</span></header>
+          <header><span class="hud">both apps ·&nbsp;</span><span class="file">z.input&lt;typeof createInvoiceSchema&gt;</span></header>
           <pre class="code" data-schema-type></pre>
         </article>
       </div>
@@ -151,12 +151,21 @@ import { FIELDS } from "../../lib/schema-demo"
     overflow: hidden;
     white-space: nowrap;
   }
+  /* Short of room, the header shortens the folder path and keeps the file name whole. */
   .card header .hud {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
     text-transform: none;
     letter-spacing: 0.02em;
     font-size: 11.5px;
   }
   .card header .file {
+    flex: none;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
     font-family: var(--mono);
     font-size: 11.5px;
     color: var(--bright);

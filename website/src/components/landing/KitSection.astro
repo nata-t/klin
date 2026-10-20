@@ -111,7 +111,7 @@ const swatches = optionsOf("accent")
         <header><span class="hud">template/packages/auth/src/</span><span class="file">auth.ts</span><span class="tag">every module on</span></header>
         <pre class="code" data-strip-source></pre>
       </article>
-      <div class="arrow" aria-hidden="true"><span>create-klin</span>→</div>
+      <div class="arrow" aria-hidden="true"><span class="label">create-klin</span><span class="glyph">→</span></div>
       <article class="pane">
         <header><span class="hud">my-app/packages/auth/src/</span><span class="file">auth.ts</span><span class="tag" data-strip-count></span></header>
         <pre class="code" data-strip-result></pre>
@@ -297,17 +297,27 @@ const swatches = optionsOf("accent")
     white-space: nowrap;
     overflow: hidden;
   }
+  /* Short of room, the header shortens the folder path and keeps the file name and the tag whole. */
   .pane header .hud {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
     text-transform: none;
     letter-spacing: 0.02em;
     font-size: 11.5px;
   }
   .pane header .file {
+    flex: none;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
     font-family: var(--mono);
     font-size: 11.5px;
     color: var(--bright);
   }
   .pane .tag {
+    flex: none;
     margin-left: auto;
     padding-left: 12px;
     font-family: var(--mono);
@@ -325,7 +335,7 @@ const swatches = optionsOf("accent")
     color: var(--bright);
     font-size: 20px;
   }
-  .arrow span {
+  .arrow .label {
     font-size: 10px;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -383,7 +393,14 @@ const swatches = optionsOf("accent")
     .panes {
       grid-template-columns: minmax(0, 1fr);
     }
+    /* Stacked panes: the label stays level, only the arrow turns to point down. */
     .arrow {
+      grid-auto-flow: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .arrow .glyph {
       transform: rotate(90deg);
     }
   }

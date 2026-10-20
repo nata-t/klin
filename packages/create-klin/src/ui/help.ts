@@ -1,14 +1,18 @@
 import { VERSION } from "../context"
-import { c, shimmer, sym } from "./theme"
+import { logoArt } from "./logo"
+import { c, shimmer, unicode } from "./theme"
 
 const cmd = (s: string) => c.white(s)
 const flag = (s: string) => c.bright(s)
 const dim = c.dim
 
 export function help() {
-  const title = `${shimmer(`${sym.star} klin`)} ${dim(`v${VERSION}`)} ${dim("— a spotless full-stack starter")}`
+  const title = `${shimmer("klin")} ${dim(`v${VERSION}`)} ${dim("— a spotless full-stack starter")}`
+  // The compact mark, with the title beside its middle row.
+  const mark = logoArt(3).lines.map((line) => line.slice(0, 5).padEnd(5))
+  const header = unicode ? `${c.white(mark[0]!)}\n  ${c.white(mark[1]!)}   ${title}\n  ${c.white(mark[2]!)}` : title
   console.log(`
-  ${title}
+  ${header}
 
   ${c.bold("Create a project")}
     ${cmd("npm create klin@latest")} ${dim("[name] [options]")}

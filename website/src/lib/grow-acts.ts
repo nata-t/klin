@@ -60,7 +60,7 @@ export const ACTS: Act[] = [
     id: "add",
     command: "pnpm klin add organizations",
     title: "Modules after day one.",
-    text: "Switch on organizations months in. klin renders the template with your old picks and your new ones, then 3-way merges the difference into your code — files you edited keep your edits.",
+    text: "Switch on organizations months in. klin renders the template with your old picks and your new ones, then 3‑way merges the difference into your code — files you edited keep your edits.",
     doc: "/docs/grow/add-remove/",
     output: [
       "  klin add   my-app",

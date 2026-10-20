@@ -1,4 +1,5 @@
 ---
+import KlinLockup from "../brand/KlinLockup.astro"
 import { NPM, REPO, VERSION } from "../../lib/site"
 ---
 
@@ -8,7 +9,7 @@ import { NPM, REPO, VERSION } from "../../lib/site"
     <span class="tick tr" aria-hidden="true"></span>
     <div class="cols">
       <div class="sign">
-        <p class="word">✦ K L I N ✦</p>
+        <KlinLockup class="lockup" label="klin" />
         <p class="hud">A spotless full-stack TypeScript starter</p>
       </div>
       <nav class="group" aria-label="Docs">
@@ -44,12 +45,11 @@ import { NPM, REPO, VERSION } from "../../lib/site"
     gap: 32px;
     padding: 56px var(--gutter) 40px;
   }
-  .word {
-    margin: 0 0 8px;
-    font-family: var(--mono);
-    font-weight: 650;
-    font-size: 15px;
-    letter-spacing: 0.06em;
+  .sign :global(.lockup) {
+    display: block;
+    height: 30px;
+    width: auto;
+    margin: 0 0 14px;
     color: var(--bright);
   }
   .group {
@@ -79,7 +79,7 @@ import { NPM, REPO, VERSION } from "../../lib/site"
   }
   .base .hud {
     margin: 0;
-    color: var(--line);
+    color: var(--subtle);
   }
   p {
     margin: 0;

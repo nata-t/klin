@@ -9,8 +9,9 @@ import { colorEnabled, depth, hue, type RGB, type Style, sym, truncate, unicode,
  *                                                                     v0.2.0
  *             ✓ 1 BASE ┈┈ ◆ 2 STACK ┈┈ ○ 3 AUTH ┈┈ ○ 4 TOOLBOX ┈┈ …
  *
- *                     ✦  ██╗  ██╗██╗     ██╗███╗   ██╗  ✦
- *                        …the KLIN logo, sized to fit…
+ *                        ██   ██
+ *                        █  ▄▀      ██      ██  ██
+ *                        …the klin logo, sized to fit…
  *
  *                              Pick your engine.
  *                 How the API is built and where the data lives.
@@ -440,7 +441,10 @@ export class Form {
       const titleStyle = toneStyle(content.tone, { fg: "bright", bold: true })
       // A problem (✖ Use letters…) is colored all the way through; help keeps its text quiet.
       const textStyle: Style = content.notice && content.tone !== "ok" ? { ...toneStyle(content.tone), bold: false } : S.muted
-      const lines = wrap(content.text ? `${content.title}${content.notice ? "" : " ·"} ${content.text}` : content.title, blockW)
+      const paragraph = content.text ? `${content.title}${content.notice ? "" : " ·"} ${content.text}` : content.title
+      // Even lines when it all fits; when it doesn't, full ones up to the cut.
+      const full = wrap(paragraph, blockW)
+      const lines = full.length <= rows ? balanced(paragraph, blockW) : full
       const shown = lines.slice(0, rows)
       if (lines.length > rows) shown[rows - 1] = truncate(`${shown[rows - 1]} …`, blockW)
       shown.forEach((line, i) => {
@@ -492,17 +496,27 @@ export class Form {
    */
   private layout(bodyW: number): Block[] {
     const page = this.page
+    // A subtitle too long for the body wraps onto a second line rather than being cut.
+    const subtitle = page.subtitle ? balanced(page.subtitle, bodyW) : []
+    if (subtitle.length > 2) subtitle.splice(1, Infinity, truncate(subtitle.slice(1).join(" "), bodyW))
     const blocks: Block[] = [
       {
-        height: page.subtitle ? 2 : 1,
+        height: 1 + subtitle.length,
         fields: [],
         draw: (c, x, y, w) => {
           center(c, x, w, y, truncate(page.heading, w), S.heading)
-          if (page.subtitle) center(c, x, w, y + 1, truncate(page.subtitle, w), S.muted)
+          subtitle.forEach((line, i) => center(c, x, w, y + 1 + i, line, S.muted))
         },
       },
     ]
     const fields = page.fields
+    // Chip groups that fit go two to a row; every such row on the page shares one pair of columns.
+    const pairs = new Map<number, [ChipField, ChipField]>()
+    for (let index = 0; index < fields.length; index++) {
+      const [a, b] = [fields[index], fields[index + 1]]
+      if (a?.kind === "chips" && b?.kind === "chips" && sideBySide(a, b, bodyW)) pairs.set(index++, [a, b])
+    }
+    const columns = sharedColumns([...pairs.values()], bodyW)
     const compact = (field: Field | undefined) => field?.kind === "input" && !!field.compact
     // Compact inputs line their boxes up behind the widest label.
     const labelW = Math.max(0, ...fields.map((field) => (field.kind === "input" && field.compact ? width(field.label) : 0)))
@@ -513,9 +527,9 @@ export class Form {
       if (!(compact(field) && compact(fields[index - 1]))) blocks.push(gap())
       if (field.kind === "input" && field.compact) blocks.push(this.compactInputBlock(field, index, band, labelW))
       else if (field.kind === "chips") {
-        const next = fields[index + 1]
-        if (next?.kind === "chips" && sideBySide(field, next, bodyW)) {
-          blocks.push(this.chipRow([field, next], [index, index + 1], bodyW, band))
+        const pair = pairs.get(index)
+        if (pair) {
+          blocks.push(this.chipRow(pair, [index, index + 1], bodyW, band, columns))
           index++
         } else blocks.push(this.chipRow([field], [index], bodyW, band))
       } else if (field.kind === "input") blocks.push(this.inputBlock(field, index, band))
@@ -541,14 +555,15 @@ export class Form {
 
   /**
    * One chip group across the body, or two lists side by side — each column
-   * just wide enough for its group, the pair centered as one.
+   * just wide enough for its group (or the page's shared `columns`, which keep
+   * stacked pairs lined up), the pair centered as one.
    */
-  private chipRow(fields: ChipField[], indexes: number[], maxW: number, band: number): Block {
+  private chipRow(fields: ChipField[], indexes: number[], maxW: number, band: number, columns?: [number, number]): Block {
     const grids = fields.map((field) => gridFor(field.items, maxW))
-    // Room for every title with its note? If not, the notes go (warnings stay).
-    const notes = fields.length === 1 || pairWidth(fields[0]!, fields[1]!, maxW, true) <= maxW
-    const cells = fields.length === 1 ? [maxW] : fields.map((field, i) => groupHead(field, grids[i]!, maxW, notes).blockW)
-    const heads = fields.map((field, i) => groupHead(field, grids[i]!, cells[i]!, notes))
+    const { notes, cells: natural } = rowCells(fields, maxW)
+    const aligned = fields.length === 2 && columns !== undefined
+    const cells = aligned ? columns : natural
+    const heads = fields.map((field, i) => groupHead(field, grids[i]!, cells[i]!, notes, aligned))
     const rowW = cells.reduce((total, cell) => total + cell, 0) + (fields.length - 1) * COLUMN_GAP
     return {
       height: 1 + Math.max(...grids.map((g) => g.rows)),
@@ -559,7 +574,8 @@ export class Form {
           const head = heads[i]!
           const focused = indexes[i] === this.cursor.field
           const after = canvas.text(cellX + head.titleX, y, head.title, focused ? { fg: "text", bold: true } : { fg: "subtle", bold: true })
-          if (head.note) canvas.text(after, y, head.note[0], head.note[1])
+          // The focused group's note ("· pick one") comes up a step with its title.
+          if (head.note) canvas.text(after, y, head.note[0], focused && head.note[1] === S.line ? S.subtle : head.note[1])
           this.drawChips(canvas, field, indexes[i]!, grids[i]!, cellX + head.gridX, y + 1, [cellX, cellX + cells[i]!], band)
           cellX += cells[i]! + COLUMN_GAP
         })
@@ -718,13 +734,29 @@ function sideBySide(a: ChipField, b: ChipField, maxW: number) {
   return gridFor(a.items, maxW).list && gridFor(b.items, maxW).list && pairWidth(a, b, maxW, false) <= maxW
 }
 
+/** A row's cell widths, and whether its notes fit (if not, they go; warnings stay). */
+function rowCells(fields: ChipField[], maxW: number) {
+  if (fields.length === 1) return { notes: true, cells: [maxW] }
+  const notes = pairWidth(fields[0]!, fields[1]!, maxW, true) <= maxW
+  return { notes, cells: fields.map((field) => groupHead(field, gridFor(field.items, maxW), maxW, notes).blockW) }
+}
+
+/** One pair of column widths for every side-by-side row on a page, when there are several and they fit. */
+function sharedColumns(pairs: Array<[ChipField, ChipField]>, maxW: number): [number, number] | undefined {
+  if (pairs.length < 2) return undefined
+  const cells = pairs.map((pair) => rowCells(pair, maxW).cells)
+  const columns: [number, number] = [Math.max(...cells.map((c) => c[0]!)), Math.max(...cells.map((c) => c[1]!))]
+  return columns[0] + COLUMN_GAP + columns[1] <= maxW ? columns : undefined
+}
+
 /**
  * A group's title line, laid out in a cell `w` wide, with a note ("· pick
  * one") trailing it: a list's title heads its column, a grid's is centered
  * over it. When parts that carry a warning are switched off, the note becomes
- * an amber "▲ CORS is off" (shown even when `notes` is false).
+ * an amber "▲ CORS is off" (shown even when `notes` is false). `start` keeps
+ * the group at the cell's left edge, for columns shared with the rows around it.
  */
-function groupHead(field: ChipField, grid: Grid, w: number, notes: boolean) {
+function groupHead(field: ChipField, grid: Grid, w: number, notes: boolean, start = false) {
   const title = truncate(field.title.toUpperCase(), w)
   const off = field.items.filter((item) => item.warning && !field.isOn(item.id))
   const note: Segment | undefined = off.length
@@ -734,7 +766,7 @@ function groupHead(field: ChipField, grid: Grid, w: number, notes: boolean) {
       : undefined
   const lineW = width(title) + (note ? width(note[0]) : 0)
   const blockW = Math.max(grid.width, lineW)
-  const left = Math.max(0, Math.floor((w - blockW) / 2))
+  const left = start ? 0 : Math.max(0, Math.floor((w - blockW) / 2))
   // A list's chips start one column in (the cursor's padding), so the title lines up with the glyphs.
   const indent = grid.list ? 1 : 0
   return {
@@ -772,7 +804,15 @@ function summaryBlock(field: SummaryField): Block {
   const layoutRows = (w: number) => {
     const labelW = Math.max(...field.rows.map(([label]) => width(label)))
     const valueW = Math.max(12, Math.min(w - labelW - 3, 60))
-    const lines = field.rows.flatMap(([label, value, tone]) => wrap(value, valueW).map((part, i) => [i ? "" : label, part, tone] as const))
+    const lines = field.rows.flatMap(([label, value, tone]) => {
+      // A flagged row is colored from its ▲ on ("Helmet · ▲ CORS off"), or all through without one.
+      let flag = tone && tone !== "ok" ? Math.max(0, value.indexOf(sym.warn)) : Infinity
+      return wrap(value, valueW).map((part, i) => {
+        const line = [i ? "" : label, part, tone, Math.min(flag, part.length)] as const
+        flag = Math.max(0, flag - part.length - 1)
+        return line
+      })
+    })
     const blockW = labelW + 3 + Math.max(...lines.map(([, part]) => width(part)))
     return { labelW, lines, blockW }
   }
@@ -782,9 +822,10 @@ function summaryBlock(field: SummaryField): Block {
     draw: (canvas, x, y, w) => {
       const { labelW, lines, blockW } = layoutRows(w)
       const startX = x + Math.max(0, Math.floor((w - blockW) / 2))
-      lines.forEach(([label, value, tone], i) => {
+      lines.forEach(([label, value, tone, flag], i) => {
         canvas.text(startX + labelW - width(label), y + i, label, S.subtle)
-        canvas.text(startX + labelW + 3, y + i, value, tone && tone !== "ok" ? { ...toneStyle(tone), bold: false } : S.bright)
+        const col = canvas.text(startX + labelW + 3, y + i, value.slice(0, flag), S.bright)
+        if (tone && tone !== "ok") canvas.text(col, y + i, value.slice(flag), { ...toneStyle(tone), bold: false })
       })
     },
   }
@@ -828,6 +869,15 @@ const segmentsWidth = (segments: Segment[]) => segments.reduce((total, [text]) =
 function drawSegments(canvas: Canvas, x: number, y: number, segments: Segment[]) {
   let col = x
   for (const [text, style] of segments) col = canvas.text(col, y, text, style)
+}
+
+/** Wraps `text` to `max` columns with its lines as even as they go, so a last line isn't one lone word. */
+function balanced(text: string, max: number): string[] {
+  const count = wrap(text, max).length
+  if (count < 2) return wrap(text, max)
+  let w = max
+  while (w > 1 && wrap(text, w - 1).length === count) w--
+  return wrap(text, w)
 }
 
 /** Writes `text` centered in [x, x + w). */

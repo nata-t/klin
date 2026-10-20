@@ -13,6 +13,57 @@ import type { ReactNode } from "react"
 
 export const APP_NAME = "Klin App"
 
+/**
+ * The klin mark (a K drawn as a dependency graph) as pixel art: email
+ * clients drop SVG, but every one of them draws table cells.
+ */
+const MARK = [
+  "##...##",
+  "##...##",
+  "#...#..",
+  "#..#...",
+  "#.#....",
+  "##.....",
+  "##.....",
+  "#.#....",
+  "#..#...",
+  "#...#..",
+  "##...##",
+  "##...##",
+]
+const PIXEL = 2
+
+function Mark() {
+  return (
+    <table
+      role="presentation"
+      cellPadding={0}
+      cellSpacing={0}
+      style={{ borderCollapse: "collapse" }}
+    >
+      <tbody>
+        {MARK.map((row, y) => (
+          <tr key={y}>
+            {[...row].map((px, x) => (
+              <td
+                key={x}
+                style={{
+                  width: `${PIXEL}px`,
+                  height: `${PIXEL}px`,
+                  padding: 0,
+                  fontSize: 0,
+                  lineHeight: `${PIXEL}px`,
+                  backgroundColor: px === "#" ? "#18181b" : "transparent",
+                }}
+              />
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+}
+
 const styles = {
   body: {
     backgroundColor: "#f6f6f7",
@@ -27,7 +78,8 @@ const styles = {
     maxWidth: "480px",
     padding: "32px",
   },
-  brand: { fontSize: "18px", fontWeight: 700, margin: "0 0 24px" },
+  brand: { margin: "0 0 24px" },
+  name: { fontSize: "18px", fontWeight: 700, paddingLeft: "10px" },
   heading: { fontSize: "20px", fontWeight: 600, margin: "0 0 12px" },
   text: { color: "#3f3f46", fontSize: "15px", lineHeight: "24px" },
   button: {
@@ -58,7 +110,16 @@ export function EmailLayout({
       <Preview>{preview}</Preview>
       <Body style={styles.body}>
         <Container style={styles.container}>
-          <Text style={styles.brand}>✨ {APP_NAME}</Text>
+          <table role="presentation" cellPadding={0} cellSpacing={0} style={styles.brand}>
+            <tbody>
+              <tr>
+                <td style={{ verticalAlign: "middle" }}>
+                  <Mark />
+                </td>
+                <td style={{ ...styles.name, verticalAlign: "middle" }}>{APP_NAME}</td>
+              </tr>
+            </tbody>
+          </table>
           <Text style={styles.heading}>{heading}</Text>
           {children}
           <Hr style={{ borderColor: "#e4e4e7", margin: "28px 0 16px" }} />
