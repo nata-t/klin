@@ -1,19 +1,18 @@
-import { Canvas } from "@cli/ui/canvas"
-import { drawLogo, logoWidth } from "@cli/ui/logo"
+import { logoArt, logoShade } from "@cli/ui/logo"
 import { drawGeometric, FONT_STACK } from "../wizard/glyphs"
 import { BEATS, intro } from "./intro"
 
 /**
  * The hero: starter kits, snapped together.
  *
- * The logo's cells come from the CLI's own drawLogo() — the same chrome
- * gradient, shadow glyphs and sparkles as the wizard's header — grouped into
- * four parts, one per letter. The opening (timed by ./intro.ts) types the
- * create command, collapses the line like a CRT switching over, then flies
- * K, L, I and N in from four sides; each lands with a flash, a jolt, crop
- * marks closing on it and a burst of sparks. The shadow layer extrudes behind
- * them, the chrome pours in top-down, the CLI's band of light sweeps across
- * and the sparkles pop.
+ * The logo's cells come from the CLI's own logo art — the graph mark (five
+ * package nodes joined by wires) and the "klin" wordmark, in the same chrome
+ * gradient as the wizard's header — grouped into parts: one per node and one
+ * per letter. The opening (timed by ./intro.ts) types the create command,
+ * collapses the line like a CRT switching over, then flies the nodes and the
+ * letters in from all sides; each lands with a flash, a jolt, crop marks
+ * closing on it and a burst of sparks. Then the wires draw in between the
+ * nodes, the chrome pours in top-down and the CLI's band of light sweeps across.
  *
  * Settled, every cell lives on its own spring: the cursor nudges cells aside
  * and lights them, scrolling away lets them drift apart, and a click flies
@@ -30,7 +29,7 @@ interface Cell {
   shade: number
   /** Where the band of light reaches it, 0..1 across the logo (the CLI's sweep). */
   at: number
-  /** Which letter it belongs to (K L I N), or -1 for a sparkle. */
+  /** Which part it belongs to (a node, or a letter after them), or -1 for a sparkle. */
   part: number
   x: number
   y: number
@@ -71,24 +70,22 @@ interface Mote {
   depth: number
 }
 
-const LOGO_SIZE = 6
+const LOGO_SIZE = 10
 const ROW_RATIO = 2.05
 const COMMAND = "npm create klin@latest"
 const DUST = "{}[]()<>;:=+*/|&!?#@$%~^.,_01xz".split("")
 const TOKENS = ["z.object()", "createZodDto", "@Public()", "useAppForm", "prisma", "klin:if", "→", "✓", "z.infer", "betterAuth", "queryOptions", "@repo/validators", "turbo dev", "pnpm", "bun", "klin:only", "// TODO", "export", "import", "<Route />"]
-const SPARK_GLYPHS = ["✦", "✧", "·", "+", "·"]
+const SPARK_GLYPHS = ["+", "·", "×", "·"]
 
-/** Letter boundaries in the logo's own columns: K, L, I, N. */
-const PART_STARTS = [0, 8, 16, 19]
-const PART_FROM = [
-  { dx: -0.62, dy: 0.1, rot: -16, scale: 1.3 },
-  { dx: -0.06, dy: 0.66, rot: 11, scale: 1.3 },
-  { dx: 0.06, dy: -0.66, rot: -9, scale: 1.3 },
-  { dx: 0.62, dy: -0.12, rot: 18, scale: 1.3 },
-]
+/** Where part `i` of `n` flies in from: around the hero, a fraction of its size away, a little turned. */
+const partFrom = (i: number, n: number) => {
+  const a = -Math.PI / 2 + (2 * Math.PI * (i + 0.5)) / n
+  return { dx: Math.cos(a) * 0.62, dy: Math.sin(a) * 0.66, rot: (i % 2 ? 1 : -1) * (9 + ((i * 7) % 10)), scale: 1.3 }
+}
 
-/** Intro-time seconds between parts launching, and each part's flight. */
-const PART_GAP = 0.12
+/** Intro-time seconds between parts launching (and on a click replay), and each part's flight. */
+const PART_GAP = 0.06
+const REPLAY_GAP = 0.05
 const FLIGHT = 0.6
 /** The fraction of a flight at which the part lands (the rest is recoil). */
 const IMPACT = 0.5
@@ -118,33 +115,20 @@ function flight(local: number) {
 }
 
 function logoCells() {
-  const columns = logoWidth(LOGO_SIZE) + 2
-  const art = new Canvas(columns, LOGO_SIZE)
-  drawLogo(art, 0, columns, 0, LOGO_SIZE)
-  const raw: Omit<Cell, "x" | "y" | "vx" | "vy" | "spread" | "phase" | "part">[] = []
-  for (let row = 0; row < LOGO_SIZE; row++) {
-    for (let col = 0; col < columns; col++) {
-      const cell = art.cells[row * columns + col]!
-      if (cell.ch === " " || cell.ch === "") continue
-      const fg = cell.style.fg
-      const shade = Array.isArray(fg) ? fg[0] : 0xc4
-      const kind: Kind = cell.ch === "█" ? "face" : "✦✧·".includes(cell.ch) ? "spark" : "shadow"
-      raw.push({ col, row, glyph: cell.ch, kind, shade, at: (col + row * 2) / (columns + LOGO_SIZE * 2) })
-    }
-  }
-  const left = Math.min(...raw.filter((c) => c.kind !== "spark").map((c) => c.col))
-  const partOf = (c: (typeof raw)[number]) => {
-    if (c.kind === "spark") return -1
-    const rel = c.col - left
-    let part = 0
-    PART_STARTS.forEach((start, i) => {
-      if (rel >= start) part = i
-    })
-    return part
-  }
-  const cells: Cell[] = raw.map((c) => ({
-    ...c,
-    part: partOf(c),
+  const art = logoArt(LOGO_SIZE)
+  const columns = art.width
+  const nodes = art.cells.filter((c) => c.kind === "node")
+  // A wire travels with the node nearest to it, and draws in once they've all landed.
+  const nearest = (col: number, row: number) =>
+    nodes.reduce((best, n) => (Math.hypot(n.col - col, (n.row - row) * 2) < Math.hypot(best.col - col, (best.row - row) * 2) ? n : best)).part
+  const cells: Cell[] = art.cells.map((c) => ({
+    col: c.col,
+    row: c.row,
+    glyph: c.ch,
+    kind: c.kind === "wire" ? "shadow" : "face",
+    shade: logoShade(c.kind, c.row, art.height),
+    at: (c.col + c.row * 2) / (columns + LOGO_SIZE * 2),
+    part: c.part >= 0 ? c.part : nearest(c.col, c.row),
     x: 0,
     y: 0,
     vx: 0,
@@ -152,15 +136,16 @@ function logoCells() {
     spread: [rand(-1, 1), rand(-1, 1)],
     phase: rand(0, Math.PI * 2),
   }))
-  const parts: Part[] = PART_FROM.map((from, i) => {
+  const parts: Part[] = Array.from({ length: art.parts }, (_, i) => {
     const own = cells.filter((c) => c.part === i)
-    const c0 = Math.min(...own.map((c) => c.col))
-    const c1 = Math.max(...own.map((c) => c.col)) + 1
-    const r0 = Math.min(...own.map((c) => c.row))
-    const r1 = Math.max(...own.map((c) => c.row)) + 1
-    return { cells: own, from, center: { col: (c0 + c1) / 2, row: (r0 + r1) / 2 }, box: { c0, c1, r0, r1 }, snapped: false, snapAt: -1 }
+    const faces = own.filter((c) => c.kind === "face")
+    const c0 = Math.min(...faces.map((c) => c.col))
+    const c1 = Math.max(...faces.map((c) => c.col)) + 1
+    const r0 = Math.min(...faces.map((c) => c.row))
+    const r1 = Math.max(...faces.map((c) => c.row)) + 1
+    return { cells: own, from: partFrom(i, art.parts), center: { col: (c0 + c1) / 2, row: (r0 + r1) / 2 }, box: { c0, c1, r0, r1 }, snapped: false, snapAt: -1 }
   })
-  return { cells, parts, columns, faces: cells.filter((c) => c.kind !== "spark").length }
+  return { cells, parts, columns, faces: cells.length }
 }
 
 export function mountHeroField(hero: HTMLElement) {
@@ -280,7 +265,7 @@ export function mountHeroField(hero: HTMLElement) {
     return shade
   }
 
-  /** The shadow layer extrudes out from behind the faces, along the sweep's diagonal. */
+  /** The wires draw in between the nodes once they've landed, along the sweep's diagonal. */
   function shadowState(c: Cell) {
     const k = easeOutCubic(clamp((intro.t - BEATS.depth - c.at * 0.3) / 0.22))
     return { k, dx: -(1 - k) * cw * 0.5, dy: -(1 - k) * rh * 0.3 }
@@ -293,7 +278,7 @@ export function mountHeroField(hero: HTMLElement) {
     if (replay) {
       const r = when
       if (r < PULL) return easeInCubic(r / PULL)
-      return flight((r - PULL - i * 0.07) / FLIGHT)
+      return flight((r - PULL - i * REPLAY_GAP) / FLIGHT)
     }
     return flight((when - BEATS.parts - i * PART_GAP) / FLIGHT)
   }
@@ -302,7 +287,7 @@ export function mountHeroField(hero: HTMLElement) {
     const part = parts[i]!
     part.snapped = true
     part.snapAt = now
-    snappedCount = Math.min(4, snappedCount + 1)
+    snappedCount = Math.min(parts.length, snappedCount + 1)
     const x0 = ox + part.box.c0 * cw
     const x1 = ox + part.box.c1 * cw
     const y0 = oy + part.box.r0 * rh
@@ -324,7 +309,7 @@ export function mountHeroField(hero: HTMLElement) {
     const part = parts[i]!
     const p = distance(i, when, replay)
     if (!replay && when < BEATS.parts + i * PART_GAP) return
-    const local = replay ? (when - PULL - i * 0.07) / FLIGHT : (when - BEATS.parts - i * PART_GAP) / FLIGHT
+    const local = replay ? (when - PULL - i * REPLAY_GAP) / FLIGHT : (when - BEATS.parts - i * PART_GAP) / FLIGHT
     if (!part.snapped && local >= IMPACT && (!replay || when >= PULL)) landed(i, now)
 
     const cx = ox + part.center.col * cw
@@ -483,7 +468,7 @@ export function mountHeroField(hero: HTMLElement) {
 
     const replaying = replayAt > 0
     const replayT = replaying ? (now - replayAt) / 1000 : 0
-    if (replaying && replayT > PULL + 3 * 0.07 + FLIGHT + 0.05) {
+    if (replaying && replayT > PULL + (parts.length - 1) * REPLAY_GAP + FLIGHT + 0.05) {
       replayAt = -1
       toTargets()
     }
@@ -544,7 +529,7 @@ export function mountHeroField(hero: HTMLElement) {
       ctx.textAlign = "left"
     }
 
-    if (countLabel) countLabel.textContent = `parts ${snappedCount} / 4 snapped · ${pad(faces, 3)} cells`
+    if (countLabel) countLabel.textContent = `parts ${snappedCount} / ${parts.length} snapped · ${pad(faces, 3)} cells`
   }
 
   function step(dtFrames: number) {
@@ -593,7 +578,7 @@ export function mountHeroField(hero: HTMLElement) {
   layout()
   if (still) {
     // Reduced motion: the settled logo, drawn once (and again on resize).
-    snappedCount = 4
+    snappedCount = parts.length
     mode = "cells"
     toTargets()
     const paint = () => draw(performance.now())

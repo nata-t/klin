@@ -160,6 +160,12 @@ pre {
   font-family: var(--mono);
 }
 
+/* Code panes that scroll sideways keep a thin scrollbar in the page's grays. */
+pre {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+
 kbd {
   display: inline-block;
   min-width: 1.6em;

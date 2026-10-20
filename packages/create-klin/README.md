@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/nata-t/klin/master/brand/logo/klin-lockup-black.png" alt="klin" width="220" />
+</p>
+
 # create-klin
 
 Scaffold a spotless full-stack TypeScript monorepo: a **NestJS 12** or plain

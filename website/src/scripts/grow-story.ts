@@ -37,6 +37,8 @@ export function mountGrowStory(story: HTMLElement) {
       ...(done && shown > 0 ? ["", ...act.output.slice(0, shown).map(styleLine)] : []),
     ]
     screen.innerHTML = lines.join("\n")
+    // Like a terminal: once the output outgrows the window, the newest line stays at the bottom.
+    screen.scrollTop = screen.scrollHeight
     progressEl.textContent = `${index + 1} / ${ACTS.length}`
     acts.forEach((el, i) => {
       const state = i < index ? "passed" : i === index ? "here" : "ahead"

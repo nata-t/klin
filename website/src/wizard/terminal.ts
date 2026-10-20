@@ -135,7 +135,9 @@ export class Terminal {
         if (drawGeometric(ctx, ch, px, py, w, h, color, dpr)) continue
         ctx.font = `${s.italic ? "italic " : ""}${s.bold ? 650 : 450} ${fontPx}px ${FONT_STACK}`
         ctx.fillStyle = color
-        ctx.fillText(ch, px, py + h / 2 + dpr * 0.5, w * 2)
+        // A glyph keeps to its own cell (two for wide ones), even from a wider fallback font.
+        const wide = x + 1 < frame.width && frame.cells[y * frame.width + x + 1]!.ch === ""
+        ctx.fillText(ch, px, py + h / 2 + dpr * 0.5, wide ? w * 2 : w)
         if (s.underline) ctx.fillRect(px, py + h - 2 * dpr, w, dpr)
         if (s.strike) ctx.fillRect(px, py + h / 2, w, dpr)
       }

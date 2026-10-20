@@ -1,0 +1,32 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "gradient-text",
+        "value": "*",
+        "files": [
+          "website/src/components/landing/GrowSection.astro"
+        ],
+        "createdAt": "2026-10-16T14:12:07.518Z",
+        "reason": "incumbent design: the .shine line mirrors the CLI's shimmer() (packages/create-klin/src/ui/theme.ts); user asked for polish without changing the concept"
+      },
+      {
+        "rule": "gradient-text",
+        "value": "*",
+        "files": [
+          "website/src/styles/landing.css"
+        ],
+        "createdAt": "2026-10-16T14:13:08.185Z",
+        "reason": "incumbent design: .chrome is the CLI logo's chrome gradient (theme.ts/logo.ts), the site's brand treatment; user asked for polish without changing the concept"
+      },
+      {
+        "rule": "overused-font",
+        "value": "geist mono",
+        "createdAt": "2026-10-19T14:11:13.994Z",
+        "reason": "project's established typeface: website/src/styles/landing.css and astro.config.mjs load Geist/Geist Mono via @fontsource; the brand sheet matches the site on purpose"
+      }
+    ]
+  }
+}

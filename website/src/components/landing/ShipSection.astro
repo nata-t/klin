@@ -1,4 +1,5 @@
 ---
+import KlinMark from "../brand/KlinMark.astro"
 import SectionShell from "./SectionShell.astro"
 import { INSTALL, REPO } from "../../lib/site"
 
@@ -60,7 +61,7 @@ const notFor = [
   </div>
 
   <div class="final">
-    <p class="spark" aria-hidden="true" data-reveal>✦</p>
+    <p class="spark" aria-hidden="true" data-reveal><KlinMark class="mark" /></p>
     <h2 class="display chrome" data-reveal>Everything's in its place.<br />Your move.</h2>
     <div class="install" data-reveal>
       <div class="chips" role="tablist" aria-label="Package manager" data-final-pm>
@@ -172,16 +173,20 @@ const notFor = [
     pointer-events: none;
   }
   .spark {
-    margin: 0 0 18px;
-    font-size: 22px;
+    margin: 0 0 22px;
     color: var(--bright);
     animation: twinkle 3.2s ease-in-out infinite;
   }
+  /* The mark breathes, slowly. */
   @keyframes twinkle {
     50% {
-      opacity: 0.35;
-      transform: rotate(45deg) scale(0.85);
+      opacity: 0.45;
     }
+  }
+  .spark :global(.mark) {
+    display: block;
+    height: 34px;
+    width: auto;
   }
   .final .display {
     font-size: clamp(34px, 5.4vw, 72px);

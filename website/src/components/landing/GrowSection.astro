@@ -155,6 +155,8 @@ import { styleLine } from "../../lib/term-lines"
     margin: 0;
     padding: 16px 18px;
     height: min(33.5em, calc(100vh - var(--nav-h) - 140px));
+    /* Whole rows only, so the line at the edge is never cut in half. */
+    height: calc(round(down, min(33.5em, 100vh - var(--nav-h) - 140px) - 32px, 1lh) + 32px);
     overflow: hidden;
     font-size: clamp(11px, 1vw, 13px);
     line-height: 1.55;

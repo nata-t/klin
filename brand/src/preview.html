@@ -1,0 +1,501 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>klin brand</title>
+    <link rel="icon" href="{{asset:favicon/favicon.svg}}" type="image/svg+xml" />
+    <style>
+      @font-face {
+        font-family: "Geist Mono";
+        src: url("{{font:geist-mono/files/geist-mono-latin-wght-normal.woff2}}") format("woff2");
+        font-weight: 100 900;
+      }
+      @font-face {
+        font-family: "Geist";
+        src: url("{{font:geist/files/geist-latin-wght-normal.woff2}}") format("woff2");
+        font-weight: 100 900;
+      }
+      :root {
+        --bg: #141414;
+        --bar: #1c1c1c;
+        --tint: #242424;
+        --line: #444444;
+        --subtle: #6a6a6a;
+        --muted: #929292;
+        --text: #c4c4c4;
+        --bright: #eeeeee;
+        --paper: #f4f4f2;
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font: 15px/1.6 "Geist", system-ui, sans-serif;
+      }
+      main {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 48px 16px 96px;
+      }
+      .top {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        margin-bottom: 14px;
+      }
+      .top .inline svg {
+        height: 44px;
+        width: auto;
+        color: var(--bright);
+      }
+      h1 {
+        font: 620 28px/1.1 "Geist Mono", monospace;
+        letter-spacing: -0.03em;
+        color: var(--bright);
+        margin: 0;
+      }
+      h2 {
+        font: 500 12px/1 "Geist Mono", monospace;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin: 56px 0 16px;
+        padding-top: 16px;
+        border-top: 1px solid rgba(255, 255, 255, 0.075);
+      }
+      p {
+        margin: 0;
+        max-width: 68ch;
+      }
+      code {
+        font: 13px "Geist Mono", monospace;
+        color: var(--bright);
+      }
+      .grid {
+        display: grid;
+        gap: 16px;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      }
+      .tile {
+        margin: 0;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+      .tile .art {
+        flex: 1;
+        display: grid;
+        place-items: center;
+        padding: 32px;
+        min-height: 220px;
+      }
+      .tile .art img,
+      .tile .art svg {
+        max-width: 100%;
+        height: auto;
+      }
+      .tile .cap {
+        padding: 10px 14px;
+        border-top: 1px solid var(--line);
+        background: var(--bar);
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .dark {
+        background: var(--bg);
+      }
+      .light {
+        background: var(--paper);
+      }
+      .gray {
+        background: #2b2f36;
+        color: #9aa3ad;
+      }
+      .wide {
+        grid-column: 1 / -1;
+      }
+      .inline.mark svg {
+        width: 120px;
+      }
+      .inline.lockup svg {
+        width: 360px;
+      }
+      .term {
+        margin: 0;
+        padding: 26px 22px;
+        overflow-x: auto;
+        font: 15px/normal "DejaVu Sans Mono", "Geist Mono", ui-monospace, monospace;
+        color: var(--text);
+        background: radial-gradient(120% 90% at 50% 0%, #1c1c1c 0%, #141414 60%, #0f0f0f 100%);
+      }
+      .term .node,
+      .term .word {
+        color: #f0f0f0;
+      }
+      .term .wire {
+        color: #727272;
+      }
+      .term .text {
+        color: #eeeeee;
+        font-weight: 700;
+      }
+      .terms {
+        margin-top: 16px;
+        grid-template-columns: 1fr 1fr;
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        gap: 28px;
+      }
+      .size {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        font: 12px "Geist Mono", monospace;
+        color: var(--muted);
+      }
+      .pixel {
+        image-rendering: pixelated;
+      }
+      .tabs {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        width: 100%;
+      }
+      .strip {
+        display: flex;
+        gap: 2px;
+        padding: 8px 8px 0;
+        border-radius: 7px 7px 0 0;
+      }
+      .strip.l {
+        background: #dee1e6;
+      }
+      .strip.d {
+        background: #202124;
+      }
+      .tab {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        border-radius: 8px 8px 0 0;
+        font: 12px system-ui, sans-serif;
+        flex: 0 1 220px;
+        min-width: 0;
+        white-space: nowrap;
+        overflow: hidden;
+      }
+      .strip.l .tab {
+        color: #3c4043;
+      }
+      .strip.l .tab.on {
+        background: #fff;
+      }
+      .strip.d .tab {
+        color: #9aa0a6;
+      }
+      .strip.d .tab.on {
+        background: #35363a;
+        color: #e8eaed;
+      }
+      .tab img {
+        width: 16px;
+        height: 16px;
+        flex: none;
+      }
+      .tab .dot {
+        flex: none;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #9aa0a6;
+        opacity: 0.5;
+      }
+      .masks {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .masks img {
+        width: 128px;
+        height: 128px;
+      }
+      .circle {
+        border-radius: 50%;
+      }
+      .squircle {
+        border-radius: 30%;
+      }
+      .safe {
+        position: relative;
+      }
+      .safe::after {
+        content: "";
+        position: absolute;
+        inset: 10%;
+        border: 1px dashed #f87171;
+        border-radius: 50%;
+      }
+      .card {
+        width: 100%;
+        display: block;
+      }
+      .swatches {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 12px;
+      }
+      .swatch {
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        overflow: hidden;
+        font: 12px "Geist Mono", monospace;
+      }
+      .swatch i {
+        display: block;
+        height: 64px;
+      }
+      .swatch span {
+        display: block;
+        padding: 8px 10px;
+        color: var(--muted);
+        background: var(--bar);
+      }
+      .rules {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 16px;
+      }
+      .rules ul {
+        margin: 0;
+        padding-left: 18px;
+      }
+      .rules li {
+        margin: 6px 0;
+      }
+      .rules h3 {
+        margin: 0 0 6px;
+        font: 600 13px "Geist Mono", monospace;
+        color: var(--bright);
+      }
+      .space {
+        position: relative;
+        display: inline-block;
+        padding: 26px;
+        outline: 1px dashed #f87171;
+        outline-offset: -1px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+      }
+      td {
+        padding: 8px 12px 8px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.075);
+        vertical-align: top;
+      }
+      td:first-child {
+        white-space: nowrap;
+      }
+      @media (max-width: 600px) {
+        td:first-child {
+          white-space: normal;
+          word-break: break-all;
+        }
+        .term {
+          font-size: 11px;
+        }
+        .terms {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="top">
+        <span class="inline">{{inline:logo/klin-mark-mono.svg}}</span>
+        <h1>klin brand</h1>
+      </div>
+      <p>
+        The mark is a K drawn as a dependency graph: five package nodes on a grid, joined by wires at 0° and 45° — the shape of
+        the monorepo klin builds. It's one colour, always gray: ink on light, white on dark. Next to it, a geometric lowercase
+        <code>klin</code> whose k shares the mark's 45° chevron.
+      </p>
+
+      <h2>Mark</h2>
+      <div class="grid">
+        <figure class="tile">
+          <div class="art light"><img src="{{asset:logo/klin-mark-black.svg}}" width="120" alt="klin mark, black" /></div>
+          <figcaption class="cap"><code>klin-mark-black.svg</code> · on light</figcaption>
+        </figure>
+        <figure class="tile">
+          <div class="art dark"><img src="{{asset:logo/klin-mark-white.svg}}" width="120" alt="klin mark, white" /></div>
+          <figcaption class="cap"><code>klin-mark-white.svg</code> · on dark</figcaption>
+        </figure>
+        <figure class="tile">
+          <div class="art gray inline mark">{{inline:logo/klin-mark-mono.svg}}</div>
+          <figcaption class="cap"><code>klin-mark-mono.svg</code> · <code>currentColor</code>, inline</figcaption>
+        </figure>
+      </div>
+
+      <h2>Lockup</h2>
+      <div class="grid">
+        <figure class="tile wide">
+          <div class="art light"><img src="{{asset:logo/klin-lockup-black.svg}}" width="420" alt="klin lockup, black" /></div>
+          <figcaption class="cap"><code>klin-lockup-black.svg</code> (and <code>.png</code>) · on light</figcaption>
+        </figure>
+        <figure class="tile wide">
+          <div class="art dark"><img src="{{asset:logo/klin-lockup-white.svg}}" width="420" alt="klin lockup, white" /></div>
+          <figcaption class="cap"><code>klin-lockup-white.svg</code> (and <code>.png</code>) · on dark</figcaption>
+        </figure>
+        <figure class="tile wide">
+          <div class="art gray inline lockup">{{inline:logo/klin-lockup-mono.svg}}</div>
+          <figcaption class="cap"><code>klin-lockup-mono.svg</code> · <code>currentColor</code>, inline</figcaption>
+        </figure>
+      </div>
+
+      <h2>In the terminal</h2>
+      <p>
+        The CLI draws the same mark as pixel art, two square pixels per character (<code>▀ ▄ █</code>): nodes and letters bright, wires
+        gray. It picks the largest that fits — from <code>packages/create-klin/src/ui/logo-art.ts</code>, which the website hero and the
+        favicons read too.
+      </p>
+      <div class="grid terms">
+        <figure class="tile wide">
+          <pre class="term">{{terminal:10}}</pre>
+          <figcaption class="cap">10 rows · tall terminals</figcaption>
+        </figure>
+        <figure class="tile">
+          <pre class="term">{{terminal:6}}</pre>
+          <figcaption class="cap">6 rows · the regular header, the banner, the generated app's hero</figcaption>
+        </figure>
+        <figure class="tile">
+          <pre class="term">{{terminal:3}}</pre>
+          <figcaption class="cap">3 rows · short terminals and <code>--help</code></figcaption>
+        </figure>
+      </div>
+
+      <h2>App icon</h2>
+      <div class="grid">
+        <figure class="tile">
+          <div class="art light"><img src="{{asset:favicon/icon-512.png}}" width="200" alt="App icon" /></div>
+          <figcaption class="cap"><code>icon-512.png</code> · <code>icon-192.png</code> · <code>klin-icon.svg</code></figcaption>
+        </figure>
+        <figure class="tile">
+          <div class="art light"><img src="{{asset:favicon/apple-touch-icon.png}}" width="180" height="180" style="border-radius: 40px" alt="Apple touch icon" /></div>
+          <figcaption class="cap"><code>apple-touch-icon.png</code> · 180, iOS rounds it</figcaption>
+        </figure>
+        <figure class="tile">
+          <div class="art light">
+            <div class="masks">
+              <img class="circle" src="{{asset:favicon/icon-maskable-512.png}}" alt="Maskable icon, circle crop" />
+              <img class="squircle" src="{{asset:favicon/icon-maskable-512.png}}" alt="Maskable icon, squircle crop" />
+              <span class="safe"><img src="{{asset:favicon/icon-maskable-512.png}}" alt="Maskable icon with safe zone" /></span>
+            </div>
+          </div>
+          <figcaption class="cap"><code>icon-maskable-512.png</code> · Android crops; dashed = safe zone</figcaption>
+        </figure>
+      </div>
+
+      <h2>Favicon</h2>
+      <div class="grid">
+        <figure class="tile">
+          <div class="art dark">
+            <div class="row">
+              <span class="size"><img src="{{asset:favicon/favicon-16x16.png}}" width="16" height="16" alt="" />16</span>
+              <span class="size"><img src="{{asset:favicon/favicon-32x32.png}}" width="32" height="32" alt="" />32</span>
+              <span class="size"><img class="pixel" src="{{asset:favicon/favicon-16x16.png}}" width="96" height="96" alt="" />16 ×6</span>
+              <span class="size"><img class="pixel" src="{{asset:favicon/favicon-32x32.png}}" width="96" height="96" alt="" />32 ×3</span>
+            </div>
+          </div>
+          <figcaption class="cap"><code>favicon.ico</code> (16 · 32 · 48) · <code>favicon.svg</code> · pixel-aligned, the CLI's own pixels</figcaption>
+        </figure>
+        <figure class="tile">
+          <div class="art light" style="padding: 24px">
+            <div class="tabs">
+              <div class="strip l">
+                <div class="tab on"><img src="{{asset:favicon/favicon.svg}}" alt="" />klin · Starter kits</div>
+                <div class="tab"><span class="dot"></span>New Tab</div>
+              </div>
+              <div class="strip d">
+                <div class="tab on"><img src="{{asset:favicon/favicon.svg}}" alt="" />klin · Starter kits</div>
+                <div class="tab"><span class="dot"></span>New Tab</div>
+              </div>
+            </div>
+          </div>
+          <figcaption class="cap">In a browser tab, light and dark</figcaption>
+        </figure>
+      </div>
+
+      <h2>Social cards</h2>
+      <div class="grid">
+        <figure class="tile">
+          <img class="card" src="{{asset:social/og.png}}" alt="Open Graph card" />
+          <figcaption class="cap"><code>og.png</code> · 1200×630, link previews (the website serves it)</figcaption>
+        </figure>
+        <figure class="tile">
+          <img class="card" src="{{asset:social/github-social.png}}" alt="GitHub social preview" />
+          <figcaption class="cap"><code>github-social.png</code> · 1280×640, upload in the repo's Settings → Social preview</figcaption>
+        </figure>
+      </div>
+
+      <h2>Using it</h2>
+      <div class="rules">
+        <div>
+          <h3>Clear space</h3>
+          <p>Keep one node's width free on every side.</p>
+          <div class="light" style="margin-top: 12px; padding: 18px; border-radius: 7px; display: inline-block">
+            <span class="space"><img src="{{asset:logo/klin-lockup-black.svg}}" width="200" alt="" /></span>
+          </div>
+        </div>
+        <div>
+          <h3>Smallest sizes</h3>
+          <ul>
+            <li>Mark: 16 px tall (below 48 px use the favicon files — the pixel cut).</li>
+            <li>Lockup: 80 px wide on screen, 20 mm in print.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Don't</h3>
+          <ul>
+            <li>Color it, or add gradients, shadows or outlines.</li>
+            <li>Rotate, mirror or stretch it, or move the nodes.</li>
+            <li>Set the name in another typeface next to the mark.</li>
+          </ul>
+        </div>
+      </div>
+      <h3 style="margin: 28px 0 10px; font: 600 13px 'Geist Mono', monospace; color: var(--bright)">Colours</h3>
+      <div class="swatches">
+        <div class="swatch"><i style="background: #141414"></i><span>Ink · #141414</span></div>
+        <div class="swatch"><i style="background: #ffffff"></i><span>White · #ffffff</span></div>
+        <div class="swatch"><i style="background: #eeeeee"></i><span>Bright · #eeeeee</span></div>
+        <div class="swatch"><i style="background: #727272"></i><span>Wire (terminal) · #727272</span></div>
+      </div>
+
+      <h2>Files</h2>
+      <table>
+        <tr><td><code>logo/klin-mark-*.svg</code></td><td>The mark: <code>black</code> for light backgrounds, <code>white</code> for dark, <code>mono</code> (currentColor) to inline.</td></tr>
+        <tr><td><code>logo/klin-lockup-*.svg</code></td><td>Mark + wordmark, same three versions; <code>.png</code> for places without SVG (the npm README).</td></tr>
+        <tr><td><code>logo/klin-icon.svg</code></td><td>The app icon as a vector: the white mark on the ink tile.</td></tr>
+        <tr><td><code>favicon/*</code></td><td>Copied into <code>website/public/</code>; <code>favicon.svg</code> also into the generated app.</td></tr>
+        <tr><td><code>social/*</code></td><td><code>og.png</code> is copied into <code>website/public/</code>; upload <code>github-social.png</code> by hand.</td></tr>
+        <tr><td><code>src/*</code></td><td>The generator: <code>node brand/src/build.mjs</code> rebuilds everything and copies it into the app.</td></tr>
+      </table>
+    </main>
+  </body>
+</html>
