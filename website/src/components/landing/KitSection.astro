@@ -1,4 +1,7 @@
 ---
+import Chip from "./Chip.astro"
+import Chips from "./Chips.astro"
+import FileHeader from "./FileHeader.astro"
 import SectionHead from "./SectionHead.astro"
 import SectionShell from "./SectionShell.astro"
 import { optionsOf } from "../../lib/manifest"
@@ -16,6 +19,16 @@ const cells = [
   { index: "06", title: "Ops", sub: "Turborepo", items: [...pickExtras(["docker", "ci"]), "dev in a split-pane TUI", "husky + commitlint", "Vitest + Playwright"] },
 ]
 const swatches = optionsOf("accent")
+
+const pane = "overflow-hidden rounded-box border border-line bg-[rgba(14,14,14,0.85)]"
+const tag = "ml-auto flex-none pl-12 font-mono text-[10.5px] tracking-[0.08em] text-subtle uppercase"
+// The strip demo's panes (src/scripts/strip-demo.ts): marker lines faint, lines the picks drop struck out,
+// lines that just came back flashing.
+const code = [
+  "m-0 max-h-560 overflow-auto px-14 py-12 text-[12px] leading-[1.7] text-text",
+  "[&_.line]:-ml-14 [&_.line]:block [&_.line]:border-l-2 [&_.line]:border-l-transparent [&_.line]:pl-12 [&_.line]:whitespace-pre [&_.line]:transition-[opacity,color] [&_.line]:duration-250 [&_.line]:ease-[ease]",
+  "[&_.marker]:text-subtle [&_.marker_.m]:text-muted [&_.drop]:line-through [&_.drop]:decoration-[rgba(255,255,255,0.25)] [&_.drop]:opacity-32 [&_.new]:animate-fresh-fast",
+].join(" ")
 ---
 
 <SectionShell id="kit" index="04" label="The kit" note={`${cells.reduce((n, c) => n + c.items.length, 0)} parts · ${swatches.length} theme colors`}>
@@ -25,20 +38,20 @@ const swatches = optionsOf("accent")
     the rest never shows up.
   </SectionHead>
 
-  <div class="cells">
+  <div class="grid grid-cols-3 gap-px border-y border-y-rule bg-rule max-1000:grid-cols-2 max-600:grid-cols-1">
     {
       cells.map((cell) => (
-        <article class="cell" data-reveal>
-          <header>
-            <p class="hud">
-              <span class="idx">{cell.index}</span> {cell.title}
+        <article class="group/cell bg-bg px-gutter pt-22 pb-28 transition-[background-color] duration-200 ease-[ease] hover:bg-[#171717]" data-reveal>
+          <header class="mb-18 flex justify-between gap-12">
+            <p class="hud m-0 text-bright group-hover/cell:bg-bright group-hover/cell:text-bg group-hover/cell:shadow-[0_0_0_4px_var(--color-bright)]">
+              <span class="mr-6 text-line group-hover/cell:text-subtle">{cell.index}</span> {cell.title}
             </p>
-            <p class="hud sub">{cell.sub}</p>
+            <p class="hud m-0">{cell.sub}</p>
           </header>
-          <ul>
+          <ul class="m-0 list-none p-0">
             {cell.items.map((item) => (
-              <li>
-                <span class="mark" aria-hidden="true">
+              <li class="flex items-baseline gap-10 py-3 font-mono text-[13px] text-text">
+                <span class="text-[9px] text-subtle transform-[translateY(-1px)] group-hover/cell:text-bright" aria-hidden="true">
                   ◼
                 </span>
                 {item}
@@ -50,70 +63,75 @@ const swatches = optionsOf("accent")
     }
   </div>
 
-  <div class="looks" data-reveal>
-    <p class="hud">Looks <span class="dim">· shadcn/ui · pick one</span></p>
-    <ul class="swatches">
+  <div class="flex flex-wrap items-center gap-x-28 gap-y-14 border-b border-b-rule px-gutter py-22" data-reveal>
+    <p class="hud m-0 text-text">Looks <span class="text-subtle">· shadcn/ui · pick one</span></p>
+    <ul class="m-0 flex list-none flex-wrap gap-6 p-0">
       {
         swatches.map((s) => (
-          <li title={s.label}>
-            <span class="sw" style={`background:${s.swatch}`} />
-            <span class="name">{s.label}</span>
+          <li class="group/swatch relative" title={s.label}>
+            <span
+              class="block size-22 rounded-[4px] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.12)] transition-[transform] duration-160 ease-[ease] group-hover/swatch:transform-[translateY(-3px)_scale(1.12)]"
+              style={`background:${s.swatch}`}
+            />
+            <span class="pointer-events-none absolute -top-24 left-1/2 rounded-[3px] bg-bright px-6 py-1 font-mono text-[10.5px] whitespace-nowrap text-bg opacity-0 transition-[opacity] duration-120 ease-linear transform-[translateX(-50%)] group-hover/swatch:opacity-100">
+              {s.label}
+            </span>
           </li>
         ))
       }
     </ul>
   </div>
 
-  <div class="strip" data-strip-demo>
-    <div class="strip-head">
-      <h3 class="display" data-reveal>Only what you picked.</h3>
-      <p class="lede" data-reveal>
+  <div class="grid gap-26 px-gutter pt-[clamp(56px,8vw,96px)] pb-[clamp(64px,9vw,112px)]" data-strip-demo>
+    <div class="grid gap-16">
+      <h3 class="m-0 font-mono text-[clamp(28px,4vw,48px)] leading-none font-[620] tracking-[-0.045em] text-balance text-bright" data-reveal>Only what you picked.</h3>
+      <p class="m-0 max-w-[34em] text-[clamp(16px,1.4vw,18px)] leading-[1.65] text-pretty text-muted" data-reveal>
         The template is one real project with every module on. Markers in comments say which lines belong to what, and create-klin
-        strips the rest — no dead flags, no <code>if (config.enableX)</code>. This is the template's real <code>auth.ts</code>, run
-        through the CLI's own marker engine as you pick.
+        strips the rest — no dead flags, no <code class="text-[0.9em] text-bright">if (config.enableX)</code>. This is the template's real <code
+          class="text-[0.9em] text-bright">auth.ts</code
+        >, run through the CLI's own marker engine as you pick.
       </p>
     </div>
-    <div class="controls" data-reveal>
-      <div class="ctrl">
-        <p class="hud">Database <span class="dim">· pick one</span></p>
-        <div class="chips" role="radiogroup" aria-label="Database" data-strip-db>
+    <div class="flex flex-wrap gap-x-48 gap-y-14" data-reveal>
+      <div class="grid content-start gap-8">
+        <p class="hud m-0 text-text">Database <span class="text-subtle">· pick one</span></p>
+        <Chips class="-ml-9" role="radiogroup" aria-label="Database" data-strip-db>
           {
             optionsOf("database").map((o, i) => (
-              <button class="chip" type="button" role="radio" aria-checked={i === 0 ? "true" : "false"} data-value={o.id}>
-                <span class="mark" aria-hidden="true">
-                  {i === 0 ? "●" : "○"}
-                </span>
+              <Chip role="radio" aria-checked={i === 0 ? "true" : "false"} data-value={o.id} mark={i === 0 ? "●" : "○"}>
                 {o.label}
-              </button>
+              </Chip>
             ))
           }
-        </div>
+        </Chips>
       </div>
-      <div class="ctrl">
-        <p class="hud">Sign-in & power-ups <span class="dim">· pick any</span></p>
-        <div class="chips" role="group" aria-label="Sign-in and power-ups" data-strip-flags>
+      <div class="grid content-start gap-8">
+        <p class="hud m-0 text-text">Sign-in & power-ups <span class="text-subtle">· pick any</span></p>
+        <Chips class="-ml-9" role="group" aria-label="Sign-in and power-ups" data-strip-flags>
           {
             [...optionsOf("auth"), ...optionsOf("plugins")].map((o) => (
-              <button class="chip" type="button" aria-pressed={o.id === "password" ? "true" : "false"} data-value={o.id}>
-                <span class="mark" aria-hidden="true">
-                  {o.id === "password" ? "◼" : "◻"}
-                </span>
+              <Chip aria-pressed={o.id === "password" ? "true" : "false"} data-value={o.id} mark={o.id === "password" ? "◼" : "◻"}>
                 {o.label}
-              </button>
+              </Chip>
             ))
           }
-        </div>
+        </Chips>
       </div>
     </div>
-    <div class="panes" data-reveal>
-      <article class="pane">
-        <header><span class="hud">template/packages/auth/src/</span><span class="file">auth.ts</span><span class="tag">every module on</span></header>
-        <pre class="code" data-strip-source></pre>
+    <div class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-18 max-1000:grid-cols-[minmax(0,1fr)]" data-reveal>
+      <article class={pane}>
+        <FileHeader path="template/packages/auth/src/" file="auth.ts"><span class={tag}>every module on</span></FileHeader>
+        <pre class={code} data-strip-source></pre>
       </article>
-      <div class="arrow" aria-hidden="true"><span class="label">create-klin</span><span class="glyph">→</span></div>
-      <article class="pane">
-        <header><span class="hud">my-app/packages/auth/src/</span><span class="file">auth.ts</span><span class="tag" data-strip-count></span></header>
-        <pre class="code" data-strip-result></pre>
+      <div
+        class="grid gap-4 self-center justify-items-center font-mono text-[20px] text-bright max-1000:grid-flow-col max-1000:items-center max-1000:justify-center max-1000:gap-10"
+        aria-hidden="true"
+      >
+        <span class="text-[10px] tracking-[0.12em] text-subtle uppercase">create-klin</span><span class="max-1000:transform-[rotate(90deg)]">→</span>
+      </div>
+      <article class={pane}>
+        <FileHeader path="my-app/packages/auth/src/" file="auth.ts"><span class={tag} data-strip-count></span></FileHeader>
+        <pre class={code} data-strip-result></pre>
       </article>
     </div>
   </div>
@@ -124,288 +142,3 @@ const swatches = optionsOf("accent")
   mountStripDemo(document.querySelector<HTMLElement>("[data-strip-demo]")!)
 </script>
 
-<style>
-  .cells {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 1px;
-    background: var(--rule);
-    border-top: 1px solid var(--rule);
-    border-bottom: 1px solid var(--rule);
-  }
-  .cell {
-    background: var(--bg);
-    padding: 22px var(--gutter) 28px;
-    transition: background-color 200ms ease;
-  }
-  .cell:hover {
-    background: #171717;
-  }
-  .cell header {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 18px;
-  }
-  .cell header .hud {
-    margin: 0;
-    color: var(--bright);
-  }
-  .cell .idx {
-    color: var(--line);
-    margin-right: 6px;
-  }
-  .cell header .sub {
-    color: var(--subtle);
-  }
-  .cell:hover header p:first-child {
-    background: var(--bright);
-    color: var(--bg);
-    box-shadow: 0 0 0 4px var(--bright);
-  }
-  .cell:hover .idx {
-    color: var(--subtle);
-  }
-  ul {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-  .cell li {
-    display: flex;
-    gap: 10px;
-    align-items: baseline;
-    padding: 3px 0;
-    font-family: var(--mono);
-    font-size: 13px;
-    color: var(--text);
-  }
-  .cell li .mark {
-    font-size: 9px;
-    color: var(--subtle);
-    transform: translateY(-1px);
-  }
-  .cell:hover li .mark {
-    color: var(--bright);
-  }
-  .looks {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 14px 28px;
-    padding: 22px var(--gutter);
-    border-bottom: 1px solid var(--rule);
-  }
-  .looks .hud {
-    margin: 0;
-    color: var(--text);
-  }
-  .dim {
-    color: var(--subtle);
-  }
-  .swatches {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-  .swatches li {
-    position: relative;
-  }
-  .sw {
-    display: block;
-    width: 22px;
-    height: 22px;
-    border-radius: 4px;
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
-    transition: transform 160ms ease;
-  }
-  .swatches li:hover .sw {
-    transform: translateY(-3px) scale(1.12);
-  }
-  .swatches .name {
-    position: absolute;
-    left: 50%;
-    top: -24px;
-    transform: translateX(-50%);
-    padding: 1px 6px;
-    border-radius: 3px;
-    background: var(--bright);
-    color: var(--bg);
-    font-family: var(--mono);
-    font-size: 10.5px;
-    white-space: nowrap;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 120ms linear;
-  }
-  .swatches li:hover .name {
-    opacity: 1;
-  }
-  .strip {
-    padding: clamp(56px, 8vw, 96px) var(--gutter) clamp(64px, 9vw, 112px);
-    display: grid;
-    gap: 26px;
-  }
-  .strip-head {
-    display: grid;
-    gap: 16px;
-  }
-  .strip-head .display {
-    font-size: clamp(28px, 4vw, 48px);
-  }
-  .strip-head code {
-    color: var(--bright);
-    font-size: 0.9em;
-  }
-  .controls {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 14px 48px;
-  }
-  .ctrl {
-    display: grid;
-    gap: 8px;
-    align-content: start;
-  }
-  .ctrl .hud {
-    margin: 0;
-    color: var(--text);
-  }
-  .ctrl .chips {
-    margin-left: -9px;
-  }
-  .panes {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    gap: 18px;
-    align-items: start;
-  }
-  .pane {
-    border: 1px solid var(--line);
-    border-radius: var(--box-radius);
-    background: rgba(14, 14, 14, 0.85);
-    overflow: hidden;
-  }
-  .pane header {
-    display: flex;
-    align-items: baseline;
-    gap: 2px;
-    padding: 9px 14px;
-    border-bottom: 1px solid var(--tint);
-    background: var(--bar);
-    white-space: nowrap;
-    overflow: hidden;
-  }
-  /* Short of room, the header shortens the folder path and keeps the file name and the tag whole. */
-  .pane header .hud {
-    flex: 0 1 auto;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    text-transform: none;
-    letter-spacing: 0.02em;
-    font-size: 11.5px;
-  }
-  .pane header .file {
-    flex: none;
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-family: var(--mono);
-    font-size: 11.5px;
-    color: var(--bright);
-  }
-  .pane .tag {
-    flex: none;
-    margin-left: auto;
-    padding-left: 12px;
-    font-family: var(--mono);
-    font-size: 10.5px;
-    color: var(--subtle);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-  .arrow {
-    align-self: center;
-    display: grid;
-    justify-items: center;
-    gap: 4px;
-    font-family: var(--mono);
-    color: var(--bright);
-    font-size: 20px;
-  }
-  .arrow .label {
-    font-size: 10px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--subtle);
-  }
-  .code {
-    margin: 0;
-    padding: 12px 14px;
-    font-size: 12px;
-    line-height: 1.7;
-    color: var(--text);
-    overflow: auto;
-    max-height: 560px;
-    scrollbar-width: thin;
-    scrollbar-color: var(--line) transparent;
-  }
-  .code :global(.line) {
-    display: block;
-    white-space: pre;
-    border-left: 2px solid transparent;
-    margin-left: -14px;
-    padding-left: 12px;
-    transition:
-      opacity 250ms ease,
-      color 250ms ease;
-  }
-  .code :global(.marker) {
-    color: var(--subtle);
-  }
-  .code :global(.marker .m) {
-    color: var(--muted);
-  }
-  .code :global(.drop) {
-    opacity: 0.32;
-    text-decoration: line-through;
-    text-decoration-color: rgba(255, 255, 255, 0.25);
-  }
-  .code :global(.new) {
-    animation: fresh 1.4s ease-out;
-  }
-  @keyframes fresh {
-    0% {
-      background: rgba(255, 255, 255, 0.14);
-      border-left-color: var(--bright);
-    }
-    100% {
-      background: transparent;
-      border-left-color: transparent;
-    }
-  }
-  @media (max-width: 1000px) {
-    .cells {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-    .panes {
-      grid-template-columns: minmax(0, 1fr);
-    }
-    /* Stacked panes: the label stays level, only the arrow turns to point down. */
-    .arrow {
-      grid-auto-flow: column;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-    }
-    .arrow .glyph {
-      transform: rotate(90deg);
-    }
-  }
-  @media (max-width: 600px) {
-    .cells {
-      grid-template-columns: minmax(0, 1fr);
-    }
-  }
-</style>
