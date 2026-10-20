@@ -4,26 +4,26 @@
  * the content between the rails, crosshair ticks where they meet, and a sticky
  * eyebrow — index, label, and a quiet note on the right.
  */
+import Ticks from "./Ticks.astro"
+
 interface Props {
   id: string
   index: string
   label: string
   note?: string
-  class?: string
 }
-const { id, index, label, note, class: className } = Astro.props
+const { id, index, label, note } = Astro.props
 ---
 
-<section id={id} class:list={["section", className]} data-choreo data-section={id}>
-  <span class="rule" aria-hidden="true"></span>
-  <div class="rail">
-    <span class="tick tl" aria-hidden="true"></span>
-    <span class="tick tr" aria-hidden="true"></span>
-    <div class="eyebrow">
-      <p class="hud" style="margin:0">
-        <span class="index">{index}</span><span class="sep">/</span><span class="label" data-decode>{label}</span>
+<section id={id} class="relative" data-choreo data-section={id}>
+  <span class="absolute inset-x-0 top-0 h-px origin-left bg-rule" aria-hidden="true" data-rule></span>
+  <div class="relative mx-auto max-w-rail border-x border-x-rule" data-rail>
+    <Ticks />
+    <div class="sticky top-nav z-20 flex items-center justify-between gap-16 border-b border-b-rule bg-bg/72 px-gutter py-11 backdrop-blur-[12px] backdrop-saturate-[1.1]">
+      <p class="hud m-0">
+        <span class="text-line">{index}</span><span class="mx-10 text-line">/</span><span class="text-text" data-decode>{label}</span>
       </p>
-      {note && <p class="hud note" style="margin:0">{note}</p>}
+      {note && <p class="hud m-0 text-right max-640:hidden">{note}</p>}
     </div>
     <slot />
   </div>

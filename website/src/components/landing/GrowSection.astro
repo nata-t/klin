@@ -1,16 +1,16 @@
 ---
+import SectionHead from "./SectionHead.astro"
 import SectionShell from "./SectionShell.astro"
 import { ACTS } from "../../lib/grow-acts"
 import { styleLine } from "../../lib/term-lines"
 ---
 
 <SectionShell id="grow" index="05" label="After day one" note="klin stays in the project">
-  <div class="section-head">
-    <h2 class="display" data-reveal>Starters end at create.<br />klin doesn't.</h2>
-    <p class="lede" data-reveal>
-      The CLI is a dev dependency of every project it makes, pinned to the version that made it. Scroll to run it.
-    </p>
-  </div>
+  <SectionHead>
+    <Fragment slot="title">Starters end at create.<br />klin doesn't.</Fragment>
+    The CLI is a dev dependency of every project it makes, pinned to the version that made it. Scroll to run it.
+
+  </SectionHead>
 
   <div class="story" data-story>
     <ol class="acts">

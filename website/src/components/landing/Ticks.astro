@@ -1,0 +1,8 @@
+---
+/** The crosshairs where a rail meets the rule above it, one at each top corner. Gone once the rail is full width. */
+const tick =
+  "pointer-events-none absolute -top-6 z-2 size-11 before:absolute before:inset-y-0 before:left-5 before:w-px before:bg-line after:absolute after:inset-x-0 after:top-5 after:h-px after:bg-line max-1280:hidden"
+---
+
+<span class:list={[tick, "-left-6"]} aria-hidden="true" data-tick></span>
+<span class:list={[tick, "-right-6"]} aria-hidden="true" data-tick></span>

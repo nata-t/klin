@@ -14,7 +14,7 @@ const { title, description } = Astro.props
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en" class="bg-bg [-webkit-text-size-adjust:100%] scheme-dark selection:bg-bright selection:text-bg">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -46,8 +46,10 @@ const { title, description } = Astro.props
       })()
     </script>
   </head>
-  <body>
-    <a class="skip" href="#main">Skip to content</a>
+  <body
+    class="m-0 min-h-screen overflow-x-clip bg-bg bg-[radial-gradient(120%_80%_at_50%_0%,#1a1a1a_0%,#141414_55%,#0f0f0f_100%)] bg-fixed font-sans text-[16px] leading-[1.6] text-text [-webkit-font-smoothing:antialiased] after:pointer-events-none after:fixed after:inset-0 after:z-100 after:bg-(image:--grain) after:opacity-5"
+  >
+    <a class="absolute -top-60 left-12 z-200 bg-bright px-12 py-8 font-mono text-[13px] text-bg focus:top-12" href="#main">Skip to content</a>
     <Nav />
     <main id="main">
       <slot />
@@ -59,20 +61,3 @@ const { title, description } = Astro.props
     </script>
   </body>
 </html>
-
-<style>
-  .skip {
-    position: absolute;
-    left: 12px;
-    top: -60px;
-    z-index: 200;
-    padding: 8px 12px;
-    background: var(--bright);
-    color: var(--bg);
-    font-family: var(--mono);
-    font-size: 13px;
-  }
-  .skip:focus {
-    top: 12px;
-  }
-</style>

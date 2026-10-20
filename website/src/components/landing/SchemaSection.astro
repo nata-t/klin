@@ -1,17 +1,16 @@
 ---
+import SectionHead from "./SectionHead.astro"
 import SectionShell from "./SectionShell.astro"
 import { FIELDS } from "../../lib/schema-demo"
 ---
 
 <SectionShell id="schema" index="03" label="One schema" note="packages/validators → form · API · types">
-  <div class="section-head">
-    <h2 class="display" data-reveal>Write the shape once.</h2>
-    <p class="lede" data-reveal>
-      In a klin project, one Zod schema validates the form, validates the request, shapes the response and types both apps. <code
-        >klin generate</code
-      > writes the example <code>name</code> field — snap on the fields you'd add and watch each one reach every layer.
-    </p>
-  </div>
+  <SectionHead>
+    <Fragment slot="title">Write the shape once.</Fragment>
+    In a klin project, one Zod schema validates the form, validates the request, shapes the response and types both apps.
+    <code class="text-[0.9em] text-bright">klin generate</code> writes the example <code class="text-[0.9em] text-bright">name</code> field —
+    snap on the fields you'd add and watch each one reach every layer.
+  </SectionHead>
 
   <div class="demo" data-schema-demo>
     <div class="fields" data-reveal>
@@ -81,11 +80,6 @@ import { FIELDS } from "../../lib/schema-demo"
 </script>
 
 <style>
-  .section-head code,
-  .lede code {
-    font-size: 0.9em;
-    color: var(--bright);
-  }
   .demo {
     padding: 0 var(--gutter) clamp(64px, 9vw, 112px);
     display: grid;
