@@ -11,6 +11,7 @@
 @layer base, starlight, theme, components, utilities;
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities) source(none);
+@import "../components/brand/hatch.css";
 
 @source "../components/docs";
 @source "../components/reference";
