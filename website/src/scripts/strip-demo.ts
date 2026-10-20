@@ -121,7 +121,7 @@ export function mountStripDemo(root: HTMLElement) {
       dbChips.forEach((c) => {
         const on = c === chip
         c.setAttribute("aria-checked", String(on))
-        c.querySelector(".mark")!.textContent = on ? "●" : "○"
+        c.querySelector("[data-mark]")!.textContent = on ? "●" : "○"
       })
       update()
     })
@@ -132,7 +132,7 @@ export function mountStripDemo(root: HTMLElement) {
       if (picked.has(id)) picked.delete(id)
       else picked.add(id)
       chip.setAttribute("aria-pressed", String(picked.has(id)))
-      chip.querySelector(".mark")!.textContent = picked.has(id) ? "◼" : "◻"
+      chip.querySelector("[data-mark]")!.textContent = picked.has(id) ? "◼" : "◻"
       update()
     })
   )
