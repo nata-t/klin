@@ -93,6 +93,19 @@
       transform: translateY(-6px);
     }
   }
+  /* A code line that just arrived flashes and fades: in the schema demo, and a little quicker in the strip demo. */
+  --animate-fresh: fresh 1.6s ease-out;
+  --animate-fresh-fast: fresh 1.4s ease-out;
+  @keyframes fresh {
+    0% {
+      background: rgba(255, 255, 255, 0.14);
+      border-left-color: var(--color-bright);
+    }
+    100% {
+      background: transparent;
+      border-left-color: transparent;
+    }
+  }
   /* The stack marquee. */
   --animate-slide: slide 60s linear infinite;
   @keyframes slide {

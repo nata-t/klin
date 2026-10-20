@@ -1,0 +1,17 @@
+---
+/**
+ * A code card's header: the folder path, then the file name. Short of room the path shortens and the
+ * name stays whole; anything in the slot (a tag) sits on the right.
+ */
+interface Props {
+  path: string
+  file: string
+}
+const { path, file } = Astro.props
+---
+
+<header class="flex items-baseline gap-2 overflow-hidden border-b border-b-tint bg-bar px-14 py-9 whitespace-nowrap">
+  <span class="hud min-w-0 flex-initial overflow-hidden text-[11.5px] tracking-[0.02em] text-ellipsis normal-case">{path}</span><span
+    class="max-w-full flex-none overflow-hidden font-mono text-[11.5px] text-ellipsis text-bright">{file}</span
+  ><slot />
+</header>

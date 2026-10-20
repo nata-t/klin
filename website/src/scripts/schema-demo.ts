@@ -23,8 +23,8 @@ export function mountSchemaDemo(root: HTMLElement) {
   const response = root.querySelector<HTMLElement>("[data-schema-response]")!
   const typeEl = root.querySelector<HTMLElement>("[data-schema-type]")!
   const wires = root.querySelector<SVGSVGElement>("[data-wires]")!
-  const grid = root.querySelector<HTMLElement>(".grid")!
-  const source = root.querySelector<HTMLElement>(".source")!
+  const grid = root.querySelector<HTMLElement>("[data-schema-grid]")!
+  const source = root.querySelector<HTMLElement>("[data-schema-source]")!
   const targets = [...root.querySelectorAll<HTMLElement>("[data-target]")]
 
   const active = () => FIELDS.filter((f) => on.has(f.id))
@@ -64,21 +64,25 @@ export function mountSchemaDemo(root: HTMLElement) {
 
   /* ─── The form ────────────────────────────────────────────────────── */
 
+  // While you're in a field it shows focus, not its error.
+  const control =
+    "h-36 rounded-[5px] border border-line bg-bg px-10 py-0 font-sans text-[14px] text-bright scheme-dark focus:border-muted focus:outline-none aria-invalid:not-focus:border-error"
+
   function inputFor(f: DemoField) {
     const value = values.get(f.id) ?? ""
     const id = `schema-${f.id}`
     if (f.input.kind === "select") {
       const options = f.input.options!.map((o) => `<option${o === value ? " selected" : ""}>${o}</option>`).join("")
-      return `<select id="${id}" data-input="${f.id}">${options}</select>`
+      return `<select class="${control}" id="${id}" data-input="${f.id}">${options}</select>`
     }
-    return `<input id="${id}" data-input="${f.id}" type="${f.input.kind}" value="${escape(value)}" ${f.input.kind === "number" ? 'inputmode="decimal" step="any"' : ""} autocomplete="off" />`
+    return `<input class="${control}" id="${id}" data-input="${f.id}" type="${f.input.kind}" value="${escape(value)}" ${f.input.kind === "number" ? 'inputmode="decimal" step="any"' : ""} autocomplete="off" />`
   }
 
   function renderForm() {
     inputs.innerHTML = active()
       .map(
         (f) =>
-          `<label class="${fresh.has(f.id) ? "new" : ""}" for="schema-${f.id}"><span>${f.label}${f.id === "notes" ? ' <span style="color:var(--subtle)">· optional</span>' : ""}</span>${inputFor(f)}<span class="msg" data-msg="${f.id}"></span></label>`
+          `<label class="grid gap-6 font-mono text-[12px] text-text${fresh.has(f.id) ? " animate-field-in" : ""}" for="schema-${f.id}"><span>${f.label}${f.id === "notes" ? ' <span class="text-subtle">· optional</span>' : ""}</span>${inputFor(f)}<span class="min-h-0 font-sans text-[12px] text-error" data-msg="${f.id}"></span></label>`
       )
       .join("")
     validate()
@@ -223,7 +227,7 @@ export function mountSchemaDemo(root: HTMLElement) {
     const id = chip.dataset.field!
     const sync = () => {
       chip.setAttribute("aria-pressed", String(on.has(id)))
-      chip.querySelector(".mark")!.textContent = on.has(id) ? "◼" : "◻"
+      chip.querySelector("[data-mark]")!.textContent = on.has(id) ? "◼" : "◻"
     }
     sync()
     chip.addEventListener("click", () => {
