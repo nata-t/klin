@@ -1,9 +1,10 @@
 // The klin mark and wordmark as vector geometry.
 //
-// The mark is a K drawn as a dependency graph: five package nodes on a grid
-// (stem top, middle and bottom; arm and leg ends), joined by wires at 0° and
-// 45° — the shape of a monorepo. The wordmark is a geometric lowercase "klin"
-// whose k shares the mark's 45° chevron.
+// The mark is an egg with its first crack, the cap lifted: something new
+// hatching. The shell's top half is half an ellipse, its bottom a half
+// circle; the crack runs level in from both sides, then zigzags in three 45°
+// teeth; the cap sits a little above the shell, an even gap apart. The
+// wordmark is a geometric lowercase "klin".
 //
 // Coordinates are screen space (y down). Every outline is clockwise, so the
 // overlapping parts of one path fill as a union.
@@ -57,22 +58,50 @@ function clockwise(verts) {
   return a >= 0 ? verts : [...verts].reverse()
 }
 
-/**
- * The graph mark. `u` is the grid step, `n` the node size, `e` the wire width
- * and `rn` the node corner radius. The small-size cut thickens the wires.
- */
-export function mark({ u = 50, n = 46, e = 14, rn = 10 } = {}) {
-  const at = (cx, cy) => ({ x: cx * u, y: cy * u })
-  const T = at(0, 0), J = at(0, 2), B = at(0, 4), A = at(2, 0), L = at(2, 4)
-  const node = (c) => [P(c.x - n / 2, c.y - n / 2, rn), P(c.x + n / 2, c.y - n / 2, rn), P(c.x + n / 2, c.y + n / 2, rn), P(c.x - n / 2, c.y + n / 2, rn)]
-  const wire = (p, q) => {
-    const d = norm(sub(q, p))
-    const o = { x: -d.y * (e / 2), y: d.x * (e / 2) }
-    return clockwise([P(p.x + o.x, p.y + o.y), P(q.x + o.x, q.y + o.y), P(q.x - o.x, q.y - o.y), P(p.x - o.x, p.y - o.y)])
+/** Offsets an open polyline sideways by `d` (positive = left of travel, i.e. up for a line running right), mitred. */
+function offsetLine(pts, d) {
+  const segs = []
+  for (let i = 0; i < pts.length - 1; i++) {
+    const dir = norm(sub(pts[i + 1], pts[i]))
+    const n = { x: dir.y * d, y: -dir.x * d }
+    segs.push({ p: add(pts[i], n), q: add(pts[i + 1], n), dir })
   }
-  const d = [wire(T, B), wire(J, A), wire(J, L)].map(outline).join("") + [T, J, B, A, L].map((c) => outline(node(c))).join("")
-  const h = n / 2
-  return { d, box: { x0: -h, y0: -h, x1: 2 * u + h, y1: 4 * u + h } }
+  const out = [segs[0].p]
+  for (let i = 1; i < segs.length; i++) out.push(meet(segs[i - 1].p, segs[i - 1].dir, segs[i].p, segs[i].dir))
+  out.push(segs[segs.length - 1].q)
+  return out
+}
+
+/**
+ * The egg mark, centred on x = 0 with the shell's widest point at y = 0.
+ * `rx` is the half-width, `ry` the height of the top half, `yc` the crack's
+ * level, `tooth` its teeth's width (and depth), `g` the gap along the crack
+ * and `lift` how far the cap sits above the shell. The small-size cut opens
+ * the gap and the lift. Returns the cap and the shell as separate paths (the
+ * website animates the cap) and both together as `d`.
+ */
+export function mark({ rx = 76, ry = 102, yc = -50, tooth = 26, g = 12, lift = 12 } = {}) {
+  /** Where the top half's outline is at height y (y ≤ 0), on the left (-1) or right (1). */
+  const xAt = (y, side) => side * rx * Math.sqrt(1 - (y / ry) ** 2)
+  const xs = [-2, -1, 0, 1, 2].map((k) => k * tooth)
+  const crack = [P(xAt(yc, -1), yc), ...xs.map((x, i) => P(x, i % 2 ? yc + tooth : yc)), P(xAt(yc, 1), yc)]
+  // The crack's level ends move with the offset, so they're put back on the outline.
+  const ends = (pts) => {
+    const out = [...pts]
+    out[0] = P(xAt(out[0].y, -1), out[0].y)
+    out[out.length - 1] = P(xAt(out[out.length - 1].y, 1), out[out.length - 1].y)
+    return out
+  }
+  const up = ends(offsetLine(crack, g / 2)).map((p) => P(p.x, p.y - lift))
+  const dn = ends(offsetLine(crack, -g / 2))
+  const line = (pts) => pts.map((p) => `L${f(p.x)} ${f(p.y)}`).join("")
+  const shell =
+    `M${f(dn[0].x)} ${f(dn[0].y)}${line(dn.slice(1))}` +
+    `A${rx} ${ry} 0 0 1 ${rx} 0A${rx} ${rx} 0 0 1 0 ${rx}A${rx} ${rx} 0 0 1 ${-rx} 0` +
+    `A${rx} ${ry} 0 0 1 ${f(dn[0].x)} ${f(dn[0].y)}Z`
+  const last = up[up.length - 1]
+  const cap = `M${f(up[0].x)} ${f(up[0].y)}A${rx} ${ry} 0 0 1 ${f(last.x)} ${f(last.y)}${line(up.slice(0, -1).reverse())}Z`
+  return { d: cap + shell, cap, shell, box: { x0: -rx, y0: -ry - lift, x1: rx, y1: rx } }
 }
 
 /** The geometric lowercase "klin" (baseline y = 0, ascender 180). */

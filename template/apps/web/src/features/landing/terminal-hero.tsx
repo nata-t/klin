@@ -1,38 +1,17 @@
 import { useEffect, useState, useSyncExternalStore } from "react"
 
 /**
- * The klin logo in the same pixel art the CLI prints: the mark (a K drawn as
- * a dependency graph) and "klin", two square pixels per character.
+ * The klin logo in the same pixel art the CLI prints: the mark (an egg with
+ * its first crack, the cap lifted) and "klin", two square pixels per character.
  */
 const LOGO = [
-  "██   ██",
-  "█  ▄▀      ██      ██  ██",
-  "█▄▀        ██  ▄▄  ██  ▄▄  ▄▄▄▄▄",
-  "█▀▄        ██▄█▀   ██  ██  ██▀▀██",
-  "█  ▀▄      ███▄    ██  ██  ██  ██",
-  "██   ██    ██ ▀█▄  ██  ██  ██  ██",
+  "  ▄████▄",
+  " ▀█▀  ▀█▀     ██      ██  ██",
+  " ▄ ▄██▄ ▄     ██  ▄▄  ██  ▄▄  ▄▄▄▄▄",
+  "██████████    ██▄█▀   ██  ██  ██▀▀██",
+  "▀████████▀    ███▄    ██  ██  ██  ██",
+  "  ▀████▀      ██ ▀█▄  ██  ██  ██  ██",
 ]
-/** Which cells of LOGO are the mark's wires (`+`), drawn quieter than the nodes and letters. */
-const WIRES = [
-  "",
-  "+  ++",
-  "  +",
-  "  +",
-  "+  ++",
-  "",
-]
-
-/** Splits a row into runs of wire and solid cells, so each run gets one color. */
-function runs(line: string, wires: string) {
-  const out: Array<{ text: string; wire: boolean }> = []
-  ;[...line].forEach((ch, i) => {
-    const wire = wires[i] === "+"
-    const last = out[out.length - 1]
-    if (last && last.wire === wire) last.text += ch
-    else out.push({ text: ch, wire })
-  })
-  return out
-}
 
 // klin:if pnpm
 const DEV_COMMAND = "pnpm dev"
@@ -109,13 +88,8 @@ export function TerminalHero() {
       <div className="bg-[radial-gradient(ellipse_at_center,rgb(255_255_255/0.05),transparent_70%)] px-4 py-6 sm:px-8 sm:py-8">
         <pre aria-label="klin" className="mx-auto w-fit max-w-full overflow-hidden text-[6.5px] leading-none min-[400px]:text-[8px] sm:text-xs">
           {LOGO.map((line, row) => (
-            <span key={row} className="block" aria-hidden>
-              {/* Nodes and letters in white, the wires between the nodes in gray — like the CLI. */}
-              {runs(line, WIRES[row] ?? "").map((run, i) => (
-                <span key={i} className={run.wire ? "text-neutral-500" : "text-neutral-50"}>
-                  {run.text}
-                </span>
-              ))}
+            <span key={row} className="block text-neutral-50" aria-hidden>
+              {line}
             </span>
           ))}
         </pre>

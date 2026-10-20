@@ -46,7 +46,7 @@ class Screen {
     this.paint()
   }
 
-  /** The band of light across the logo, as when the CLI's screen first opens. */
+  /** The egg hatching and the band of light across the logo, as when the CLI's screen first opens. */
   playIntro() {
     playIntro()
     clearInterval(this.sweep)

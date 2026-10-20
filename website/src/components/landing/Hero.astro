@@ -2,7 +2,7 @@
 import { logoArt, logoShade } from "@cli/ui/logo"
 import { INSTALL, VERSION } from "../../lib/site"
 
-// No-JS fallback for the canvas logo: nodes and letters in the chrome gradient, wires in gray.
+// No-JS fallback for the canvas logo: the egg and the letters in the chrome gradient.
 const art = logoArt(10)
 const fallback = art.lines.map((line) => [...line.padEnd(art.width)].map((ch) => ({ ch, color: "transparent" })))
 for (const cell of art.cells) {
