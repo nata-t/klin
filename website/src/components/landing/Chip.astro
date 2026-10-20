@@ -6,8 +6,12 @@
  */
 import type { HTMLAttributes } from "astro/types"
 
-type Props = HTMLAttributes<"button"> & { mark: string }
-const { mark, class: className, ...attrs } = Astro.props
+type Props = HTMLAttributes<"button"> & {
+  mark: string
+  /** Extra classes for the glyph. */
+  markClass?: string
+}
+const { mark, markClass, class: className, ...attrs } = Astro.props
 ---
 
 <button
@@ -19,6 +23,6 @@ const { mark, class: className, ...attrs } = Astro.props
   type="button"
   {...attrs}
 >
-  <span class="w-[1ch] text-center" aria-hidden="true" data-mark>{mark}</span>
+  <span class:list={["w-[1ch] text-center", markClass]} aria-hidden="true" data-mark>{mark}</span>
   <slot />
 </button>
