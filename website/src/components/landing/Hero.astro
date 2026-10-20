@@ -1,16 +1,17 @@
 ---
-import { logoArt, logoShade } from "@cli/ui/logo"
+import { logoShade } from "@cli/ui/logo"
+import { heroLogo } from "../../lib/hero-logo"
 import { INSTALL, VERSION } from "../../lib/site"
 
-// No-JS fallback for the canvas logo: the egg and the letters in the chrome gradient.
-const art = logoArt(10)
-const fallback = art.lines.map((line) => [...line.padEnd(art.width)].map((ch) => ({ ch, color: "transparent" })))
-for (const cell of art.cells) {
-  const level = logoShade(cell.kind, cell.row, art.height)
+// No-JS fallback for the canvas logo: what the opening settles on, the word in the chrome gradient.
+const art = heroLogo()
+const fallback = Array.from({ length: art.rows }, () => Array.from({ length: art.columns }, () => ({ ch: " ", color: "transparent" })))
+for (const cell of art.word) {
+  const level = logoShade(cell.kind, cell.row, art.rows)
   fallback[cell.row]![cell.col] = { ch: cell.ch, color: `rgb(${level},${level},${level})` }
 }
 // The slot keeps the art's shape: columns wide, rows × the cell's height-to-width ratio tall.
-const slotShape = `--cols: ${art.width}; aspect-ratio: ${art.width} / ${(art.height * 2.05).toFixed(2)}`
+const slotShape = `--cols: ${art.columns}; aspect-ratio: ${art.columns} / ${(art.rows * 2.05).toFixed(2)}`
 ---
 
 <section id="intro" class="hero section" data-section="intro">
@@ -19,7 +20,7 @@ const slotShape = `--cols: ${art.width}; aspect-ratio: ${art.width} / ${(art.hei
   <div class="corners" aria-hidden="true">
     <p class="hud c-tl">create-klin v{VERSION}</p>
     <p class="hud c-tr">◆ 1 / 6 · intro</p>
-    <p class="hud c-bl" data-hero-count>parts 0 / {art.parts} snapped</p>
+    <p class="hud c-bl" data-hero-count>parts 0 / 4 snapped</p>
     <p class="hud c-br" data-hero-pointer>x 0000 · y 0000</p>
   </div>
 
@@ -148,7 +149,7 @@ const slotShape = `--cols: ${art.width}; aspect-ratio: ${art.width} / ${(art.hei
   }
   .logo-slot {
     position: relative;
-    width: min(500px, 86%);
+    width: min(250px, 58%);
     display: grid;
     place-items: center;
     margin-bottom: clamp(18px, 3vw, 34px);
@@ -157,7 +158,7 @@ const slotShape = `--cols: ${art.width}; aspect-ratio: ${art.width} / ${(art.hei
   .logo-fallback {
     margin: 0;
     /* One monospace cell (≈0.6em wide) per column of the slot. */
-    font-size: min(calc(500px / var(--cols) / 0.6), calc(86vw / var(--cols) / 0.6));
+    font-size: min(calc(250px / var(--cols) / 0.6), calc(58vw / var(--cols) / 0.6));
     line-height: 1.02;
     letter-spacing: 0;
   }

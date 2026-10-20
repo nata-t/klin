@@ -11,21 +11,12 @@ import { colorEnabled, type Style, unicode } from "./theme";
 export type { LogoPose, LogoSize } from "./logo-art";
 export { LID_CLOSED, logoArt } from "./logo-art";
 
-/** The regular lockup as text — the banner and the generated app's hero use it. */
+/** The regular lockup as text — the generated app's landing terminal copies it. */
 export const LOGO = logoArt(6).lines;
 
-/** Columns the logo needs. */
-export function logoWidth(size: LogoSize) {
-  return logoArt(size).width;
-}
-
-/** The largest logo that fits in `rows` × `columns` (the one-liner always "fits"). */
-export function logoSizeFor(rows: number, columns: number): LogoSize {
-  if (unicode && rows >= 10 && columns >= logoWidth(10) + 4) return 10;
-  if (unicode && rows >= 6 && columns >= logoWidth(6) + 4) return 6;
-  if (unicode && rows >= 3 && columns >= logoWidth(3) + 4) return 3;
-  return 1;
-}
+/** The small egg the CLI's screens and the banner draw: 5 columns, 3 rows. */
+export const MARK_WIDTH = 5;
+export const MARK_HEIGHT = 3;
 
 /* ─── The intro: the egg hatches, then a band of light sweeps across ───── */
 
@@ -69,7 +60,7 @@ export function hatchPose(size: LogoSize, ms: number): LogoPose {
 }
 
 /** The egg right now: mid-hatch while the intro runs, otherwise at rest. */
-function pose(size: LogoSize): LogoPose | undefined {
+export function pose(size: LogoSize): LogoPose | undefined {
   if (!introRunning()) return undefined;
   return hatchPose(size, Date.now() - introStart);
 }
@@ -78,7 +69,7 @@ function pose(size: LogoSize): LogoPose | undefined {
  * Where the band of light is (0..1 across the logo), or null outside the
  * sweep — the settled logo has no band, so the sweep ends without a jump.
  */
-function band(): number | null {
+export function band(): number | null {
   if (!introRunning()) return null;
   const t = (Date.now() - introStart - SWEEP_AT) / SWEEP_MS;
   if (t < 0) return null;
@@ -101,31 +92,22 @@ export function logoShade(kind: CellKind, row: number, rows: number) {
 }
 
 /**
- * Draws the logo centered in [x, x + w) from row `y`: the egg and the
- * wordmark — and, the first time the screen opens, the egg hatching and the
- * CLI's band of light sweeping across.
+ * Draws the small egg with its top-left at (x, y) — and, the first time the
+ * screen opens, the egg hatching and the CLI's band of light sweeping across.
+ * Only where Unicode block characters are safe; returns whether it drew.
  */
-export function drawLogo(
-  canvas: Canvas,
-  x: number,
-  w: number,
-  y: number,
-  size: LogoSize,
-) {
-  // Centered on the resting art, so the wobble moves the egg and not the logo.
-  const left = x + Math.floor((w - logoArt(size).width) / 2);
-  const art = logoArt(size, pose(size));
+export function drawMark(canvas: Canvas, x: number, y: number) {
+  if (!unicode) return false;
+  const art = logoArt(3, pose(3));
   const light = band();
   for (const cell of art.cells) {
+    if (cell.kind === "text") continue;
     let shade = logoShade(cell.kind, cell.row, art.height);
     if (light !== null) {
-      const position = (cell.col + cell.row * 2) / (art.width + art.height * 2);
-      const glow = Math.max(0, 1 - Math.abs(position - light) * 6);
-      shade = Math.round(shade + (0xff - shade) * glow);
+      const position = (cell.col + cell.row * 2) / (MARK_WIDTH + MARK_HEIGHT * 2);
+      shade = Math.round(shade + (0xff - shade) * Math.max(0, 1 - Math.abs(position - light) * 3));
     }
-    canvas.text(left + cell.col, y + cell.row, cell.ch, {
-      fg: level(shade),
-      bold: cell.kind === "text",
-    });
+    canvas.text(x + cell.col, y + cell.row, cell.ch, { fg: level(shade) });
   }
+  return true;
 }

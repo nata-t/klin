@@ -110,7 +110,7 @@ bunx create-klin my-app --preset saas -y     # no questions
 ### The wizard
 
 In a terminal, `create-klin` opens a full-screen, grayscale wizard — a step
-indicator on top, the klin logo under it (sized to fit the terminal), everything
+indicator on top, the small klin egg beside the version in the corner, everything
 centered — six steps, each a page of text chips you snap on and off:
 
 1. **Base** — name your kit (validated live: `✓ ./my-app is free to use`), package manager, a preset to start from

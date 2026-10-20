@@ -1,17 +1,14 @@
 import { Canvas } from "./canvas"
-import { drawLogo, logoSizeFor } from "./logo"
+import { drawMark, MARK_HEIGHT, MARK_WIDTH } from "./logo"
 import type { Key } from "./term"
 import { colorEnabled, depth, hue, type RGB, type Style, sym, truncate, unicode, width, wrap } from "./theme"
 
 /**
  * One full-screen page of the CLI, centered on a softly vignetted background:
  *
- *                                                                     v0.2.0
- *             ✓ 1 BASE ┈┈ ◆ 2 STACK ┈┈ ○ 3 AUTH ┈┈ ○ 4 TOOLBOX ┈┈ …
- *
- *                        ██   ██
- *                        █  ▄▀      ██      ██  ██
- *                        …the klin logo, sized to fit…
+ *                                                               ▄█▀█▄
+ *             ✓ 1 BASE ┈┈ ◆ 2 STACK ┈┈ ○ 3 AUTH ┈┈ ○ 4 TOOLBOX  ▄▄█▄▄  v0.2.0
+ *                                                               ▀███▀
  *
  *                              Pick your engine.
  *                 How the API is built and where the data lives.
@@ -104,8 +101,8 @@ export interface Page {
   /** Help text when nothing is highlighted (summary/progress pages). */
   help?: { title: string; text: string }
   /**
-   * Rows to keep free for the page body at a terminal width — the tallest page
-   * of a multi-step flow — so the logo keeps one size on every page of it.
+   * Rows to keep for the page body at a terminal width — the tallest page of a
+   * multi-step flow — so every page of it starts on the same row.
    */
   room?: (width: number) => number
 }
@@ -355,22 +352,17 @@ export class Form {
     const blocks = this.layout(bodyW)
     const height = sum(blocks)
 
-    // The logo and the page are centered together under the steps; the logo
-    // shrinks (full letters → folded → one line) to leave the page room — the
-    // room of the flow's tallest page, so it doesn't change size between steps.
-    const size = logoSizeFor(avail - Math.max(height, this.page.room?.(w) ?? 0) - 1, w)
-    const logoH = size + 1
-    if (logoH + height <= avail) {
+    // The page is centered under the steps, placed where the flow's tallest
+    // page would start, so it doesn't jump from step to step.
+    if (height <= avail) {
       this.scroll = 0
-      const y = top + Math.floor((avail - logoH - height) / 2)
-      drawLogo(canvas, 0, w, y, size)
-      this.drawBlocks(canvas, blocks, left, y + logoH, bodyW)
+      const tallest = Math.min(avail, Math.max(height, this.page.room?.(w) ?? 0))
+      this.drawBlocks(canvas, blocks, left, top + Math.floor((avail - tallest) / 2), bodyW)
       return this.finish(canvas, w, h)
     }
 
-    // Not enough room: the one-line logo stays put and the page scrolls under it.
-    drawLogo(canvas, 0, w, top, 1)
-    const from = top + 2
+    // Not enough room: the page scrolls under the steps.
+    const from = top
     const room = bottom - from
     const [focusTop, focusBottom] = this.focusOffset(blocks)
     if (focusTop - this.scroll < 0) this.scroll = focusTop
@@ -398,20 +390,29 @@ export class Form {
   }
 
   /**
-   * The step indicator (or the page title) on its own line at the top, the
-   * version in the corner. Returns the first row free below it.
+   * The step indicator (or the page title) on its own line at the top, and in
+   * the corner the small klin egg with the version beside it. When the steps
+   * would run into the egg they move down under it. Returns the first row
+   * free below them.
    */
   private topLine(canvas: Canvas, w: number, h: number): number {
-    const y = h >= 20 ? 1 : 0
     const { steps, title, version } = this.page
     const segments = steps ? (stepSegments(steps, w - 4) ?? []) : title ? ([[truncate(title, w - 4), S.muted]] as Segment[]) : []
     const x = Math.floor((w - segmentsWidth(segments)) / 2)
-    drawSegments(canvas, x, y, segments)
-    // Above the steps when there's a spare row; beside them only if they don't touch.
-    if (version) {
-      const vx = w - width(version) - 2
-      if (y > 0 || vx > x + segmentsWidth(segments) + 2) canvas.text(vx, 0, version, S.line)
+    const y = h >= 20 ? 1 : 0
+    const vx = version ? w - width(version) - 2 : w
+    const mx = vx - 2 - MARK_WIDTH
+    // The egg spans the top three rows with the version beside its middle one.
+    if (version && h >= 16 && mx > 2 && drawMark(canvas, mx, 0)) {
+      canvas.text(vx, 1, version, S.line)
+      const below = x + segmentsWidth(segments) + 2 >= mx
+      const row = below ? MARK_HEIGHT : y
+      drawSegments(canvas, x, row, segments)
+      return Math.max(row + 2, MARK_HEIGHT + 1)
     }
+    drawSegments(canvas, x, y, segments)
+    // No room for the egg: just the version, above the steps or beside them if they don't touch.
+    if (version && (y > 0 || vx > x + segmentsWidth(segments) + 2)) canvas.text(vx, 0, version, S.line)
     return y + 2
   }
 

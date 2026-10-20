@@ -59,7 +59,7 @@ const PM_ABOUT: Record<PackageManager, string> = {
 const NAME_ABOUT =
   "This becomes the folder and the package name. Use lowercase letters, numbers and dashes — spaces turn into dashes as you type."
 
-/** The wizard's room, kept for the build page that follows it so the logo doesn't change size there either. */
+/** The wizard's room, kept for the build page that follows it so that page starts on the same row too. */
 let flowRoom: ((width: number) => number) | undefined
 
 export async function wizard(input: WizardInput): Promise<WizardResult | Cancel> {
@@ -284,7 +284,7 @@ export async function wizard(input: WizardInput): Promise<WizardResult | Cancel>
   }
 
   const layoutOf = (index: number) => (index === 0 ? basePage() : index === labels.length - 1 ? reviewPage() : stepPage(index))
-  /** Room for the tallest step at this width, so the logo keeps one size from step to step. */
+  /** Room for the tallest step at this width, so every step starts on the same row. */
   const room = (width: number) => Math.max(...labels.map((_, i) => new Form(layoutOf(i)).bodyHeight(width)))
   flowRoom = room
   const pageFor = (index: number): Page => ({ ...layoutOf(index), room })
