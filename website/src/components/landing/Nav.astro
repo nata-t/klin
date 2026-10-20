@@ -1,174 +1,48 @@
 ---
 import KlinLockup from "../brand/KlinLockup.astro"
 import { REPO, STEPS, VERSION } from "../../lib/site"
+
+// The nav's three parts assemble one after another at the opening's instrument beat.
+const part = "assemble before-instrument:opacity-0 before-instrument:transform-[translateY(-6px)]"
 ---
 
-<header class="nav" id="site-nav">
-  <div class="inner">
-    <a class="brand hatch-hover" href="#intro" aria-label="klin, back to the top">
-      <KlinLockup class="lockup" />
+<header class="fixed inset-x-0 top-0 z-50 h-nav border-b border-b-rule bg-bg/70 backdrop-blur-[14px] backdrop-saturate-[1.15]" id="site-nav">
+  <div class="mx-auto grid h-full max-w-rail grid-cols-[auto_1fr_auto] items-center gap-24 px-gutter font-mono text-[11.5px] tracking-[0.12em] uppercase max-720:gap-12">
+    <a class:list={[part, "hatch-hover inline-flex items-center text-text no-underline hover:text-white"]} href="#intro" aria-label="klin, back to the top">
+      <KlinLockup class="block h-20 w-auto" />
     </a>
 
-    <nav class="steps" aria-label="Sections">
-      <ol>
+    <nav class:list={[part, "min-w-0 justify-self-center delay-80"]} aria-label="Sections">
+      <ol class="m-0 flex list-none items-center p-0 max-720:hidden">
         {
           STEPS.map((step, i) => (
-            <li>
-              {i > 0 && <span class="joint" aria-hidden="true" />}
-              <a href={`#${step.id}`} data-step={step.id} data-state={i === 0 ? "here" : "ahead"}>
-                <span class="mark" aria-hidden="true">
+            <li class="flex items-center">
+              {i > 0 && <span class="mx-6 h-px w-22 bg-[linear-gradient(90deg,var(--color-line)_50%,transparent_0)] bg-size-[4px_1px] max-1080:w-12" aria-hidden="true" />}
+              <a
+                class="inline-flex items-center gap-6 rounded-[3px] px-6 py-4 text-subtle no-underline transition-[color,background-color] duration-160 ease-linear hover:bg-lift hover:text-text data-[state=here]:font-[650] data-[state=here]:text-bright data-[state=passed]:text-muted"
+                href={`#${step.id}`}
+                data-step={step.id}
+                data-state={i === 0 ? "here" : "ahead"}
+              >
+                <span class="w-[1ch] text-center" aria-hidden="true" data-mark>
                   {i === 0 ? "◆" : "○"}
                 </span>
-                <span class="num">{i + 1}</span>
-                <span class="name">{step.label}</span>
+                <span>{i + 1}</span>
+                <span class="max-1080:hidden">{step.label}</span>
               </a>
             </li>
           ))
         }
       </ol>
-      <p class="compact" aria-hidden="true">
-        <span class="mark">◆</span> <span data-compact-num>1</span>/{STEPS.length} <span data-compact-name>{STEPS[0].label}</span>
+      <p class="m-0 hidden text-bright max-720:block" aria-hidden="true">
+        <span>◆</span> <span data-compact-num>1</span>/{STEPS.length} <span data-compact-name>{STEPS[0].label}</span>
       </p>
     </nav>
 
-    <div class="links">
-      <a href="/docs/">Docs</a>
-      <a href={REPO} rel="noopener">GitHub</a>
-      <span class="version">v{VERSION}</span>
+    <div class:list={[part, "flex items-center gap-18 delay-160"]}>
+      <a class="text-muted no-underline transition-[color] duration-120 ease-linear hover:text-bright" href="/docs/">Docs</a>
+      <a class="text-muted no-underline transition-[color] duration-120 ease-linear hover:text-bright" href={REPO} rel="noopener">GitHub</a>
+      <span class="text-line max-720:hidden">v{VERSION}</span>
     </div>
   </div>
 </header>
-
-<style>
-  .nav {
-    position: fixed;
-    inset: 0 0 auto 0;
-    z-index: 50;
-    height: var(--nav-h);
-    border-bottom: 1px solid var(--rule);
-    background: rgba(20, 20, 20, 0.7);
-    backdrop-filter: blur(14px) saturate(1.15);
-    -webkit-backdrop-filter: blur(14px) saturate(1.15);
-  }
-  .inner {
-    height: 100%;
-    max-width: var(--rail);
-    margin: 0 auto;
-    padding: 0 var(--gutter);
-    display: grid;
-    grid-template-columns: auto 1fr auto;
-    align-items: center;
-    gap: 24px;
-    font-family: var(--mono);
-    font-size: 11.5px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-  }
-  .brand {
-    display: inline-flex;
-    align-items: center;
-    color: var(--text);
-    text-decoration: none;
-    transition: color 160ms linear;
-  }
-  .brand:hover {
-    color: var(--white);
-  }
-  .brand .lockup {
-    display: block;
-    height: 20px;
-    width: auto;
-  }
-  .steps {
-    justify-self: center;
-    min-width: 0;
-  }
-  .steps ol {
-    display: flex;
-    align-items: center;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-  .steps li {
-    display: flex;
-    align-items: center;
-  }
-  .joint {
-    width: 22px;
-    height: 1px;
-    margin: 0 6px;
-    background-image: linear-gradient(90deg, var(--line) 50%, transparent 0);
-    background-size: 4px 1px;
-  }
-  .steps a {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 6px;
-    border-radius: 3px;
-    color: var(--subtle);
-    text-decoration: none;
-    transition:
-      color 160ms linear,
-      background-color 160ms linear;
-  }
-  .steps a:hover {
-    background: var(--lift);
-    color: var(--text);
-  }
-  .steps a[data-state="passed"] {
-    color: var(--muted);
-  }
-  .steps a[data-state="here"] {
-    color: var(--bright);
-    font-weight: 650;
-  }
-  .steps .mark {
-    width: 1ch;
-    text-align: center;
-  }
-  .compact {
-    display: none;
-    margin: 0;
-    color: var(--bright);
-  }
-  .links {
-    display: flex;
-    align-items: center;
-    gap: 18px;
-  }
-  .links a {
-    color: var(--muted);
-    text-decoration: none;
-    transition: color 120ms linear;
-  }
-  .links a:hover {
-    color: var(--bright);
-  }
-  .version {
-    color: var(--line);
-  }
-  @media (max-width: 1080px) {
-    .steps .name {
-      display: none;
-    }
-    .joint {
-      width: 12px;
-    }
-  }
-  @media (max-width: 720px) {
-    .steps ol {
-      display: none;
-    }
-    .compact {
-      display: block;
-    }
-    .version {
-      display: none;
-    }
-    .inner {
-      gap: 12px;
-    }
-  }
-</style>

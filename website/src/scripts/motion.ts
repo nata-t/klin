@@ -118,7 +118,7 @@ function setStep(current: number) {
     if (!link) return
     const state = i < current ? "passed" : i === current ? "here" : "ahead"
     link.dataset.state = state
-    link.querySelector(".mark")!.textContent = state === "passed" ? "✓" : state === "here" ? "◆" : "○"
+    link.querySelector("[data-mark]")!.textContent = state === "passed" ? "✓" : state === "here" ? "◆" : "○"
     if (state === "here") link.setAttribute("aria-current", "step")
     else link.removeAttribute("aria-current")
   })
