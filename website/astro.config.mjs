@@ -1,5 +1,6 @@
 // @ts-check
 import starlight from "@astrojs/starlight"
+import tailwindcss from "@tailwindcss/vite"
 import { defineConfig } from "astro/config"
 import starlightLinksValidator from "starlight-links-validator"
 import { cliBridge, cliSrc } from "./cli-bridge.mjs"
@@ -116,7 +117,7 @@ export default defineConfig({
     }),
   ],
   vite: {
-    plugins: [cliBridge()],
+    plugins: [tailwindcss(), cliBridge()],
     resolve: { alias: { "@cli": cliSrc } },
   },
 })

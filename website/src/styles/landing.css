@@ -1,61 +1,151 @@
 /*
- * The klin landing page. Same rules as the CLI (packages/create-klin/src/ui/theme.ts):
- * grayscale, white to black, hierarchy carried by brightness, weight and
- * glyphs instead of hue. The only colors are the status pair (red errors,
- * amber warnings) and theme swatches, which preview real colors.
+ * The klin landing page, styled with Tailwind. Same rules as the CLI
+ * (packages/create-klin/src/ui/theme.ts): grayscale, white to black, hierarchy
+ * carried by brightness, weight and glyphs instead of hue. The only colors are
+ * the status pair (red errors, amber warnings) and theme swatches, which
+ * preview real colors.
  *
  * Structure borrows an instrument's vocabulary: hairline rails, crosshair
  * ticks where they meet, mono micro-labels. Boxes keep the CLI's rounded
  * ╭ ╮ corners; rails and rules stay square.
+ *
+ * Tailwind's theme and utilities, without its Preflight reset: the page keeps
+ * the browser defaults it was designed on, plus the small base below.
  */
 
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities) source(none);
+
+@source "../layouts/Landing.astro";
+@source "../pages/index.astro";
+@source "../components/landing";
+@source "../components/brand";
+@source "../scripts";
+@source "../lib";
+
+@theme {
+  /* The CLI's grays (theme.ts `gray`) and nothing else: no hue sneaks in through a utility. */
+  --color-*: initial;
+  --color-bg: #141414;
+  --color-bar: #1c1c1c;
+  --color-tint: #242424;
+  --color-lift: #303030;
+  --color-line: #444444;
+  --color-subtle: #6a6a6a;
+  --color-muted: #929292;
+  --color-text: #c4c4c4;
+  --color-bright: #eeeeee;
+  --color-white: #ffffff;
+  --color-error: #f87171;
+  --color-warn: #fbbf24;
+  --color-rule: rgba(255, 255, 255, 0.075);
+
+  --font-*: initial;
+  --font-sans: "Geist Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Pixel units, as the page was drawn: p-14 is 14px, gap-22 is 22px. */
+  --spacing: 1px;
+  --spacing-gutter: clamp(16px, 4vw, 40px);
+  --spacing-nav: 52px;
+  --spacing-ruler: 64px;
+  --container-rail: 1240px;
+
+  --radius-*: initial;
+  --radius-box: 7px;
+
+  /* Font sizes are set in px where they're used; Tailwind's scale would bring line heights along. */
+  --text-*: initial;
+  --breakpoint-*: initial;
+}
+
+/* The page's breakpoints, desktop-first: max-720 is (max-width: 720px), inclusive, as before.
+   Widest first, so a narrower one wins. */
+@custom-variant max-1280 (@media (max-width: 1280px));
+@custom-variant max-1080 (@media (max-width: 1080px));
+@custom-variant max-1000 (@media (max-width: 1000px));
+@custom-variant max-960 (@media (max-width: 960px));
+@custom-variant max-860 (@media (max-width: 860px));
+@custom-variant max-760 (@media (max-width: 760px));
+@custom-variant max-720 (@media (max-width: 720px));
+@custom-variant max-640 (@media (max-width: 640px));
+@custom-variant max-600 (@media (max-width: 600px));
+@custom-variant max-560 (@media (max-width: 560px));
+
+/* Hover styles apply on touch screens too (a tap leaves them on), as they always have. */
+@custom-variant hover (&:hover);
+
+/* The old names, until every section has moved to the theme's utilities. */
 :root {
-  /* The CLI's grays (theme.ts `gray`). */
-  --bg: #141414;
-  --bar: #1c1c1c;
-  --tint: #242424;
-  --lift: #303030;
-  --line: #444444;
-  --subtle: #6a6a6a;
-  --muted: #929292;
-  --text: #c4c4c4;
-  --bright: #eeeeee;
-  --white: #ffffff;
-  --error: #f87171;
-  --warn: #fbbf24;
-
-  --rule: rgba(255, 255, 255, 0.075);
-  --rule-strong: rgba(255, 255, 255, 0.16);
-  --sunken: #101010;
-
-  --mono: "Geist Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
-  --sans: "Geist Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
-
-  --rail: 1240px;
-  --gutter: clamp(16px, 4vw, 40px);
-  --nav-h: 52px;
-  --box-radius: 7px;
+  --bg: var(--color-bg);
+  --bar: var(--color-bar);
+  --tint: var(--color-tint);
+  --lift: var(--color-lift);
+  --line: var(--color-line);
+  --subtle: var(--color-subtle);
+  --muted: var(--color-muted);
+  --text: var(--color-text);
+  --bright: var(--color-bright);
+  --white: var(--color-white);
+  --error: var(--color-error);
+  --rule: var(--color-rule);
+  --mono: var(--font-mono);
+  --sans: var(--font-sans);
+  --rail: var(--container-rail);
+  --gutter: var(--spacing-gutter);
+  --nav-h: var(--spacing-nav);
+  --box-radius: var(--radius-box);
 
   color-scheme: dark;
 }
 
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html.lenis,
+  html.lenis body {
+    height: auto;
+  }
+  .lenis.lenis-smooth {
+    scroll-behavior: auto !important;
+  }
+
+  :focus-visible {
+    outline: 1px solid var(--color-bright);
+    outline-offset: 3px;
+  }
+
+  a {
+    color: inherit;
+  }
+
+  img,
+  svg,
+  canvas {
+    display: block;
+  }
+
+  code,
+  kbd,
+  pre {
+    font-family: var(--font-mono);
+  }
+
+  /* Code panes that scroll sideways keep a thin scrollbar in the page's grays. */
+  pre {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-line) transparent;
+  }
 }
 
 html {
   background: var(--bg);
   -webkit-text-size-adjust: 100%;
-}
-
-html.lenis,
-html.lenis body {
-  height: auto;
-}
-.lenis.lenis-smooth {
-  scroll-behavior: auto !important;
 }
 
 body {
@@ -87,21 +177,6 @@ body::after {
 ::selection {
   background: var(--bright);
   color: var(--bg);
-}
-
-:focus-visible {
-  outline: 1px solid var(--bright);
-  outline-offset: 3px;
-}
-
-a {
-  color: inherit;
-}
-
-img,
-svg,
-canvas {
-  display: block;
 }
 
 .sr-only {
@@ -152,18 +227,6 @@ canvas {
   max-width: 34em;
   margin: 0;
   text-wrap: pretty;
-}
-
-code,
-kbd,
-pre {
-  font-family: var(--mono);
-}
-
-/* Code panes that scroll sideways keep a thin scrollbar in the page's grays. */
-pre {
-  scrollbar-width: thin;
-  scrollbar-color: var(--line) transparent;
 }
 
 kbd {
