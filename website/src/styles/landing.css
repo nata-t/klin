@@ -16,6 +16,7 @@
 @layer theme, base, components, utilities;
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities) source(none);
+@import "../components/brand/hatch.css";
 
 @source "../layouts/Landing.astro";
 @source "../pages/index.astro";
