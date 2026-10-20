@@ -76,6 +76,23 @@
         0 0;
     }
   }
+  /* The wizard's "click to type" dot, breathing until the terminal has focus. */
+  --animate-breathe: breathe 1.8s ease-in-out infinite;
+  @keyframes breathe {
+    50% {
+      background: var(--color-bright);
+    }
+  }
+  /* Panels arriving: the wizard's finished overlay and a field snapping into the schema demo's form both come
+     down into place. */
+  --animate-overlay-in: rise 420ms cubic-bezier(0.2, 0.9, 0.2, 1);
+  --animate-field-in: rise 500ms cubic-bezier(0.2, 0.9, 0.2, 1);
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(-6px);
+    }
+  }
   /* The stack marquee. */
   --animate-slide: slide 60s linear infinite;
   @keyframes slide {
@@ -269,28 +286,6 @@
   .tick {
     display: none;
   }
-}
-
-/* ─── Boxes: the CLI's ╭─ title ─╮ frames ─────────────────────────────── */
-
-.box {
-  position: relative;
-  border: 1px solid var(--line);
-  border-radius: var(--box-radius);
-  background: rgba(16, 16, 16, 0.6);
-}
-.box > .box-title {
-  position: absolute;
-  top: -0.72em;
-  left: 14px;
-  padding: 0 8px;
-  background: var(--bg);
-  font-family: var(--mono);
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--bright);
-  line-height: 1.4;
-  white-space: nowrap;
 }
 
 /* ─── Chips: ● ○ ◼ ◻, a soft highlight under the cursor ────────────────── */
