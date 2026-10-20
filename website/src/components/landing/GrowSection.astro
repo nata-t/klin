@@ -1,8 +1,27 @@
 ---
 import SectionHead from "./SectionHead.astro"
 import SectionShell from "./SectionShell.astro"
+import WindowDots from "./WindowDots.astro"
 import { ACTS } from "../../lib/grow-acts"
 import { styleLine } from "../../lib/term-lines"
+
+// Every act stacked by default (no JS, small screens, reduced motion); once src/scripts/grow-story.ts sets
+// data-mode="story" on a wide screen, the acts become steps beside one pinned terminal.
+const actClass = [
+  "min-w-0 rounded-box border-0 p-0 transition-[border-color,background-color,opacity] duration-300 ease-[ease] data-[state=here]:border-line",
+  "group-data-[mode=story]/story:border group-data-[mode=story]/story:border-transparent group-data-[mode=story]/story:px-18 group-data-[mode=story]/story:pt-18 group-data-[mode=story]/story:pb-20",
+  "group-data-[mode=story]/story:data-[state=ahead]:opacity-45 group-data-[mode=story]/story:data-[state=here]:border-line group-data-[mode=story]/story:data-[state=here]:bg-white/2",
+].join(" ")
+
+// A terminal screen, and the CLI output src/lib/term-lines.ts marks up in it.
+const screen = [
+  "m-0 overflow-hidden px-18 py-16 text-[clamp(11px,1vw,13px)] leading-[1.55] whitespace-pre text-text",
+  "[&_.cmdline]:text-bright [&_.prompt]:text-subtle [&_.tree]:text-line [&_.add]:text-bright [&_.mod]:text-muted [&_.note]:text-subtle [&_.ok]:text-bright [&_.head]:font-semibold [&_.head]:text-bright",
+  "[&_.caret]:ml-2 [&_.caret]:inline-block [&_.caret]:h-[1.1em] [&_.caret]:w-[0.6em] [&_.caret]:animate-blink [&_.caret]:bg-bright [&_.caret]:align-[-0.2em]",
+  "[&_.shine]:bg-[linear-gradient(90deg,#a4a4a4,#fff,#a4a4a4)] [&_.shine]:bg-clip-text [&_.shine]:text-transparent",
+  // The command chip in an output header, shaped like the page's chips.
+  "[&_.badge]:inline-flex [&_.badge]:cursor-pointer [&_.badge]:items-center [&_.badge]:gap-8 [&_.badge]:rounded-[3px] [&_.badge]:bg-bright [&_.badge]:px-[0.4em] [&_.badge]:font-semibold [&_.badge]:whitespace-nowrap [&_.badge]:text-bg [&_.badge]:transition-[background-color,color] [&_.badge]:duration-120 [&_.badge]:ease-linear",
+].join(" ")
 ---
 
 <SectionShell id="grow" index="05" label="After day one" note="klin stays in the project">
@@ -11,36 +30,48 @@ import { styleLine } from "../../lib/term-lines"
     The CLI is a dev dependency of every project it makes, pinned to the version that made it. Scroll to run it.
   </SectionHead>
 
-  <div class="story" data-story>
-    <ol class="acts">
+  <div
+    class="group/story grid grid-cols-[minmax(0,1fr)] items-start gap-40 px-gutter pb-[clamp(64px,9vw,112px)] data-[mode=story]:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]"
+    data-story
+  >
+    <ol class="m-0 grid list-none grid-cols-[minmax(0,1fr)] gap-48 p-0 group-data-[mode=story]/story:gap-10">
       {
         ACTS.map((act, i) => (
-          <li class="act" data-act={i} data-state={i === 0 ? "here" : "ahead"}>
-            <p class="hud step">
-              <span class="mark" aria-hidden="true">
+          <li class={actClass} data-act={i} data-state={i === 0 ? "here" : "ahead"}>
+            <p class="hud m-0 mb-10 text-bright">
+              <span class="mr-[0.8ch] inline-block w-[1.2ch]" aria-hidden="true" data-mark>
                 {i === 0 ? "◆" : "○"}
               </span>
               klin {act.id}
             </p>
-            <h3>{act.title}</h3>
-            <p class="text">{act.text}</p>
-            <a class="more" href={act.doc}>
+            <h3 class="m-0 mb-8 font-mono text-[clamp(20px,2vw,26px)] font-[620] tracking-[-0.03em] text-bright">{act.title}</h3>
+            <p class="m-0 mb-12 text-[15px] leading-[1.6] text-muted">{act.text}</p>
+            <a class="border-b border-b-line font-mono text-[12px] text-text no-underline hover:border-bright hover:text-bright" href={act.doc}>
               Read about klin {act.id} <span aria-hidden="true">→</span>
             </a>
             {/* The transcript itself: what no-JS, small-screen and reduced-motion visitors read. */}
-            <pre class="screen static" set:html={[`<span class="cmdline"><span class="prompt">$</span> ${act.command}</span>`, "", ...act.output.map(styleLine)].join("\n")} />
+            <pre
+              class:list={[screen, "mt-18 overflow-x-auto rounded-[10px] border border-line bg-[#111] group-data-[mode=story]/story:hidden"]}
+              set:html={[`<span class="cmdline"><span class="prompt">$</span> ${act.command}</span>`, "", ...act.output.map(styleLine)].join("\n")}
+            />
           </li>
         ))
       }
     </ol>
 
-    <div class="term" aria-hidden="true">
-      <div class="bar">
-        <span class="dots"><i></i><i></i><i></i></span>
-        <p class="hud">~/code/my-app</p>
-        <p class="hud progress" data-story-progress>1 / 3</p>
+    <div class="hidden overflow-hidden rounded-[10px] border border-line bg-[#111] shadow-[0_40px_100px_-40px_rgba(0,0,0,0.9)] group-data-[mode=story]/story:block" aria-hidden="true">
+      <div class="grid grid-cols-[auto_1fr_auto] items-center gap-14 border-b border-b-tint bg-bar px-14 py-9">
+        <WindowDots />
+        <p class="hud m-0 justify-self-center text-[11.5px] tracking-[0.04em] normal-case">~/code/my-app</p>
+        <p class="hud m-0 text-[11.5px] tracking-[0.04em] normal-case" data-story-progress>1 / 3</p>
       </div>
-      <pre class="screen" data-story-screen></pre>
+      <pre
+        class:list={[
+          screen,
+          // Whole rows only, so the line at the edge is never cut in half (the min() alone where round() isn't supported).
+          "h-[min(33.5em,calc(100vh_-_var(--spacing-nav)_-_140px))] supports-[height:round(down,1px,1px)]:h-[calc(round(down,min(33.5em,100vh_-_var(--spacing-nav)_-_140px)_-_32px,1lh)_+_32px)]",
+        ]}
+        data-story-screen></pre>
     </div>
   </div>
 </SectionShell>
@@ -50,216 +81,3 @@ import { styleLine } from "../../lib/term-lines"
   mountGrowStory(document.querySelector<HTMLElement>("[data-story]")!)
 </script>
 
-<style>
-  .story {
-    display: grid;
-    gap: 40px;
-    padding: 0 var(--gutter) clamp(64px, 9vw, 112px);
-    align-items: start;
-  }
-  .acts {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 10px;
-  }
-  .act {
-    min-width: 0;
-  }
-  .act {
-    padding: 18px 18px 20px;
-    border: 1px solid transparent;
-    border-radius: var(--box-radius);
-    transition:
-      border-color 300ms ease,
-      background-color 300ms ease,
-      opacity 300ms ease;
-  }
-  .act[data-state="here"] {
-    border-color: var(--line);
-    background: rgba(255, 255, 255, 0.02);
-  }
-  .act .step {
-    margin: 0 0 10px;
-    color: var(--bright);
-  }
-  .act .mark {
-    display: inline-block;
-    width: 1.2ch;
-    margin-right: 0.8ch;
-  }
-  .act h3 {
-    margin: 0 0 8px;
-    font-family: var(--mono);
-    font-weight: 620;
-    letter-spacing: -0.03em;
-    font-size: clamp(20px, 2vw, 26px);
-    color: var(--bright);
-  }
-  .act .text {
-    margin: 0 0 12px;
-    color: var(--muted);
-    font-size: 15px;
-    line-height: 1.6;
-  }
-  .more {
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--text);
-    text-decoration: none;
-    border-bottom: 1px solid var(--line);
-  }
-  .more:hover {
-    color: var(--bright);
-    border-color: var(--bright);
-  }
-  .term {
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    overflow: hidden;
-    background: #111;
-    box-shadow: 0 40px 100px -40px rgba(0, 0, 0, 0.9);
-  }
-  .bar {
-    display: grid;
-    grid-template-columns: auto 1fr auto;
-    align-items: center;
-    gap: 14px;
-    padding: 9px 14px;
-    border-bottom: 1px solid var(--tint);
-    background: var(--bar);
-  }
-  .bar .hud {
-    margin: 0;
-    text-transform: none;
-    letter-spacing: 0.04em;
-    font-size: 11.5px;
-  }
-  .bar .hud:not(.progress) {
-    justify-self: center;
-  }
-  .dots {
-    display: flex;
-    gap: 6px;
-  }
-  .dots i {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: var(--lift);
-  }
-  .screen {
-    margin: 0;
-    padding: 16px 18px;
-    height: min(33.5em, calc(100vh - var(--nav-h) - 140px));
-    /* Whole rows only, so the line at the edge is never cut in half. */
-    height: calc(round(down, min(33.5em, 100vh - var(--nav-h) - 140px) - 32px, 1lh) + 32px);
-    overflow: hidden;
-    font-size: clamp(11px, 1vw, 13px);
-    line-height: 1.55;
-    color: var(--text);
-    white-space: pre;
-  }
-  .screen :global(.cmdline) {
-    color: var(--bright);
-  }
-  .screen :global(.prompt) {
-    color: var(--subtle);
-  }
-  .screen :global(.caret) {
-    display: inline-block;
-    width: 0.6em;
-    height: 1.1em;
-    margin-left: 2px;
-    vertical-align: -0.2em;
-    background: var(--bright);
-    animation: blink 1s steps(1) infinite;
-  }
-  @keyframes blink {
-    50% {
-      opacity: 0;
-    }
-  }
-  .screen :global(.tree) {
-    color: var(--line);
-  }
-  .screen :global(.add) {
-    color: var(--bright);
-  }
-  .screen :global(.mod) {
-    color: var(--muted);
-  }
-  .screen :global(.note) {
-    color: var(--subtle);
-  }
-  .screen :global(.ok) {
-    color: var(--bright);
-  }
-  .screen :global(.head) {
-    color: var(--bright);
-    font-weight: 600;
-  }
-  .screen :global(.chip) {
-    background: var(--bright);
-    color: var(--bg);
-    font-weight: 600;
-    padding: 0 0.4em;
-  }
-  .screen :global(.shine) {
-    background: linear-gradient(90deg, #a4a4a4, #fff, #a4a4a4);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-  .static {
-    height: auto;
-    margin-top: 18px;
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    background: #111;
-    overflow-x: auto;
-  }
-  /* By default (no JS, small screens, reduced motion): every act's transcript, stacked. */
-  .story {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .term {
-    display: none;
-  }
-  .act {
-    padding: 0;
-    border: 0;
-  }
-  .act[data-state="here"] {
-    background: none;
-  }
-  .acts {
-    gap: 48px;
-  }
-  /* The scroll story, once JS has set it up on a wide screen. */
-  :global(.story[data-mode="story"]) {
-    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
-  }
-  :global(.story[data-mode="story"]) .term {
-    display: block;
-  }
-  :global(.story[data-mode="story"]) .static {
-    display: none;
-  }
-  :global(.story[data-mode="story"]) .acts {
-    gap: 10px;
-  }
-  :global(.story[data-mode="story"]) .act {
-    padding: 18px 18px 20px;
-    border: 1px solid transparent;
-  }
-  :global(.story[data-mode="story"]) .act[data-state="here"] {
-    border-color: var(--line);
-    background: rgba(255, 255, 255, 0.02);
-  }
-  :global(.story[data-mode="story"]) .act[data-state="ahead"] {
-    opacity: 0.45;
-  }
-</style>
