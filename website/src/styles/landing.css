@@ -79,6 +79,9 @@
 /* Hover styles apply on touch screens too (a tap leaves them on), as they always have. */
 @custom-variant hover (&:hover);
 
+/* The opening (src/scripts/intro.ts): until its instrument beat only the hero stage shows. */
+@custom-variant before-instrument (:where(html.intro:not(.at-instrument)) &);
+
 /* The old names, until every section has moved to the theme's utilities. */
 :root {
   --bg: var(--color-bg);
@@ -145,6 +148,13 @@
 }
 
 /* ─── Type ─────────────────────────────────────────────────────────────── */
+
+/* How the nav, the hero's HUD and the ruler assemble at the instrument beat (with before-instrument:opacity-0). */
+@utility assemble {
+  transition-property: opacity, transform;
+  transition-duration: 0.6s;
+  transition-timing-function: ease, cubic-bezier(0.2, 0.9, 0.2, 1);
+}
 
 /* The mono micro-label the whole page speaks in: section indexes, file paths, corner readouts. */
 @utility hud {
@@ -423,7 +433,6 @@ html.motion [data-reveal] {
 
 /* The opening (src/scripts/intro.ts): until its instrument beat only the hero
    stage shows; then the nav, the HUD and the ruler assemble, staggered. */
-#site-nav .inner > *,
 .hero .corners,
 .hero .keys,
 .ruler {
@@ -431,26 +440,16 @@ html.motion [data-reveal] {
     opacity 0.6s ease,
     transform 0.6s cubic-bezier(0.2, 0.9, 0.2, 1);
 }
-#site-nav .inner > :nth-child(2) {
-  transition-delay: 0.08s;
-}
-#site-nav .inner > :nth-child(3) {
-  transition-delay: 0.16s;
-}
 .hero .corners {
   transition-delay: 0.2s;
 }
 .hero .keys {
   transition-delay: 0.5s;
 }
-html.intro:not(.at-instrument) #site-nav .inner > *,
 html.intro:not(.at-instrument) .hero .corners,
 html.intro:not(.at-instrument) .hero .keys,
 html.intro:not(.at-instrument) .ruler {
   opacity: 0;
-}
-html.intro:not(.at-instrument) #site-nav .inner > * {
-  transform: translateY(-6px);
 }
 
 @media (prefers-reduced-motion: reduce) {

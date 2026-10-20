@@ -1,95 +1,37 @@
 ---
 import KlinLockup from "../brand/KlinLockup.astro"
+import Ticks from "./Ticks.astro"
 import { NPM, REPO, VERSION } from "../../lib/site"
+
+const link = "w-fit text-[14px] text-muted no-underline hover:text-bright"
 ---
 
-<footer class="footer">
-  <div class="rail">
-    <span class="tick tl" aria-hidden="true"></span>
-    <span class="tick tr" aria-hidden="true"></span>
-    <div class="cols">
-      <div class="sign">
-        <KlinLockup class="lockup" label="klin" />
-        <p class="hud">A spotless full-stack TypeScript starter</p>
+<footer class="relative border-t border-t-rule">
+  <div class="relative mx-auto max-w-rail border-x border-x-rule">
+    <Ticks />
+    <div class="grid grid-cols-[2fr_1fr_1fr] gap-32 px-gutter pt-56 pb-40 max-720:grid-cols-[1fr_1fr]">
+      <div class="max-720:col-span-full">
+        <KlinLockup class="m-0 mb-14 block h-30 w-auto text-bright" label="klin" />
+        <p class="hud m-0">A spotless full-stack TypeScript starter</p>
       </div>
-      <nav class="group" aria-label="Docs">
-        <p class="hud">Docs</p>
-        <a href="/docs/getting-started/">Getting started</a>
-        <a href="/docs/grow/generate/">klin generate</a>
-        <a href="/docs/reference/cli/">CLI reference</a>
-        <a href="/docs/reference/custom-templates/">Custom templates</a>
+      <nav class="grid content-start gap-8" aria-label="Docs">
+        <p class="hud m-0 mb-6">Docs</p>
+        <a class={link} href="/docs/getting-started/">Getting started</a>
+        <a class={link} href="/docs/grow/generate/">klin generate</a>
+        <a class={link} href="/docs/reference/cli/">CLI reference</a>
+        <a class={link} href="/docs/reference/custom-templates/">Custom templates</a>
       </nav>
-      <nav class="group" aria-label="Project">
-        <p class="hud">Project</p>
-        <a href={REPO} rel="noopener">GitHub</a>
-        <a href={NPM} rel="noopener">npm</a>
-        <a href="/docs/changelog/">Changelog</a>
-        <a href={`${REPO}/issues`} rel="noopener">Issues</a>
+      <nav class="grid content-start gap-8" aria-label="Project">
+        <p class="hud m-0 mb-6">Project</p>
+        <a class={link} href={REPO} rel="noopener">GitHub</a>
+        <a class={link} href={NPM} rel="noopener">npm</a>
+        <a class={link} href="/docs/changelog/">Changelog</a>
+        <a class={link} href={`${REPO}/issues`} rel="noopener">Issues</a>
       </nav>
     </div>
-    <div class="base">
-      <p class="hud">create-klin v{VERSION} · MIT</p>
-      <p class="hud">Everything's in its place. Your move.</p>
+    <div class="flex flex-wrap justify-between gap-12 border-t border-t-rule px-gutter py-18">
+      <p class="hud m-0">create-klin v{VERSION} · MIT</p>
+      <p class="hud m-0">Everything's in its place. Your move.</p>
     </div>
   </div>
 </footer>
-
-<style>
-  .footer {
-    position: relative;
-    border-top: 1px solid var(--rule);
-  }
-  .cols {
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr;
-    gap: 32px;
-    padding: 56px var(--gutter) 40px;
-  }
-  .sign :global(.lockup) {
-    display: block;
-    height: 30px;
-    width: auto;
-    margin: 0 0 14px;
-    color: var(--bright);
-  }
-  .group {
-    display: grid;
-    align-content: start;
-    gap: 8px;
-  }
-  .group .hud {
-    margin: 0 0 6px;
-  }
-  .group a {
-    color: var(--muted);
-    text-decoration: none;
-    font-size: 14px;
-    width: fit-content;
-  }
-  .group a:hover {
-    color: var(--bright);
-  }
-  .base {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 18px var(--gutter);
-    border-top: 1px solid var(--rule);
-  }
-  .base .hud {
-    margin: 0;
-    color: var(--subtle);
-  }
-  p {
-    margin: 0;
-  }
-  @media (max-width: 720px) {
-    .cols {
-      grid-template-columns: 1fr 1fr;
-    }
-    .sign {
-      grid-column: 1 / -1;
-    }
-  }
-</style>
