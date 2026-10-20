@@ -37,8 +37,10 @@ and dark, in a browser tab and in the terminal.
   its cap, then its pixels fly out as the KLIN wordmark's letters, the
   shadow extrudes and the sparkles pop (`website/src/lib/hero-logo.ts`). The
   nav, footer, docs header and the last section use `website/src/components/brand/` (`KlinMark.astro`,
-  `KlinLockup.astro`, the cap and the shell as separate paths): the nav's egg
-  hatches on hover, the last section's every few seconds. Favicons and
+  `KlinLockup.astro`, the cap and the shell as separate paths): with
+  `hatch="hover"` the egg hatches while a `group/hatch` ancestor is hovered
+  (the nav, the docs title), with `hatch="loop"` every few seconds (the last
+  section). The animations are Tailwind theme tokens in `hatch.css`. Favicons and
   `og.png` are in `website/public/`.
 - **Generated app** — `template/apps/web/public/favicon.svg`, `<Logo>` (the
   mark on the app's brand color, from `components/klin-mark.tsx`), the landing
