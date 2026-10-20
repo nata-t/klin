@@ -1,7 +1,22 @@
 ---
+import Button from "./Button.astro"
+import Chip from "./Chip.astro"
+import Chips from "./Chips.astro"
+import FileHeader from "./FileHeader.astro"
 import SectionHead from "./SectionHead.astro"
 import SectionShell from "./SectionShell.astro"
 import { FIELDS } from "../../lib/schema-demo"
+
+// A card lights up as a field's pulse reaches it.
+const card =
+  "overflow-hidden rounded-box border border-line bg-[rgba(14,14,14,0.85)] transition-[border-color,box-shadow] duration-300 ease-[ease] data-[lit=true]:border-muted data-[lit=true]:shadow-[0_0_0_1px_rgba(255,255,255,0.06),0_0_40px_-12px_rgba(255,255,255,0.18)]"
+// The code panes, and the tokens src/scripts/highlight.ts marks: keywords bright, strings muted, comments faint.
+// A line that just arrived (.new) flashes.
+const code = [
+  "m-0 overflow-x-auto px-16 py-14 text-[12.5px] leading-[1.7] text-text [tab-size:2]",
+  "[&_.line]:-ml-16 [&_.line]:block [&_.line]:border-l-2 [&_.line]:border-l-transparent [&_.line]:pl-14 [&_.line.new]:animate-fresh",
+  "[&_.k]:font-semibold [&_.k]:text-bright [&_.t]:text-bright [&_.s]:text-muted [&_.c]:text-subtle [&_.c]:italic [&_.p]:text-subtle [&_.ok]:text-bright [&_.err]:text-error",
+].join(" ")
 ---
 
 <SectionShell id="schema" index="03" label="One schema" note="packages/validators → form · API · types">
@@ -12,62 +27,58 @@ import { FIELDS } from "../../lib/schema-demo"
     snap on the fields you'd add and watch each one reach every layer.
   </SectionHead>
 
-  <div class="demo" data-schema-demo>
-    <div class="fields" data-reveal>
-      <p class="hud group">Fields <span class="hint">· pick any</span></p>
-      <div class="chips" role="group" aria-label="Fields in the schema">
+  <div class="grid gap-22 px-gutter pb-[clamp(64px,9vw,112px)]" data-schema-demo>
+    <div class="flex flex-wrap items-center gap-x-18 gap-y-6" data-reveal>
+      <p class="hud m-0 text-text">Fields <span class="text-subtle">· pick any</span></p>
+      <Chips role="group" aria-label="Fields in the schema">
         {
           FIELDS.map((field) => (
-            <button
-              class="chip"
-              type="button"
+            <Chip
               data-field={field.id}
               aria-pressed={field.always ? "true" : "false"}
               disabled={field.always}
               title={field.always ? "The example field klin generate writes" : undefined}
+              mark={field.always ? "◼" : "◻"}
             >
-              <span class="mark" aria-hidden="true">
-                {field.always ? "◼" : "◻"}
-              </span>
               {field.id}
-            </button>
+            </Chip>
           ))
         }
-      </div>
+      </Chips>
     </div>
 
-    <div class="grid">
-      <article class="card source" data-reveal>
-        <header><span class="hud">packages/validators/src/billing/</span><span class="file">invoice.ts</span></header>
-        <pre class="code" data-schema-code></pre>
+    <div class="relative grid grid-cols-[minmax(0,1.08fr)_minmax(0,1fr)] items-start gap-x-72 gap-y-28 max-960:grid-cols-[1fr]" data-schema-grid>
+      <article class:list={[card, "sticky top-[calc(var(--spacing-nav)+60px)] max-960:relative max-960:top-0"]} data-reveal data-schema-source>
+        <FileHeader path="packages/validators/src/billing/" file="invoice.ts" />
+        <pre class={code} data-schema-code></pre>
       </article>
 
-      <svg class="wires" aria-hidden="true" data-wires></svg>
+      <svg class="pointer-events-none absolute inset-0 size-full overflow-visible max-960:hidden" aria-hidden="true" data-wires></svg>
 
-      <div class="consumers">
-        <article class="card" data-reveal data-target="form">
-          <header><span class="hud">apps/web · features/billing/invoice/</span><span class="file">invoice-form.tsx</span></header>
-          <form class="preview" data-schema-form novalidate>
-            <div class="inputs" data-schema-inputs></div>
-            <div class="foot">
-              <span class="hud" data-schema-form-state>validated with createInvoiceSchema</span>
-              <button class="btn primary small" type="submit">Create invoice</button>
+      <div class="grid gap-22">
+        <article class:list={[card, "relative"]} data-reveal data-target="form">
+          <FileHeader path="apps/web · features/billing/invoice/" file="invoice-form.tsx" />
+          <form class="grid gap-14 p-16" data-schema-form novalidate>
+            <div class="grid gap-12" data-schema-inputs></div>
+            <div class="flex flex-wrap items-center justify-between gap-12">
+              <span class="hud tracking-[0.02em] normal-case" data-schema-form-state>validated with createInvoiceSchema</span>
+              <Button primary small type="submit">Create invoice</Button>
             </div>
           </form>
         </article>
 
-        <article class="card" data-reveal data-target="api">
-          <header><span class="hud">apps/api · modules/billing/invoice/</span><span class="file">invoice.dto.ts</span></header>
-          <pre class="code dto"><span class="k">export class</span> <span class="t">CreateInvoiceDto</span> <span class="k">extends</span> createZodDto(<span class="t">createInvoiceSchema</span>) {"{}"}</pre>
-          <div class="exchange">
-            <pre class="code req" data-schema-request></pre>
-            <pre class="code res" data-schema-response></pre>
+        <article class:list={[card, "relative"]} data-reveal data-target="api">
+          <FileHeader path="apps/api · modules/billing/invoice/" file="invoice.dto.ts" />
+          <pre class:list={[code, "border-b border-b-tint whitespace-pre-wrap"]}><span class="k">export class</span> <span class="t">CreateInvoiceDto</span> <span class="k">extends</span> createZodDto(<span class="t">createInvoiceSchema</span>) {"{}"}</pre>
+          <div class="grid grid-cols-[1fr_1fr] max-560:grid-cols-[1fr]">
+            <pre class:list={[code, "border-r border-r-tint max-560:border-r-0 max-560:border-b max-560:border-b-tint"]} data-schema-request></pre>
+            <pre class={code} data-schema-response></pre>
           </div>
         </article>
 
-        <article class="card" data-reveal data-target="types">
-          <header><span class="hud">both apps ·&nbsp;</span><span class="file">z.input&lt;typeof createInvoiceSchema&gt;</span></header>
-          <pre class="code" data-schema-type></pre>
+        <article class:list={[card, "relative"]} data-reveal data-target="types">
+          <FileHeader path={"both apps ·\u00a0"} file="z.input<typeof createInvoiceSchema>" />
+          <pre class={code} data-schema-type></pre>
         </article>
       </div>
     </div>
@@ -79,243 +90,3 @@ import { FIELDS } from "../../lib/schema-demo"
   mountSchemaDemo(document.querySelector<HTMLElement>("[data-schema-demo]")!)
 </script>
 
-<style>
-  .demo {
-    padding: 0 var(--gutter) clamp(64px, 9vw, 112px);
-    display: grid;
-    gap: 22px;
-  }
-  .fields {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 6px 18px;
-  }
-  .fields .group {
-    margin: 0;
-    color: var(--text);
-  }
-  .fields .hint {
-    color: var(--subtle);
-  }
-  .chip:disabled {
-    cursor: default;
-    opacity: 1;
-  }
-  .grid {
-    position: relative;
-    display: grid;
-    grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
-    gap: 28px 72px;
-    align-items: start;
-  }
-  .wires {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    overflow: visible;
-  }
-  .consumers {
-    display: grid;
-    gap: 22px;
-  }
-  .card {
-    position: relative;
-    border: 1px solid var(--line);
-    border-radius: var(--box-radius);
-    background: rgba(14, 14, 14, 0.85);
-    overflow: hidden;
-    transition:
-      border-color 300ms ease,
-      box-shadow 300ms ease;
-  }
-  .card[data-lit="true"] {
-    border-color: var(--muted);
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 0 40px -12px rgba(255, 255, 255, 0.18);
-  }
-  .card header {
-    display: flex;
-    align-items: baseline;
-    gap: 2px;
-    padding: 9px 14px;
-    border-bottom: 1px solid var(--tint);
-    background: var(--bar);
-    overflow: hidden;
-    white-space: nowrap;
-  }
-  /* Short of room, the header shortens the folder path and keeps the file name whole. */
-  .card header .hud {
-    flex: 0 1 auto;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    text-transform: none;
-    letter-spacing: 0.02em;
-    font-size: 11.5px;
-  }
-  .card header .file {
-    flex: none;
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-family: var(--mono);
-    font-size: 11.5px;
-    color: var(--bright);
-  }
-  .source {
-    position: sticky;
-    top: calc(var(--nav-h) + 60px);
-  }
-  .code {
-    margin: 0;
-    padding: 14px 16px;
-    font-size: 12.5px;
-    line-height: 1.7;
-    color: var(--text);
-    overflow-x: auto;
-    tab-size: 2;
-  }
-  .code :global(.line) {
-    display: block;
-    border-left: 2px solid transparent;
-    margin-left: -16px;
-    padding-left: 14px;
-  }
-  .code :global(.line.new) {
-    animation: fresh 1.6s ease-out;
-  }
-  @keyframes fresh {
-    0% {
-      background: rgba(255, 255, 255, 0.14);
-      border-left-color: var(--bright);
-    }
-    100% {
-      background: transparent;
-      border-left-color: transparent;
-    }
-  }
-  .code :global(.k) {
-    color: var(--bright);
-    font-weight: 600;
-  }
-  .code :global(.t) {
-    color: var(--bright);
-  }
-  .code :global(.s) {
-    color: var(--muted);
-  }
-  .code :global(.c) {
-    color: var(--subtle);
-    font-style: italic;
-  }
-  .code :global(.p) {
-    color: var(--subtle);
-  }
-  .code :global(.ok) {
-    color: var(--bright);
-  }
-  .code :global(.err) {
-    color: var(--error);
-  }
-  .dto {
-    border-bottom: 1px solid var(--tint);
-    white-space: pre-wrap;
-  }
-  .exchange {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-  }
-  .exchange .req {
-    border-right: 1px solid var(--tint);
-  }
-  .preview {
-    padding: 16px;
-    display: grid;
-    gap: 14px;
-  }
-  .inputs {
-    display: grid;
-    gap: 12px;
-  }
-  .inputs :global(label) {
-    display: grid;
-    gap: 6px;
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--text);
-  }
-  .inputs :global(.new) {
-    animation: rise 500ms cubic-bezier(0.2, 0.9, 0.2, 1);
-  }
-  @keyframes rise {
-    from {
-      opacity: 0;
-      transform: translateY(-6px);
-    }
-  }
-  .inputs :global(input),
-  .inputs :global(select) {
-    height: 36px;
-    padding: 0 10px;
-    border: 1px solid var(--line);
-    border-radius: 5px;
-    background: var(--bg);
-    color: var(--bright);
-    font-family: var(--sans);
-    font-size: 14px;
-    color-scheme: dark;
-  }
-  .inputs :global(input:focus),
-  .inputs :global(select:focus) {
-    outline: none;
-    border-color: var(--muted);
-  }
-  .inputs :global([aria-invalid="true"]) {
-    border-color: var(--error);
-  }
-  .inputs :global(.msg) {
-    font-family: var(--sans);
-    font-size: 12px;
-    color: var(--error);
-    min-height: 0;
-  }
-  .foot {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-  .foot .hud {
-    text-transform: none;
-    letter-spacing: 0.02em;
-  }
-  .btn.small {
-    height: 34px;
-    padding: 0 14px;
-    font-size: 12px;
-  }
-  @media (max-width: 960px) {
-    .grid {
-      grid-template-columns: 1fr;
-    }
-    .source {
-      position: relative;
-      top: 0;
-    }
-    .wires {
-      display: none;
-    }
-  }
-  @media (max-width: 560px) {
-    .exchange {
-      grid-template-columns: 1fr;
-    }
-    .exchange .req {
-      border-right: 0;
-      border-bottom: 1px solid var(--tint);
-    }
-  }
-</style>
