@@ -25,9 +25,9 @@ const describe = (answers: Record<string, string | string[]>) =>
         return (
           <tr>
             <td>
-              <code class="klin-chip">{p.id}</code>
+              <code class="font-mono whitespace-nowrap">{p.id}</code>
               <br />
-              <span class="klin-muted">{p.label}</span>
+              <span class="text-gray-3">{p.label}</span>
             </td>
             <td>
               {p.about}
@@ -35,12 +35,12 @@ const describe = (answers: Record<string, string | string[]>) =>
                 <ul>
                   {changes.map((c) => (
                     <li>
-                      {c.question}: {c.text} <span class="klin-muted">(<code>--{c.flag} {c.raw}</code>)</span>
+                      {c.question}: {c.text} <span class="text-gray-3">(<code>--{c.flag} {c.raw}</code>)</span>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p class="klin-muted">Every question at its default.</p>
+                <p class="text-gray-3">Every question at its default.</p>
               )}
             </td>
           </tr>

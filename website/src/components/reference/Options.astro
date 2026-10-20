@@ -26,8 +26,8 @@ const list = (value: string | string[]) => (Array.isArray(value) ? (value.length
       <p>
         <code>--{q.flag ?? q.id}</code> · {q.type === "select" ? "pick one" : "pick any (comma-separated, or none)"} · default{" "}
         <code>{list(q.default)}</code>
-        {stepOf(q.id) && <span class="klin-muted"> · wizard step “{stepOf(q.id)}”</span>}
-        {q.locked && <span class="klin-muted"> · picked once, at create</span>}
+        {stepOf(q.id) && <span class="text-gray-3"> · wizard step “{stepOf(q.id)}”</span>}
+        {q.locked && <span class="text-gray-3"> · picked once, at create</span>}
       </p>
       <table>
         <thead>
@@ -42,21 +42,21 @@ const list = (value: string | string[]) => (Array.isArray(value) ? (value.length
             return (
               <tr>
                 <td>
-                  <code class="klin-chip">{id}</code>
+                  <code class="font-mono whitespace-nowrap">{id}</code>
                 </td>
                 <td>
                   <strong>
-                    {o.swatch && <span class="klin-swatch" style={`background:${o.swatch}`} />}
+                    {o.swatch && <span class="mr-[0.4em] inline-block size-[0.9em] rounded-[3px] align-[-0.1em] shadow-[inset_0_0_0_1px_rgba(127,127,127,0.35)]" style={`background:${o.swatch}`} />}
                     {o.label}
                   </strong>
-                  {o.hint && <span class="klin-muted"> — {o.hint}</span>}
+                  {o.hint && <span class="text-gray-3"> — {o.hint}</span>}
                   {o.about && <p>{o.about}</p>}
                   {o.requires?.length ? (
-                    <p class="klin-muted">
+                    <p class="text-gray-3">
                       Also switches on: {o.requires.map((r) => option(r).label).join(", ")}.
                     </p>
                   ) : null}
-                  {o.warnOff && <p class="klin-muted">If you switch it off: {o.warnOff}</p>}
+                  {o.warnOff && <p class="text-gray-3">If you switch it off: {o.warnOff}</p>}
                 </td>
               </tr>
             )

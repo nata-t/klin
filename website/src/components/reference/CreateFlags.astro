@@ -40,11 +40,11 @@ void option
       [...own.slice(0, 4), ...fromManifest, ...own.slice(4)].map((row) => (
         <tr>
           <td>
-            <code class="klin-chip">{row.flag}</code>
+            <code class="font-mono whitespace-nowrap">{row.flag}</code>
             {row.label && (
               <>
                 <br />
-                <span class="klin-muted">{row.label}</span>
+                <span class="text-gray-3">{row.label}</span>
               </>
             )}
           </td>
