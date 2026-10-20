@@ -54,11 +54,6 @@ interface Section {
 const clamp = (v: number, a = 0, b = 1) => Math.max(a, Math.min(b, v))
 const easeOutExpo = (t: number) => (t >= 1 ? 1 : 1 - 2 ** (-10 * t))
 const pad3 = (n: number) => String(Math.round(n)).padStart(3, "0")
-// Each tick also carries the crosshair the section ticks draw (a dot on the line and a hairline 5px under
-// it), and like them the ticks drop out once the rail is full width.
-const TICK =
-  "pointer-events-none absolute top-0 right-0 z-2 h-px origin-right bg-bright before:absolute before:inset-y-0 before:left-5 before:w-px before:bg-line after:absolute after:inset-x-0 after:top-5 after:h-px after:bg-line max-1280:hidden"
-
 const el = (tag: string, cls: string, parent?: HTMLElement) => {
   const node = document.createElement(tag)
   node.className = cls
@@ -108,7 +103,7 @@ function build(rail: HTMLElement, still: boolean): () => void {
   el("div", "absolute inset-x-0 top-0 h-px bg-white shadow-[0_0_8px_rgba(255,255,255,0.55)]", needle)
   const chip = el(
     "div",
-    "absolute top-4 left-4 flex cursor-pointer items-center gap-8 rounded-[2px] border-0 bg-bright px-4 py-1 text-[9px] leading-[1.35] font-[650] tracking-[0.06em] whitespace-nowrap text-bg transition-[top] duration-180 ease-[ease]",
+    "absolute top-4 left-4 flex items-center rounded-[2px] bg-bright px-4 py-1 text-[9px] leading-[1.35] font-[650] tracking-[0.06em] text-bg transition-[top] duration-180 ease-[ease]",
     needle
   )
   const digits = el("span", "inline-flex h-[1.35em] overflow-hidden", chip)
@@ -139,7 +134,7 @@ function build(rail: HTMLElement, still: boolean): () => void {
     const mid = half % 10 === 0
     const whole = half % 2 === 0
     const row = el("div", "absolute inset-x-0 h-0", track)
-    const line = el("span", TICK, row)
+    const line = el("span", "absolute top-0 right-0 h-px origin-right bg-bright", row)
     line.style.width = `${major ? 16 : mid ? 11 : whole ? 7 : 4}px`
     const alpha = major ? 0.75 : mid ? 0.48 : whole ? 0.32 : 0.2
     line.style.opacity = String(alpha)
