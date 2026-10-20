@@ -8,16 +8,11 @@ const { Content } = changelog
 
 {
   releases.length ? (
-    <div class="klin-changelog">
+    <div class="[&_h1:first-child]:hidden">
       <Content />
     </div>
   ) : (
-    <p class="klin-muted">No releases yet — the first one is on its way.</p>
+    <p class="text-gray-3">No releases yet — the first one is on its way.</p>
   )
 }
 
-<style>
-  .klin-changelog :global(h1:first-child) {
-    display: none;
-  }
-</style>
