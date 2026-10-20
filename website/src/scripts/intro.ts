@@ -6,7 +6,8 @@
  *   enter       the line collapses like a CRT switching over
  *   egg         the egg drops in and lands
  *   hatch       it wobbles, cracks and pops its cap
- *   word        the shell breaks away and its pixels fly out as k, l, i and n
+ *   word        the shell breaks away and its pixels fly out as K, L, I and N
+ *   depth       the shadow extrudes behind the letters
  *   chrome      the chrome gradient pours in, the CLI's light band sweeps
  *   sparks      the sparkles pop
  *   instrument  the nav and the scroll ruler assemble
@@ -24,11 +25,12 @@ export const BEATS = {
   egg: 1.22,
   hatch: 1.72,
   word: 2.34,
-  chrome: 2.95,
-  sparks: 3.15,
-  instrument: 2.95,
-  copy: 3.15,
-  done: 4.0,
+  depth: 2.98,
+  chrome: 3.08,
+  sparks: 3.3,
+  instrument: 3.05,
+  copy: 3.25,
+  done: 4.2,
 } as const
 
 export type Beat = keyof typeof BEATS

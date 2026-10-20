@@ -1,17 +1,16 @@
 ---
-import { logoShade } from "@cli/ui/logo"
-import { heroLogo } from "../../lib/hero-logo"
+import { KLIN } from "@cli/ui/wordmark"
+import { HERO_GRID } from "../../lib/hero-logo"
 import { INSTALL, VERSION } from "../../lib/site"
 
-// No-JS fallback for the canvas logo: what the opening settles on, the word in the chrome gradient.
-const art = heroLogo()
-const fallback = Array.from({ length: art.rows }, () => Array.from({ length: art.columns }, () => ({ ch: " ", color: "transparent" })))
-for (const cell of art.word) {
-  const level = logoShade(cell.kind, cell.row, art.rows)
-  fallback[cell.row]![cell.col] = { ch: cell.ch, color: `rgb(${level},${level},${level})` }
-}
-// The slot keeps the art's shape: columns wide, rows × the cell's height-to-width ratio tall.
-const slotShape = `--cols: ${art.columns}; aspect-ratio: ${art.columns} / ${(art.rows * 2.05).toFixed(2)}`
+// The slot keeps the art's shape: the hero grid's square pixels, columns × rows.
+const slotShape = `aspect-ratio: ${HERO_GRID.columns} / ${HERO_GRID.rows}`
+// No-JS fallback for the canvas logo: KLIN, faces in the chrome gradient, shadows in dark gray.
+const faceRows = KLIN.filter((line) => line.includes("█")).length
+const shade = (row: number) => Math.round(0xfa - (0xfa - 0xa4) * Math.min(1, row / Math.max(1, faceRows - 1)))
+const fallback = KLIN.map((line, row) =>
+  [...line].map((ch) => (ch === "█" ? { ch, color: `rgb(${shade(row)},${shade(row)},${shade(row)})` } : { ch, color: "#585858" }))
+)
 ---
 
 <section id="intro" class="hero section" data-section="intro">
@@ -149,7 +148,7 @@ const slotShape = `--cols: ${art.columns}; aspect-ratio: ${art.columns} / ${(art
   }
   .logo-slot {
     position: relative;
-    width: min(250px, 58%);
+    width: min(560px, 88%);
     display: grid;
     place-items: center;
     margin-bottom: clamp(18px, 3vw, 34px);
@@ -157,8 +156,7 @@ const slotShape = `--cols: ${art.columns}; aspect-ratio: ${art.columns} / ${(art
   }
   .logo-fallback {
     margin: 0;
-    /* One monospace cell (≈0.6em wide) per column of the slot. */
-    font-size: min(calc(250px / var(--cols) / 0.6), calc(58vw / var(--cols) / 0.6));
+    font-size: clamp(9px, 1.6vw, 15px);
     line-height: 1.02;
     letter-spacing: 0;
   }

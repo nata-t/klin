@@ -40,11 +40,14 @@ The site reads the real thing wherever it can, so it can't drift:
   `packages/create-klin/src` browser stand-ins for `node:fs`, `node:path`,
   `process` and the terminal `screen` (see `src/wizard/shims/`). When a visitor
   builds, it hands them the shortest `create klin` command for their picks.
-- **The hero logo** is the CLI's own pixel art (`logoArt()`, taken apart by
-  `src/lib/hero-logo.ts`), in the same chrome gradient. The egg drops in,
-  wobbles, cracks and pops its cap; then its pixels fly out as the word, and
-  only "klin" is left (`src/scripts/hero-field.ts`, timed by
-  `src/scripts/intro.ts`). A click folds the word back into the egg.
+- **The hero logo** hatches KLIN out of the egg, on one grid of square
+  pixels (`src/lib/hero-logo.ts`): the vector egg from `brand/`, rasterized,
+  and the CLI's own KLIN wordmark (`drawWordmark()`), its letters split into
+  pixels, its box-drawing shadow and sparkles kept whole. The egg drops in,
+  wobbles, cracks and pops its cap; its pixels fly out as K, L, I and N,
+  then the shadow extrudes, the chrome pours in and the sparkles pop
+  (`src/scripts/hero-field.ts`, timed by `src/scripts/intro.ts`). A click
+  folds KLIN back into the egg and hatches it again.
 - **The "only what you picked" demo** runs the template's real
   `packages/auth/src/auth.ts` through the CLI's marker engine.
 - **Options, presets, flags and the kit grid** are generated from

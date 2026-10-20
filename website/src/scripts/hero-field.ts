@@ -1,37 +1,43 @@
-import { LID_CLOSED, logoShade } from "@cli/ui/logo"
-import { heroLogo } from "../lib/hero-logo"
+import { eggPixels, HERO_GRID, SX, SY, wordmarkCells } from "../lib/hero-logo"
 import { drawGeometric, FONT_STACK } from "../wizard/glyphs"
 import { BEATS, intro } from "./intro"
 
 /**
- * The hero: klin hatches.
+ * The hero: KLIN hatches.
  *
- * The cells come from the CLI's own pixel art (../lib/hero-logo.ts takes it
- * apart): the egg — its cap and its shell — and the "klin" letters, in the
- * same chrome gradient as the wizard's header. The opening (timed by
+ * Everything sits on one grid of square pixels (../lib/hero-logo.ts): the
+ * egg, rasterized from the vector mark, and the KLIN wordmark the CLI draws
+ * — its ANSI Shadow letters split into pixels, the box-drawing shadow that
+ * echoes them down and to the right, and its sparkles. The opening (timed by
  * ./intro.ts) types the create command, collapses the line like a CRT
  * switching over, then drops the egg in: it lands with a flash, a jolt, crop
  * marks and a burst of sparks. The egg wobbles, cracks and pops its cap
- * away; the shell breaks up and its pixels fly out as the letters, which land
- * one after another. Then the chrome pours in top-down and the CLI's band of
- * light sweeps across, and only the word is left.
+ * away; the shell breaks up and its pixels fly out as K, L, I and N, which
+ * land one after another. Then the shadow extrudes behind the letters, the
+ * chrome pours in top-down, the CLI's band of light sweeps across and the
+ * sparkles pop.
  *
- * Settled, every cell of the word lives on its own spring: the cursor nudges
- * cells aside and lights them, scrolling away lets them drift apart, and a
- * click folds the word back into the egg and hatches it again.
+ * Settled, every pixel and shadow cell lives on its own spring: the cursor
+ * nudges them aside and lights them, scrolling away lets them drift apart,
+ * and a click folds KLIN back into the egg and hatches it again.
  */
 
+type Kind = "cap" | "shell" | "face" | "shadow" | "spark"
+
 interface Cell {
+  /** Where it sits, in grid pixels, and its size: one pixel, or a whole wordmark cell (SX × SY) for a glyph. */
   col: number
   row: number
+  w: number
+  h: number
   glyph: string
-  kind: "cap" | "shell" | "word"
+  kind: Kind
   shade: number
   /** Where the band of light reaches it, 0..1 across the logo (the CLI's sweep). */
   at: number
-  /** Which part it belongs to: 0 the egg, then 1–4 for k, l, i, n. */
+  /** 0 the egg (and the sparkles), then 1–4 for K, L, I, N. */
   part: number
-  /** A letter's cell: the spot inside the egg it hatches from, and how late it leaves. */
+  /** A face pixel: the spot inside the egg it hatches from, and how late it leaves. */
   from: { col: number; row: number }
   delay: number
   x: number
@@ -39,10 +45,10 @@ interface Cell {
   vx: number
   vy: number
   spread: [number, number]
+  phase: number
 }
 
 interface Part {
-  cells: Cell[]
   box: { c0: number; c1: number; r0: number; r1: number }
   snapped: boolean
   snapAt: number
@@ -71,7 +77,6 @@ interface Mote {
   depth: number
 }
 
-const ROW_RATIO = 2.05
 const COMMAND = "npm create klin@latest"
 const DUST = "{}[]()<>;:=+*/|&!?#@$%~^.,_01xz".split("")
 const TOKENS = ["z.object()", "createZodDto", "@Public()", "useAppForm", "prisma", "klin:if", "→", "✓", "z.infer", "betterAuth", "queryOptions", "@repo/validators", "turbo dev", "pnpm", "bun", "klin:only", "// TODO", "export", "import", "<Route />"]
@@ -80,7 +85,8 @@ const SHELL_GLYPHS = ["▘", "▝", "▖", "▗", "·"]
 
 /*
  * The sequence, in seconds from the egg's launch (`s`): the drop and its
- * landing, the hatch, then the letters. The beats in ./intro.ts place it.
+ * landing, the hatch, the letters, their shadow and the sparkles. The beats
+ * in ./intro.ts place it.
  */
 const FLIGHT = 0.6
 /** The fraction of the drop at which the egg lands (the rest is recoil). */
@@ -90,13 +96,15 @@ const WOBBLE = 0.45
 const CRACK = 0.1
 const POP = 0.45
 const WORD = BEATS.word - BEATS.egg
+const DEPTH = BEATS.depth - BEATS.egg
+const SPARKLE = BEATS.sparks - BEATS.egg
 const SHELL_FADE = 0.3
-/** Each letter leaves a little after the last; its cells straggle by up to JITTER. */
+/** Each letter leaves a little after the last; its pixels straggle by up to JITTER. */
 const LETTER_GAP = 0.08
 const JITTER = 0.07
 const TRAVEL = 0.6
 const SEQ_END = WORD + 3 * LETTER_GAP + JITTER + TRAVEL + 0.05
-/** Click replay: the word folds back into the egg, which sits for a moment before it hatches again. */
+/** Click replay: KLIN folds back into the egg, which sits for a moment before it hatches again. */
 const COLLAPSE = 0.55
 const SEATED = 0.15
 
@@ -122,38 +130,41 @@ function flight(local: number) {
   return -0.035 * Math.sin(Math.PI * k * 1.5) * Math.exp(-4 * k)
 }
 
+/** One unit of the egg's vector geometry, in grid pixels. */
+const EGG_UNIT = HERO_GRID.egg.scale
+
 /**
  * The egg `t` seconds into its hatch: `lid` is how many pixels lower than at
  * rest the cap sits (negative: higher), `tilt` the egg's rock, `capTilt` the
  * cap's own turn and `capAlpha` how much of it is left as it flies off.
+ * Closed, the cap drops by its lift and the crack's gap (12 + 12 units).
  */
 function hatchPose(t: number) {
-  const closed = LID_CLOSED[20]
+  const closed = 24 * EGG_UNIT
   if (t < 0) return { lid: closed, tilt: 0, capTilt: 0, capAlpha: 1 }
   if (t < WOBBLE) {
     const k = t / WOBBLE
     return { lid: closed, tilt: 0.085 * Math.sin(k * Math.PI * 4) * (1 - k * 0.6), capTilt: 0, capAlpha: 1 }
   }
   if (t < WOBBLE + CRACK) {
-    // The crack opens: the cap lifts a pixel, the egg gives one last shiver.
+    // The crack opens: the cap lifts a little, the egg gives one last shiver.
     const k = (t - WOBBLE) / CRACK
-    return { lid: closed - easeOutCubic(k), tilt: 0.03 * Math.sin(k * Math.PI * 2), capTilt: 0, capAlpha: 1 }
+    return { lid: closed - 10 * EGG_UNIT * easeOutCubic(k), tilt: 0.03 * Math.sin(k * Math.PI * 2), capTilt: 0, capAlpha: 1 }
   }
   // The cap pops off: up, turning, and gone.
   const u = clamp((t - WOBBLE - CRACK) / POP)
-  return { lid: closed - 1 - 18 * easeOutCubic(u), tilt: 0, capTilt: -0.6 * u, capAlpha: 1 - easeInCubic(u) }
+  return { lid: closed - (10 + 150 * easeOutCubic(u)) * EGG_UNIT, tilt: 0, capTilt: -0.6 * u, capAlpha: 1 - easeInCubic(u) }
 }
 
 function heroCells() {
-  const art = heroLogo()
-  const base = (c: { col: number; row: number; ch: string; part: number }, kind: Cell["kind"]): Cell => ({
-    col: c.col,
-    row: c.row,
-    glyph: c.ch,
-    kind,
-    shade: logoShade(kind, c.row, art.rows),
-    at: (c.col + c.row * 2) / (art.columns + art.rows * 2),
-    part: c.part,
+  const { columns, rows, top } = HERO_GRID
+  const cell = (c: Partial<Cell> & Pick<Cell, "col" | "row" | "kind">): Cell => ({
+    w: 1,
+    h: 1,
+    glyph: "",
+    shade: 0xb4,
+    at: (c.col + c.row / 2) / (columns + rows / 2),
+    part: 0,
     from: { col: c.col, row: c.row },
     delay: 0,
     x: 0,
@@ -161,31 +172,49 @@ function heroCells() {
     vx: 0,
     vy: 0,
     spread: [rand(-1, 1), rand(-1, 1)],
+    phase: rand(0, Math.PI * 2),
+    ...c,
   })
-  const egg = art.egg.map((c) => base(c, c.kind === "cap" ? "cap" : "shell"))
+  const egg = eggPixels().map((p) => cell({ col: p.col, row: p.row, kind: p.kind }))
   const shell = egg.filter((c) => c.kind === "shell")
-  // Every letter's cell hatches from somewhere inside the shell.
-  const word = art.word.map((c) => {
-    const cell = base(c, "word")
-    const at = pick(shell)
-    cell.from = { col: at.col, row: at.row }
-    cell.delay = rand(0, JITTER)
-    return cell
+  // The faces' chrome runs down the five rows of letters, pixel by pixel.
+  const faceRows = 5 * SY
+  const faces: Cell[] = []
+  const shadows: Cell[] = []
+  const sparkles: Cell[] = []
+  for (const w of wordmarkCells()) {
+    if (w.kind === "face") {
+      for (let y = 0; y < SY; y++)
+        for (let x = 0; x < SX; x++) {
+          const row = w.row + y
+          const at = pick(shell)
+          faces.push(
+            cell({
+              col: w.col + x,
+              row,
+              kind: "face",
+              part: w.part,
+              shade: Math.round(0xfa - (0xfa - 0xa4) * Math.min(1, (row - top) / (faceRows - 1))),
+              from: { col: at.col, row: at.row },
+              delay: rand(0, JITTER),
+            }),
+          )
+        }
+    } else (w.kind === "shadow" ? shadows : sparkles).push(cell({ col: w.col, row: w.row, w: SX, h: SY, glyph: w.ch, kind: w.kind, part: w.part, shade: w.level }))
+  }
+  const box = (cells: Cell[]) => ({
+    c0: Math.min(...cells.map((c) => c.col)),
+    c1: Math.max(...cells.map((c) => c.col + c.w)),
+    r0: Math.min(...cells.map((c) => c.row)),
+    r1: Math.max(...cells.map((c) => c.row + c.h)),
   })
-  const partOf = (cells: Cell[]): Part => ({
-    cells,
-    box: {
-      c0: Math.min(...cells.map((c) => c.col)),
-      c1: Math.max(...cells.map((c) => c.col)) + 1,
-      r0: Math.min(...cells.map((c) => c.row)),
-      r1: Math.max(...cells.map((c) => c.row)) + 1,
-    },
+  const parts: Part[] = [egg, ...[1, 2, 3, 4].map((i) => [...faces, ...shadows].filter((c) => c.part === i))].map((cells) => ({
+    box: box(cells),
     snapped: false,
     snapAt: -1,
-  })
-  const parts = [partOf(egg), ...[1, 2, 3, 4].map((i) => partOf(word.filter((c) => c.part === i)))]
+  }))
   const shellTop = Math.min(...shell.map((c) => c.row))
-  return { columns: art.columns, rows: art.rows, egg, word, parts, shellTop }
+  return { egg, faces, shadows, sparkles, parts, shellTop }
 }
 
 export function mountHeroField(hero: HTMLElement) {
@@ -199,14 +228,18 @@ export function mountHeroField(hero: HTMLElement) {
   hero.dataset.field = "on"
 
   const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  const { columns, rows, egg, word, parts, shellTop } = heroCells()
+  const { columns, rows } = HERO_GRID
+  const { egg, faces, shadows, sparkles, parts, shellTop } = heroCells()
   const eggPart = parts[0]!
+  const eggBox = eggPart.box
+  /** What lives on springs once the opening is over: the letters' pixels and their shadow. */
+  const springs = [...faces, ...shadows]
 
   let width = 0
   let height = 0
   let dpr = 1
-  let cw = 10
-  let rh = 20
+  /** A grid pixel's size on screen. */
+  let px = 6
   let ox = 0
   let oy = 0
   let motes: Mote[] = []
@@ -215,8 +248,9 @@ export function mountHeroField(hero: HTMLElement) {
   const pointer = { x: -9999, y: -9999, active: false }
   let visible = true
   let scroll = 0
-  /** "sequence" while the egg drops and hatches (the opening, or a click replay); "cells" once the word is on its springs. */
+  /** "sequence" while the egg drops and hatches (the opening, or a click replay); "cells" once KLIN is on its springs. */
   let mode: "sequence" | "cells" = "sequence"
+  /** When the last click replay started (performance.now() ms), or -1: the opening's clock applies. */
   let replayAt = -1
   let snappedCount = 0
   /** Which hatch moments have shed their bits of shell, so each sheds once a run. */
@@ -227,13 +261,15 @@ export function mountHeroField(hero: HTMLElement) {
     const s = slot.getBoundingClientRect()
     width = rect.width
     height = rect.height
-    dpr = Math.min(2, window.devicePixelRatio || 1)
+    dpr = Math.min(3, window.devicePixelRatio || 1)
+    // The canvas is sized in whole device pixels and shown at exactly that size, so nothing gets resampled (blurred).
     canvas.width = Math.round(width * dpr)
     canvas.height = Math.round(height * dpr)
-    cw = s.width / columns
-    rh = cw * ROW_RATIO
-    ox = s.left - rect.left + (s.width - cw * columns) / 2
-    oy = s.top - rect.top + (s.height - rh * rows) / 2
+    canvas.style.width = `${canvas.width / dpr}px`
+    canvas.style.height = `${canvas.height / dpr}px`
+    px = s.width / columns
+    ox = s.left - rect.left + (s.width - px * columns) / 2
+    oy = s.top - rect.top + (s.height - px * rows) / 2
     const count = Math.round(clamp((width * height) / 11000, 40, 130))
     motes = Array.from({ length: count }, () => {
       const isWord = Math.random() < 0.22
@@ -253,19 +289,19 @@ export function mountHeroField(hero: HTMLElement) {
   }
 
   /** Where a grid spot is on screen right now (it rises a little as the hero scrolls away). */
-  const spot = (col: number, row: number) => ({ x: ox + col * cw, y: oy + row * rh - scroll * height * 0.18 })
+  const spot = (col: number, row: number) => ({ x: ox + col * px, y: oy + row * px - scroll * height * 0.18 })
 
-  /** A letter cell's resting place, drifting apart as the hero scrolls away. */
+  /** A cell's resting place, drifting apart as the hero scrolls away. */
   const target = (c: Cell) => {
     const drift = scroll * scroll
     return {
-      x: ox + c.col * cw + c.spread[0] * drift * width * 0.35,
-      y: oy + c.row * rh - scroll * height * 0.18 + c.spread[1] * drift * height * 0.25,
+      x: ox + c.col * px + c.spread[0] * drift * width * 0.35,
+      y: oy + c.row * px - scroll * height * 0.18 + c.spread[1] * drift * height * 0.25,
     }
   }
 
   function toTargets() {
-    for (const c of word) {
+    for (const c of springs) {
       const t = target(c)
       c.x = t.x
       c.y = t.y
@@ -276,23 +312,55 @@ export function mountHeroField(hero: HTMLElement) {
 
   const gray = (shade: number, alpha = 1) => `rgba(${shade},${shade},${shade},${alpha})`
 
-  function drawCell(c: Cell, x: number, y: number, shade: number, alpha: number) {
-    if (alpha <= 0.002) return
-    const color = gray(Math.round(clamp(shade, 0, 255)), alpha)
-    if (!drawGeometric(ctx, c.glyph, x, y, cw + 0.35, rh + 0.35, color, 1)) {
-      ctx.font = `400 ${cw * 1.45}px ${FONT_STACK}`
-      ctx.fillStyle = color
-      ctx.textAlign = "center"
-      ctx.fillText(c.glyph, x + cw / 2, y + rh / 2)
-      ctx.textAlign = "left"
-    }
+  /** Fill colors by shade and alpha (in twentieths), so thousands of pixels a frame don't each build a string. */
+  const fills = new Map<number, string>()
+  function fill(shade: number, alpha: number) {
+    const s = Math.round(clamp(shade, 0, 255))
+    const a = Math.round(clamp(alpha) * 20)
+    const key = s * 32 + a
+    let color = fills.get(key)
+    if (!color) fills.set(key, (color = gray(s, a / 20)))
+    return color
+  }
+
+  /**
+   * One pixel, crisp: its edges snap to device pixels, so neighbours at rest
+   * share an edge exactly. `bleed` oversizes it a hair where the canvas is
+   * turned and edges can't line up.
+   */
+  function drawPixel(x: number, y: number, shade: number, alpha: number, bleed = 0, g: CanvasRenderingContext2D = ctx) {
+    if (alpha <= 0.02) return
+    g.fillStyle = fill(shade, alpha)
+    const x0 = Math.round(x * dpr) / dpr
+    const y0 = Math.round(y * dpr) / dpr
+    const x1 = Math.round((x + px) * dpr) / dpr
+    const y1 = Math.round((y + px) * dpr) / dpr
+    g.fillRect(x0, y0, Math.max(x1 - x0, 1 / dpr) + bleed, Math.max(y1 - y0, 1 / dpr) + bleed)
+  }
+
+  /** A shadow cell: its box-drawing glyph, drawn as lines — the echoes of the letter above and to the left. */
+  function drawShadow(c: Cell, x: number, y: number, alpha: number) {
+    if (alpha <= 0.02) return
+    drawGeometric(ctx, c.glyph, Math.round(x * dpr) / dpr, Math.round(y * dpr) / dpr, c.w * px, c.h * px, gray(Math.round(c.shade), alpha), 1)
+  }
+
+  /** A sparkle: its glyph, centred in its cell. */
+  function drawSparkle(c: Cell, x: number, y: number, alpha: number) {
+    if (alpha <= 0.02) return
+    // As big as the old hero drew them: about one and a half cell widths.
+    ctx.font = `400 ${c.w * px * 1.45}px ${FONT_STACK}`
+    ctx.fillStyle = gray(c.shade, alpha)
+    ctx.textAlign = "center"
+    ctx.textBaseline = "middle"
+    ctx.fillText(c.glyph, x + (c.w * px) / 2, y + (c.h * px) / 2)
+    ctx.textAlign = "left"
   }
 
   /* ─── Looks over time ─────────────────────────────────────────────── */
 
-  /** A cell's shade: flat until the chrome pours in top-down and the band sweeps; lit by the cursor and by landings. */
+  /** A pixel's shade: flat until the chrome pours in top-down and the band sweeps; lit by the cursor and by landings. */
   function faceShade(c: Cell, now: number) {
-    const pour = clamp((intro.t - BEATS.chrome - c.row * 0.05) / 0.3)
+    const pour = clamp((intro.t - BEATS.chrome - (c.row / rows) * 0.5) / 0.3)
     let shade = 0xb4 + (c.shade - 0xb4) * easeOutCubic(pour)
     const band = (intro.t - BEATS.chrome - 0.16) / 0.8
     if (band > 0 && band < 1) {
@@ -300,7 +368,7 @@ export function mountHeroField(hero: HTMLElement) {
       shade += (0xff - shade) * Math.max(0, 1 - Math.abs(c.at - at) * 6)
     }
     if (pointer.active && mode === "cells") {
-      const d = Math.hypot(c.x + cw / 2 - pointer.x, c.y + rh / 2 - pointer.y)
+      const d = Math.hypot(c.x + px / 2 - pointer.x, c.y + px / 2 - pointer.y)
       shade += (0xff - shade) * clamp(1 - d / 160) * 0.8
     }
     const part = parts[c.part]
@@ -309,6 +377,12 @@ export function mountHeroField(hero: HTMLElement) {
       if (flash > 0) shade += (0xff - shade) * flash
     }
     return shade
+  }
+
+  /** The shadow extrudes behind the letters once they've landed, along the sweep's diagonal: how far, and from where. */
+  function shadowState(c: Cell, s: number) {
+    const k = easeOutCubic(clamp((s - DEPTH - c.at * 0.3) / 0.22))
+    return { k, dx: -(1 - k) * c.w * px * 0.5, dy: -(1 - k) * c.h * px * 0.3 }
   }
 
   /* ─── Landings ────────────────────────────────────────────────────── */
@@ -360,12 +434,10 @@ export function mountHeroField(hero: HTMLElement) {
 
   /* ─── The egg ─────────────────────────────────────────────────────── */
 
-  const eggBox = eggPart.box
-
   /** Bits of shell: a few from along the crack as it opens, a burst from the whole shell as it breaks. */
   function shedShell(now: number, count: number, speed: number, whole: boolean) {
-    const a = spot(eggBox.c0, whole ? shellTop : shellTop - 0.4)
-    const b = spot(eggBox.c1, whole ? eggBox.r1 : shellTop + 0.2)
+    const a = spot(eggBox.c0, whole ? shellTop : shellTop - 1)
+    const b = spot(eggBox.c1, whole ? eggBox.r1 : shellTop + 1)
     const cx = (a.x + b.x) / 2
     const half = (b.x - a.x) / 2
     for (let n = 0; n < count; n++) {
@@ -377,9 +449,45 @@ export function mountHeroField(hero: HTMLElement) {
   }
 
   /**
+   * The egg's two layers. Each frame its pixels are painted flat into them
+   * (snapped, upright), then each layer is drawn as one image under the
+   * drop's and the rock's turns, so a turned egg stays clean instead of
+   * showing hundreds of turned squares — and an upright one is copied 1:1.
+   */
+  const layers = { shell: document.createElement("canvas"), cap: document.createElement("canvas") }
+  function bake(kind: "shell" | "cap", shade: (c: Cell) => number) {
+    const layer = layers[kind]
+    const w = (eggBox.c1 - eggBox.c0) * px
+    const h = (eggBox.r1 - eggBox.r0) * px
+    const pw = Math.ceil(w * dpr) + 2
+    const ph = Math.ceil(h * dpr) + 2
+    if (layer.width !== pw || layer.height !== ph) {
+      layer.width = pw
+      layer.height = ph
+    }
+    const g = layer.getContext("2d")!
+    g.setTransform(1, 0, 0, 1, 0, 0)
+    g.clearRect(0, 0, pw, ph)
+    g.setTransform(dpr, 0, 0, dpr, 0, 0)
+    for (const c of egg) if (c.kind === kind) drawPixel((c.col - eggBox.c0) * px, (c.row - eggBox.r0) * px, shade(c), 1, 0, g)
+    return { layer, w: pw / dpr, h: ph / dpr }
+  }
+
+  /** A snapshot of a layer, so it can be baked again in the same frame. */
+  const ghosts = { a: document.createElement("canvas"), b: document.createElement("canvas") }
+  let ghostFlip = false
+  function copy(source: HTMLCanvasElement) {
+    const t = (ghostFlip = !ghostFlip) ? ghosts.a : ghosts.b
+    t.width = source.width
+    t.height = source.height
+    t.getContext("2d")!.drawImage(source, 0, 0)
+    return t
+  }
+
+  /**
    * Draws the egg `s` seconds into the sequence: dropping in (with a motion
    * trail), landing, hatching, then breaking away. `fade` scales it all (the
-   * replay fades it in as the word folds back).
+   * replay fades it in as KLIN folds back).
    */
   function drawEgg(s: number, now: number, fade = 1) {
     if (s < 0) return
@@ -402,7 +510,18 @@ export function mountHeroField(hero: HTMLElement) {
     const center = spot((eggBox.c0 + eggBox.c1) / 2, (eggBox.r0 + eggBox.r1) / 2)
     const bottom = spot((eggBox.c0 + eggBox.c1) / 2, eggBox.r1)
     const crack = spot((eggBox.c0 + eggBox.c1) / 2, shellTop)
-    const paint = (q: number, alpha: number, ghost: boolean) => {
+    const corner = spot(eggBox.c0, eggBox.r0)
+    // The layers sit on whole device pixels, like the pixels drawn straight onto the canvas.
+    const x0 = Math.round(corner.x * dpr) / dpr
+    const y0 = Math.round(corner.y * dpr) / dpr
+    const base = ctx.globalAlpha
+    const image = (baked: ReturnType<typeof bake>, alpha: number) => {
+      if (alpha <= 0) return
+      ctx.globalAlpha = base * alpha
+      ctx.drawImage(baked.layer, x0, y0, baked.w, baked.h)
+      ctx.globalAlpha = base
+    }
+    const paint = (q: number, alpha: number, shell: ReturnType<typeof bake>, cap: ReturnType<typeof bake>) => {
       ctx.save()
       // The drop: from above, a little turned and bigger.
       ctx.translate(center.x, center.y - height * 0.55 * q)
@@ -413,63 +532,95 @@ export function mountHeroField(hero: HTMLElement) {
       ctx.translate(bottom.x, bottom.y)
       ctx.rotate(pose.tilt)
       ctx.translate(-bottom.x, -bottom.y)
-      for (const c of egg) {
-        if (c.kind !== "shell") continue
-        const at = spot(c.col, c.row)
-        // Breaking, the shell's cells drift out from the middle as they fade.
-        const dx = (at.x - center.x) * breakK * 0.35
-        const dy = (at.y - center.y) * breakK * 0.35 + breakK * rh * 0.6
-        drawCell(c, at.x + dx, at.y + dy, ghost ? 0x90 : faceShade(c, now), alpha * shellAlpha)
-      }
-      ctx.translate(crack.x, crack.y + (pose.lid * rh) / 2)
+      if (breakK > 0) {
+        // Breaking, the shell crumbles: each bit tumbles its own way and falls as it fades.
+        for (const c of egg) {
+          if (c.kind !== "shell") continue
+          const at = spot(c.col, c.row)
+          const k = clamp(breakK * (0.7 + 0.3 * Math.abs(c.spread[1])))
+          const dx = (at.x - center.x) * k * 0.25 + c.spread[0] * k * px * 5
+          const dy = k * k * px * 12 + c.spread[1] * k * px * 2
+          drawPixel(at.x + dx, at.y + dy, faceShade(c, now), alpha * shellAlpha * (1 - k * 0.3))
+        }
+      } else image(shell, alpha * shellAlpha)
+      ctx.translate(crack.x, crack.y + pose.lid * px)
       ctx.rotate(pose.capTilt)
       ctx.translate(-crack.x, -crack.y)
-      for (const c of egg) {
-        if (c.kind !== "cap") continue
-        const at = spot(c.col, c.row)
-        drawCell(c, at.x, at.y, ghost ? 0x90 : faceShade(c, now), alpha * capAlpha)
-      }
+      image(cap, alpha * capAlpha)
       ctx.restore()
     }
     // Only the opening drops it; a replay's egg is already sitting there.
     const q = s < FLIGHT && replayAt < 0 ? flight(s / FLIGHT) : 0
-    // Motion trail: the egg a few moments ago, fainter the further back.
+    // Motion trail: the egg a few moments ago, fainter the further back, in a flat gray.
     if (q > 0.02) {
-      for (let k = 7; k >= 1; k--) {
-        const past = flight((s - k * 0.011) / FLIGHT)
-        if (past > q) paint(past, 0.1 * (1 - k / 8), true)
+      const shell = bake("shell", () => 0x90)
+      const ghostShell = { ...shell, layer: copy(shell.layer) }
+      const cap = bake("cap", () => 0x90)
+      const ghostCap = { ...cap, layer: copy(cap.layer) }
+      for (let k = 5; k >= 1; k--) {
+        const past = flight((s - k * 0.014) / FLIGHT)
+        if (past > q) paint(past, 0.1 * (1 - k / 6), ghostShell, ghostCap)
       }
     }
-    paint(q, 1, false)
+    paint(q, 1, bake("shell", (c) => faceShade(c, now)), bake("cap", (c) => faceShade(c, now)))
   }
 
-  /* ─── The word ────────────────────────────────────────────────────── */
+  /* ─── KLIN ────────────────────────────────────────────────────────── */
 
-  /** The letters hatching: each cell flies from its spot in the egg to its place, rising as it leaves. */
-  function drawWord(s: number, now: number) {
+  /** The letters hatching: each face pixel flies from its spot in the egg to its place, rising as it leaves. */
+  function drawLetters(s: number, now: number) {
     for (let i = 1; i <= 4; i++) {
       const lands = WORD + (i - 1) * LETTER_GAP + JITTER + TRAVEL * 0.55
       if (!parts[i]!.snapped && s >= lands && s < SEQ_END) landed(i, now, 6)
     }
-    for (const c of word) {
+    for (const c of faces) {
       const k = (s - WORD - (c.part - 1) * LETTER_GAP - c.delay) / TRAVEL
       if (k <= 0) continue
       const e = easeOutBack(clamp(k))
       const from = spot(c.from.col, c.from.row)
       const to = spot(c.col, c.row)
-      const x = lerp(from.x, to.x, e)
-      const y = lerp(from.y, to.y, e) - Math.sin(Math.PI * clamp(k)) * rh * 1.4
-      drawCell(c, x, y, faceShade(c, now), clamp(k * 4))
+      const y = lerp(from.y, to.y, e) - Math.sin(Math.PI * clamp(k)) * px * 9
+      drawPixel(lerp(from.x, to.x, e), y, faceShade(c, now), clamp(k * 4))
     }
   }
 
-  /** A click replay's first moments: the letters fold back into the egg as it fades in, closed. */
+  /** The shadow, extruding at its beat; `at` places each cell (its rest, or its spring). */
+  function drawShadows(s: number, at: (c: Cell) => { x: number; y: number }, alpha = 1) {
+    for (const c of shadows) {
+      const st = shadowState(c, s)
+      if (st.k <= 0) continue
+      const p = at(c)
+      drawShadow(c, p.x + st.dx, p.y + st.dy, st.k * alpha)
+    }
+  }
+
+  /** The sparkles pop in at their beat, turning, then twinkle. */
+  function drawSparkles(s: number, now: number, alpha = 1) {
+    sparkles.forEach((c, i) => {
+      const k = clamp((s - SPARKLE - i * 0.06) / 0.35)
+      if (k <= 0) return
+      const t = target(c)
+      const pop = easeOutBack(k)
+      ctx.save()
+      ctx.translate(t.x + (c.w * px) / 2, t.y + (c.h * px) / 2)
+      ctx.rotate((1 - k) * Math.PI)
+      ctx.scale(pop, pop)
+      ctx.translate(-(t.x + (c.w * px) / 2), -(t.y + (c.h * px) / 2))
+      drawSparkle(c, t.x, t.y, alpha * (0.55 + 0.45 * Math.sin(now / 520 + c.phase)))
+      ctx.restore()
+    })
+  }
+
+  /** A click replay's first moments: the letters fold back into the egg as it fades in, closed; the shadow and the sparkles go out. */
   function drawCollapse(r: number, now: number) {
     const k = clamp(r / COLLAPSE)
     const e = easeInCubic(k)
-    for (const c of word) {
+    const out = 1 - clamp(r / 0.2)
+    drawShadows(999, (c) => ({ x: c.x, y: c.y }), out)
+    drawSparkles(999, now, out)
+    for (const c of faces) {
       const from = spot(c.from.col, c.from.row)
-      drawCell(c, lerp(c.x, from.x, e), lerp(c.y, from.y, e), faceShade(c, now), 1 - clamp((k - 0.55) / 0.45))
+      drawPixel(lerp(c.x, from.x, e), lerp(c.y, from.y, e), faceShade(c, now), 1 - clamp((k - 0.55) / 0.45))
     }
     drawEgg(HATCH - SEATED, now, clamp((k - 0.35) / 0.65))
   }
@@ -479,26 +630,26 @@ export function mountHeroField(hero: HTMLElement) {
   function drawPrompt(now: number) {
     const t = intro.t
     if (t >= BEATS.egg + 0.2) return
-    const size = clamp(cw * 1.45, 16, 27)
+    const size = clamp(px * 3, 16, 27)
     ctx.font = `500 ${size}px ${FONT_STACK}`
     ctx.textBaseline = "middle"
     const typed = COMMAND.slice(0, clamp(Math.floor((t - BEATS.type) / 0.034), 0, COMMAND.length))
     const prompt = "$ "
     const full = ctx.measureText(prompt + COMMAND).width
-    const cx = ox + (columns * cw) / 2
-    const cy = oy + (rows * rh) / 2
+    const cx = ox + (columns * px) / 2
+    const cy = oy + (rows * px) / 2
     const x = cx - full / 2
 
     if (t < BEATS.enter) {
       ctx.fillStyle = gray(0x6a)
       ctx.fillText(prompt, x, cy)
-      const px = x + ctx.measureText(prompt).width
+      const left = x + ctx.measureText(prompt).width
       ctx.fillStyle = gray(0xee)
-      ctx.fillText(typed, px, cy)
+      ctx.fillText(typed, left, cy)
       const typing = typed.length < COMMAND.length && t > BEATS.type
       if (typing || Math.floor(now / 530) % 2 === 0) {
         ctx.fillStyle = gray(0xee)
-        ctx.fillRect(px + ctx.measureText(typed).width + 2, cy - size * 0.55, size * 0.55, size * 1.1)
+        ctx.fillRect(left + ctx.measureText(typed).width + 2, cy - size * 0.55, size * 0.55, size * 1.1)
       }
       return
     }
@@ -531,9 +682,11 @@ export function mountHeroField(hero: HTMLElement) {
 
   let last = performance.now()
 
+  /** Seconds into the sequence: the opening's clock, or the last click replay's (its fold back, then the same hatch). */
+  const seqTime = (now: number) => (replayAt > 0 ? HATCH - SEATED + ((now - replayAt) / 1000 - COLLAPSE) : intro.t - BEATS.egg)
+
   function settle() {
     mode = "cells"
-    replayAt = -1
     snappedCount = 4
     toTargets()
   }
@@ -567,60 +720,65 @@ export function mountHeroField(hero: HTMLElement) {
     drawPrompt(now)
 
     ctx.globalAlpha = fade
+    const s = seqTime(now)
     if (mode === "sequence") {
-      // The opening's own clock, or a click replay's (the fold back, then the same hatch).
       const r = replayAt > 0 ? (now - replayAt) / 1000 : -1
-      const s = r >= 0 ? HATCH - SEATED + (r - COLLAPSE) : intro.t - BEATS.egg
       if (s > SEQ_END) settle()
       else if (r >= 0 && r < COLLAPSE) drawCollapse(r, now)
       else {
+        drawShadows(s, (c) => spot(c.col, c.row))
         drawEgg(s, now)
-        drawWord(s, now)
+        drawLetters(s, now)
+        drawSparkles(s, now)
       }
     }
-    if (mode === "cells") for (const c of word) drawCell(c, c.x, c.y, faceShade(c, now), 1)
+    if (mode === "cells") {
+      drawShadows(s, (c) => ({ x: c.x, y: c.y }))
+      for (const c of faces) drawPixel(c.x, c.y, faceShade(c, now), 1)
+      drawSparkles(s, now)
+    }
     ctx.globalAlpha = 1
 
     for (const part of parts) drawCropMarks(part, now)
 
     // Sparks from the landings, and the bits of shell.
     for (let i = sparks.length - 1; i >= 0; i--) {
-      const s = sparks[i]!
-      const age = (now - s.born) / s.life
+      const sp = sparks[i]!
+      const age = (now - sp.born) / sp.life
       if (age >= 1) {
         sparks.splice(i, 1)
         continue
       }
-      if (s.gravity) {
-        s.vx *= 0.98 ** (dt * 60)
-        s.vy += 900 * dt
+      if (sp.gravity) {
+        sp.vx *= 0.98 ** (dt * 60)
+        sp.vy += 900 * dt
       } else {
-        s.vx *= 0.9 ** (dt * 60)
-        s.vy *= 0.9 ** (dt * 60)
+        sp.vx *= 0.9 ** (dt * 60)
+        sp.vy *= 0.9 ** (dt * 60)
       }
-      s.x += s.vx * dt
-      s.y += s.vy * dt
-      ctx.font = `400 ${clamp(cw * 1.1, 10, 18)}px ${FONT_STACK}`
+      sp.x += sp.vx * dt
+      sp.y += sp.vy * dt
+      ctx.font = `400 ${clamp(px * 2.4, 10, 18)}px ${FONT_STACK}`
       ctx.fillStyle = gray(0xee, (1 - age) ** 1.5)
       ctx.textAlign = "center"
-      ctx.fillText(s.glyph, s.x, s.y)
+      ctx.fillText(sp.glyph, sp.x, sp.y)
       ctx.textAlign = "left"
     }
 
-    if (countLabel) countLabel.textContent = `parts ${snappedCount} / 4 snapped · ${pad(word.length, 3)} cells`
+    if (countLabel) countLabel.textContent = `parts ${snappedCount} / 4 snapped · ${pad(faces.length + shadows.length, 4)} cells`
   }
 
   function step(dtFrames: number) {
     if (mode !== "cells") return
-    for (const c of word) {
+    for (const c of springs) {
       const t = target(c)
       c.vx += (t.x - c.x) * 0.075 * dtFrames
       c.vy += (t.y - c.y) * 0.075 * dtFrames
       if (pointer.active) {
-        const dx = c.x + cw / 2 - pointer.x
-        const dy = c.y + rh / 2 - pointer.y
+        const dx = c.x + px / 2 - pointer.x
+        const dy = c.y + px / 2 - pointer.y
         const d = Math.hypot(dx, dy)
-        const reach = cw * 5.5
+        const reach = px * 10
         if (d < reach && d > 0.01) {
           const push = (1 - d / reach) ** 2 * 2.6 * dtFrames
           c.vx += (dx / d) * push
@@ -659,7 +817,7 @@ export function mountHeroField(hero: HTMLElement) {
 
   layout()
   if (still) {
-    // Reduced motion: the settled word, drawn once (and again on resize).
+    // Reduced motion: the settled wordmark, drawn once (and again on resize).
     settle()
     const paint = () => draw(performance.now())
     paint()
@@ -692,7 +850,7 @@ export function mountHeroField(hero: HTMLElement) {
     pointer.active = false
   })
 
-  // A click on the settled word folds it back into the egg and hatches it again.
+  // A click on the settled wordmark folds it back into the egg and hatches it again.
   slot.addEventListener("click", () => {
     if (mode !== "cells") return
     mode = "sequence"

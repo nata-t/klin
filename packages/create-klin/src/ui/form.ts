@@ -1,5 +1,6 @@
 import { Canvas } from "./canvas"
 import { MARK_GLYPH, markImage } from "./logo"
+import { drawWordmark, wordmarkSizeFor } from "./wordmark"
 import type { Key } from "./term"
 import { colorEnabled, depth, hue, type RGB, type Style, sym, truncate, unicode, width, wrap } from "./theme"
 
@@ -8,6 +9,10 @@ import { colorEnabled, depth, hue, type RGB, type Style, sym, truncate, unicode,
  *
  *                                                                     v0.2.0
  *             ✓ 1 BASE ┈┈ ◆ 2 STACK ┈┈ ○ 3 AUTH ┈┈ ○ 4 TOOLBOX ┈┈ …
+ *
+ *                    ✦  ██╗  ██╗██╗     ██╗███╗   ██╗  ✦
+ *                       ██║ ██╔╝██║     ██║████╗  ██║
+ *                       …the KLIN wordmark, sized to fit…
  *
  *                              Pick your engine.
  *                 How the API is built and where the data lives.
@@ -100,8 +105,8 @@ export interface Page {
   /** Help text when nothing is highlighted (summary/progress pages). */
   help?: { title: string; text: string }
   /**
-   * Rows to keep for the page body at a terminal width — the tallest page of a
-   * multi-step flow — so every page of it starts on the same row.
+   * Rows to keep free for the page body at a terminal width — the tallest page
+   * of a multi-step flow — so the wordmark keeps one size on every page of it.
    */
   room?: (width: number) => number
 }
@@ -351,17 +356,23 @@ export class Form {
     const blocks = this.layout(bodyW)
     const height = sum(blocks)
 
-    // The page is centered under the steps, placed where the flow's tallest
-    // page would start, so it doesn't jump from step to step.
-    if (height <= avail) {
+    // The wordmark and the page are centered together under the steps; the
+    // wordmark shrinks (tall letters → regular → folded → one line) to leave
+    // the page room — the room of the flow's tallest page, so it doesn't
+    // change size between steps.
+    const size = wordmarkSizeFor(avail - Math.max(height, this.page.room?.(w) ?? 0) - 1, w)
+    const markH = size + 1
+    if (markH + height <= avail) {
       this.scroll = 0
-      const tallest = Math.min(avail, Math.max(height, this.page.room?.(w) ?? 0))
-      this.drawBlocks(canvas, blocks, left, top + Math.floor((avail - tallest) / 2), bodyW)
+      const y = top + Math.floor((avail - markH - height) / 2)
+      drawWordmark(canvas, 0, w, y, size)
+      this.drawBlocks(canvas, blocks, left, y + markH, bodyW)
       return this.finish(canvas, w, h)
     }
 
-    // Not enough room: the page scrolls under the steps.
-    const from = top
+    // Not enough room: the one-line wordmark stays put and the page scrolls under it.
+    drawWordmark(canvas, 0, w, top, 1)
+    const from = top + 2
     const room = bottom - from
     const [focusTop, focusBottom] = this.focusOffset(blocks)
     if (focusTop - this.scroll < 0) this.scroll = focusTop

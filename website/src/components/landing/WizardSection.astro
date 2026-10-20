@@ -84,7 +84,7 @@ import SectionShell from "./SectionShell.astro"
     },
   })
 
-  // Start when the terminal first comes into view.
+  // Start (and play the wordmark's light sweep) when the terminal first comes into view.
   let started = false
   new IntersectionObserver(
     ([entry], observer) => {
@@ -92,6 +92,7 @@ import SectionShell from "./SectionShell.astro"
       started = true
       observer.disconnect()
       void wizard.start()
+      wizard.playIntro()
     },
     { threshold: 0.35 }
   ).observe(host)

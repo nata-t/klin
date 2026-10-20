@@ -4,7 +4,8 @@ import { join } from "node:path"
 import { describe, expect, it } from "vitest"
 import { describeName } from "../src/commands/wizard"
 import { type ChipField, type ChipItem, Form, type InputField, type Page } from "../src/ui/form"
-import { HATCH, hatchPose, logoArt, MARK_GLYPH, markImage } from "../src/ui/logo"
+import { LID_CLOSED, logoArt, MARK_GLYPH, markImage } from "../src/ui/logo"
+import { wordmarkSizeFor } from "../src/ui/wordmark"
 import { PIXEL_MARKS } from "../src/ui/logo-art"
 import type { Key } from "../src/ui/term"
 import { hue, parseColor, width, wrap } from "../src/ui/theme"
@@ -49,7 +50,8 @@ describe("full-screen form", () => {
       const text = form.render(w, h).toString()
       if (w < 40 || h < 12) expect(text).toContain("more room")
       else {
-        // The header (the steps) stays put even when the body scrolls.
+        // The header (steps + wordmark) stays put even when the body scrolls.
+        expect(text).toMatch(/K L I N|██╗|▄█▀/)
         expect(text).toContain("TOOLBOX")
         if (h >= 24) expect(text).toContain("Fill the toolbox.")
         if (h >= 24) expect(text).toContain("SECURITY")
@@ -109,47 +111,55 @@ function grid() {
 
 const rowOf = (text: string, needle: string) => text.split("\n").findIndex((line) => line.includes(needle))
 describe("full-screen layout", () => {
-  it("shows the version in the corner, with no logo in a terminal", () => {
-    const p = { ...page().p, version: "v9.9.9" }
-    const text = new Form(p).render(120, 40).toString()
-    expect(rowOf(text, "v9.9.9")).toBe(0)
-    expect(text).not.toMatch(/[▄▀]█|█[▄▀]/)
-    expect(text).not.toContain(MARK_GLYPH)
-    expect(rowOf(text, p.heading)).toBeGreaterThan(rowOf(text, "TOOLBOX"))
+  it("puts the KLIN wordmark under the step indicator and shrinks it to fit", () => {
+    const form = new Form(page().p)
+    const big = form.render(120, 40).toString()
+    expect(rowOf(big, "TOOLBOX")).toBeLessThan(rowOf(big, "██╗"))
+    expect(big).not.toMatch(/TOOLBOX.*██/)
+    // Its sparkles come along.
+    expect(big).toMatch(/✦/)
+    expect(form.render(80, 28).toString()).toContain("▄█▀")
+    expect(form.render(60, 20).toString()).toContain("K L I N")
   })
 
-  it("puts the egg before the version where the renderer can draw it as an image", () => {
+  it("draws the tallest wordmark that fits, down to one line", () => {
+    expect([8, 7, 6, 5, 3, 2].map((rows) => wordmarkSizeFor(rows, 120))).toEqual([8, 6, 6, 3, 3, 1])
+    // Too narrow for the tall letters and their sparkles: the regular ones.
+    expect(wordmarkSizeFor(8, 48)).toBe(6)
+    expect(new Form(page().p).render(120, 44).toString()).toContain("██║  ██╔╝")
+  })
+
+  it("keeps the wordmark one size across the pages of a flow", () => {
+    const short = page().p
+    const tall = grid().p
+    const logo = (text: string) => (text.includes("██╗") ? 6 : text.includes("▄█▀") ? 3 : 1)
+    // On their own, a short page gets a bigger wordmark than a tall one at this height…
+    expect(logo(new Form(short).render(100, 28).toString())).toBeGreaterThan(logo(new Form(tall).render(100, 28).toString()))
+    // …but with the flow's room they match.
+    const room = (width: number) => Math.max(new Form(short).bodyHeight(width), new Form(tall).bodyHeight(width))
+    const sizes = [short, tall].map((p) => logo(new Form({ ...p, room }).render(100, 28).toString()))
+    expect(sizes[0]).toBe(sizes[1])
+  })
+
+  it("shows the version in the corner, and the egg before it only where the renderer draws images", () => {
+    const p = { ...page().p, version: "v9.9.9" }
+    const plain = new Form(p).render(120, 40).toString()
+    expect(rowOf(plain, "v9.9.9")).toBe(0)
+    expect(plain).not.toContain(MARK_GLYPH)
     markImage.on = true
     try {
-      const text = new Form({ ...page().p, version: "v9.9.9" }).render(120, 40).toString()
-      expect(text.split("\n")[0]).toMatch(new RegExp(`${MARK_GLYPH}  v9\\.9\\.9`))
+      expect(new Form(p).render(120, 40).toString().split("\n")[0]).toMatch(new RegExp(`${MARK_GLYPH}  v9\\.9\\.9`))
     } finally {
       markImage.on = false
     }
   })
 
-  it("starts every page of a flow on the same row", () => {
-    const short = page().p
-    const tall = grid().p
-    const headingRow = (p: Page) => rowOf(new Form(p).render(100, 30).toString(), p.heading)
-    // On their own, a short page sits lower than a tall one…
-    expect(headingRow(short)).toBeGreaterThan(headingRow(tall))
-    // …but with the flow's room they line up.
-    const room = (width: number) => Math.max(new Form(short).bodyHeight(width), new Form(tall).bodyHeight(width))
-    expect(headingRow({ ...short, room })).toBe(headingRow({ ...tall, room }))
-  })
-
-  it("hatches the egg: closed, cracked, then the resting logo", () => {
-    for (const size of [10, 6, 3] as const) {
-      const cap = (lid: number) => logoArt(size, { lid, nudge: 0 }).cells.filter((c) => c.kind === "cap")
+  it("closes the egg's crack when the cap drops, and keeps it one part", () => {
+    for (const [size, px] of [[10, 20], [6, 12], [3, 6]] as const) {
+      const cap = logoArt(size, { lid: LID_CLOSED[px], nudge: 0 }).cells.filter((c) => c.kind === "cap")
       const shell = logoArt(size).cells.filter((c) => c.kind === "shell")
-      const closed = hatchPose(size, 0)
       // Closed, the cap sits on the shell with no empty row between them.
-      const capBottom = Math.max(...cap(closed.lid).map((c) => c.row))
-      const shellTop = Math.min(...shell.map((c) => c.row))
-      expect(shellTop - capBottom).toBeLessThanOrEqual(1)
-      // The last keyframe is the logo at rest, and the egg is one part with both halves.
-      expect(logoArt(size, hatchPose(size, HATCH.at(-1)!.ms)).lines).toEqual(logoArt(size).lines)
+      expect(Math.min(...shell.map((c) => c.row)) - Math.max(...cap.map((c) => c.row))).toBeLessThanOrEqual(1)
       expect(new Set(logoArt(size).cells.filter((c) => c.kind !== "text" && c.kind !== "word").map((c) => c.part))).toEqual(new Set([0]))
     }
   })
