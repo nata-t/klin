@@ -23,12 +23,14 @@ and dark, in a browser tab and in the terminal.
 ## Where it's used
 
 - **CLI** — `packages/create-klin/src/ui/logo-art.ts` holds the mark and the
-  wordmark as pixel art (two square pixels per character). The full-screen
-  header, the banner and `--help` draw the largest size that fits (10, 6 or 3
-  rows, or one line). The first time the full screen opens (and in the
-  banner), the egg hatches: it wobbles, cracks and the cap pops up.
-- **Website** — the hero animates that same pixel art: the egg flies in,
-  wobbles, cracks and pops its cap. The nav, footer, docs header and the last
+  wordmark as pixel art (two square pixels per character). The CLI draws the
+  small egg (3 rows): in the full-screen header's corner with the version
+  beside it, and beside the name in the banner and `--help`. The first time
+  the full screen opens (and in the banner), the egg hatches: it wobbles,
+  cracks and the cap pops up.
+- **Website** — the hero takes the big pixel art apart: the egg drops in,
+  wobbles, cracks and pops its cap, then its pixels fly out as the word and
+  only "klin" is left. The nav, footer, docs header and the last
   section use `website/src/components/brand/` (`KlinMark.astro`,
   `KlinLockup.astro`, the cap and the shell as separate paths): the nav's egg
   hatches on hover, the last section's every few seconds. Favicons and

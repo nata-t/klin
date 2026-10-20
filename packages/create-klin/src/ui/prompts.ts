@@ -16,7 +16,7 @@ export const isCancel = (value: unknown): value is Cancel => value === CANCEL
 
 let context = "klin"
 
-/** Shown next to the KLIN logo ("klin add · my-app"). */
+/** Shown at the top of the screen ("klin add · my-app"). */
 export function setPromptContext(text: string) {
   context = text
 }
@@ -69,12 +69,12 @@ const toItems = <T extends string>(options: Option<T>[]): ChipItem[] =>
 
 /**
  * Every prompt keeps room for the tallest one — a heading, a subtitle and a
- * full eight-option list — so the logo stays one size across a run of them.
+ * full eight-option list — so a run of them all start on the same row.
  */
 const PROMPT_ROOM = 12
 let room = PROMPT_ROOM
 
-/** A flow with a taller page keeps room for it on every page, so the logo never changes size. */
+/** A flow with a taller page keeps room for it on every page, so none of them jumps. */
 export function setPromptRoom(rows: number) {
   room = Math.max(PROMPT_ROOM, rows)
 }
