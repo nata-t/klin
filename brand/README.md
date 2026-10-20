@@ -24,10 +24,11 @@ and dark, in a browser tab and in the terminal.
 
 - **CLI** — `packages/create-klin/src/ui/logo-art.ts` holds the mark and the
   wordmark as pixel art (two square pixels per character). The CLI draws the
-  small egg (3 rows): in the full-screen header's corner with the version
-  beside it, and beside the name in the banner and `--help`. The first time
-  the full screen opens (and in the banner), the egg hatches: it wobbles,
-  cracks and the cap pops up.
+  small egg (3 rows) beside the name in the banner and `--help`, and in the
+  banner the egg hatches: it wobbles, cracks and the cap pops up. The
+  full-screen header shows just the version: no text glyph makes a good egg
+  that small. The website's in-browser wizard, a canvas, draws the vector egg
+  at text height before it (`MARK_GLYPH`, `website/src/wizard/glyphs.ts`).
 - **Website** — the hero takes the big pixel art apart: the egg drops in,
   wobbles, cracks and pops its cap, then its pixels fly out as the word and
   only "klin" is left. The nav, footer, docs header and the last
