@@ -54,6 +54,11 @@ interface Section {
 const clamp = (v: number, a = 0, b = 1) => Math.max(a, Math.min(b, v))
 const easeOutExpo = (t: number) => (t >= 1 ? 1 : 1 - 2 ** (-10 * t))
 const pad3 = (n: number) => String(Math.round(n)).padStart(3, "0")
+// Each tick also carries the crosshair the section ticks draw (a dot on the line and a hairline 5px under
+// it), and like them the ticks drop out once the rail is full width.
+const TICK =
+  "pointer-events-none absolute top-0 right-0 z-2 h-px origin-right bg-bright before:absolute before:inset-y-0 before:left-5 before:w-px before:bg-line after:absolute after:inset-x-0 after:top-5 after:h-px after:bg-line max-1280:hidden"
+
 const el = (tag: string, cls: string, parent?: HTMLElement) => {
   const node = document.createElement(tag)
   node.className = cls
@@ -88,25 +93,41 @@ function build(rail: HTMLElement, still: boolean): () => void {
   rail.setAttribute("aria-valuemin", "0")
   rail.setAttribute("aria-valuemax", "100")
 
-  el("div", "frost", rail)
-  el("div", "edge", rail)
-  const track = el("div", "track", rail)
-  const bracket = el("div", "bracket", rail)
-  const needle = el("div", "needle", rail)
-  el("div", "line", needle)
-  const chip = el("div", "chip", needle)
-  const digits = el("span", "digits", chip)
+  // Frost: whatever passes under the rail blurs, feathering out toward the page.
+  el("div", "absolute inset-0 bg-bg/58 backdrop-blur-[9px] [mask-image:linear-gradient(to_left,#000_55%,rgba(0,0,0,0.6)_75%,transparent)]", rail)
+  el("div", "absolute inset-y-0 right-0 w-px bg-rule", rail)
+  const track = el("div", "absolute inset-x-0 top-0 will-change-transform", rail)
+  // The map's "you are here": the visible slice of the page, in crop marks.
+  const bracket = el(
+    "div",
+    "absolute top-0 right-px left-6 h-0 bg-white/5 opacity-0 before:absolute before:inset-x-0 before:top-0 before:h-7 before:border before:border-b-0 before:border-bright after:absolute after:inset-x-0 after:bottom-0 after:h-7 after:border after:border-t-0 after:border-bright",
+    rail
+  )
+  // The needle: where you are, meeting its own tick.
+  const needle = el("div", "absolute inset-x-0 top-0 h-0 will-change-[transform,opacity]", rail)
+  el("div", "absolute inset-x-0 top-0 h-px bg-white shadow-[0_0_8px_rgba(255,255,255,0.55)]", needle)
+  const chip = el(
+    "div",
+    "absolute top-4 left-4 flex cursor-pointer items-center gap-8 rounded-[2px] border-0 bg-bright px-4 py-1 text-[9px] leading-[1.35] font-[650] tracking-[0.06em] whitespace-nowrap text-bg transition-[top] duration-180 ease-[ease]",
+    needle
+  )
+  const digits = el("span", "inline-flex h-[1.35em] overflow-hidden", chip)
   const columns = [0, 1, 2].map(() => {
-    const col = el("span", "digit", digits)
-    col.innerHTML = "0123456789".split("").map((d) => `<span>${d}</span>`).join("")
+    const col = el("span", "flex flex-col transition-[transform] duration-280 ease-[cubic-bezier(0.2,0.9,0.2,1)]", digits)
+    col.innerHTML = "0123456789".split("").map((d) => `<span class="h-[1.35em] tabular-nums">${d}</span>`).join("")
     return col
   })
   chip.append("%")
 
-  const ghost = el("div", "ruler-ghost", document.body)
+  // The hover ghost: where a click would take you.
+  const ghost = el("div", "pointer-events-none fixed top-0 right-0 z-41 h-0 w-260 opacity-0 transition-[opacity] duration-150 ease-linear", document.body)
   ghost.setAttribute("aria-hidden", "true")
-  el("div", "line", ghost)
-  const ghostLabel = el("div", "label", ghost)
+  el("div", "absolute top-0 right-0 h-px w-ruler bg-muted", ghost)
+  const ghostLabel = el(
+    "div",
+    "absolute top-0 right-[calc(var(--spacing-ruler)+8px)] rounded-[3px] border border-line bg-bg/92 px-7 py-3 font-mono text-[10px] tracking-[0.1em] whitespace-nowrap text-text uppercase transform-[translateY(-50%)] [&_b]:font-[650] [&_b]:text-bright",
+    ghost
+  )
 
   /* ─── The track ───────────────────────────────────────────────────── */
 
@@ -117,14 +138,18 @@ function build(rail: HTMLElement, still: boolean): () => void {
     const major = half % 20 === 0
     const mid = half % 10 === 0
     const whole = half % 2 === 0
-    const row = el("div", "row", track)
-    const line = el("span", "tick", row)
+    const row = el("div", "absolute inset-x-0 h-0", track)
+    const line = el("span", TICK, row)
     line.style.width = `${major ? 16 : mid ? 11 : whole ? 7 : 4}px`
     const alpha = major ? 0.75 : mid ? 0.48 : whole ? 0.32 : 0.2
     line.style.opacity = String(alpha)
     let label: HTMLElement | undefined
     if (major) {
-      label = el("span", "num", row)
+      label = el(
+        "span",
+        "absolute top-0 right-21 text-[8.5px] tracking-[0.08em] text-muted tabular-nums transition-[opacity] duration-200 ease-linear transform-[translateY(-50%)]",
+        row
+      )
       label.textContent = pad3(pct)
     }
     ticks.push({ pct: pct / 100, row, line, label, alpha })
@@ -133,11 +158,16 @@ function build(rail: HTMLElement, still: boolean): () => void {
   const sections: Section[] = []
   STEPS.forEach((step, index) => {
     if (!document.getElementById(step.id)) return
-    const row = el("div", "row", track)
+    // A section's marker: a long rule and its name on the spine, reading down.
+    const row = el("div", "group/row absolute inset-x-0 h-0", track)
     row.dataset.state = index === 0 ? "here" : "ahead"
-    el("span", "mark", row)
-    const spine = el("span", "spine", row)
-    const glyph = el("span", "glyph", spine)
+    el("span", "absolute top-0 right-0 h-px w-30 bg-bright", row)
+    const spine = el(
+      "span",
+      "absolute top-7 right-34 text-[9px] tracking-[0.16em] whitespace-nowrap text-subtle uppercase transition-[color,opacity] duration-[250ms,200ms] ease-linear [writing-mode:vertical-rl] group-data-[state=here]/row:font-[650] group-data-[state=here]/row:text-bright group-data-[state=passed]/row:text-muted",
+      row
+    )
+    const glyph = el("span", "mb-6 inline-block", spine)
     glyph.textContent = index === 0 ? "◆" : "○"
     spine.append(` ${String(index + 1).padStart(2, "0")} ${step.label}`)
     sections.push({ id: step.id, label: step.label, index, pct: 0, row, spine, glyph, len: 0 })
