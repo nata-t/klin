@@ -61,6 +61,28 @@
   /* Font sizes are set in px where they're used; Tailwind's scale would bring line heights along. */
   --text-*: initial;
   --breakpoint-*: initial;
+
+  /* The headline's light band, crossing once at the opening's copy beat (motion.ts sets data-sheen="go"). */
+  --animate-sheen: sheen 1.5s cubic-bezier(0.4, 0, 0.2, 1) 0.35s both;
+  @keyframes sheen {
+    from {
+      background-position:
+        120% 0,
+        0 0;
+    }
+    to {
+      background-position:
+        -40% 0,
+        0 0;
+    }
+  }
+  /* The stack marquee. */
+  --animate-slide: slide 60s linear infinite;
+  @keyframes slide {
+    to {
+      transform: translateX(-50%);
+    }
+  }
 }
 
 /* The page's breakpoints, desktop-first: max-720 is (max-width: 720px), inclusive, as before.
@@ -193,19 +215,6 @@
   text-wrap: pretty;
 }
 
-kbd {
-  display: inline-block;
-  min-width: 1.6em;
-  padding: 1px 6px;
-  border: 1px solid var(--line);
-  border-bottom-width: 2px;
-  border-radius: 4px;
-  font-size: 0.78em;
-  line-height: 1.5;
-  text-align: center;
-  color: var(--bright);
-  background: var(--bar);
-}
 
 /* ─── Rails, rules, ticks ──────────────────────────────────────────────── */
 

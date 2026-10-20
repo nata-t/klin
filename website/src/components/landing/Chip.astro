@@ -1,0 +1,24 @@
+---
+/**
+ * A chip, the CLI's plain-text option: ● / ○ to pick one, ◼ / ◻ to pick any, a soft highlight under the
+ * cursor. Whichever of aria-pressed, aria-selected or aria-checked it carries brightens it when "true";
+ * the scripts flip that attribute and the [data-mark] glyph. Sits in a <Chips> row, which sets its font.
+ */
+import type { HTMLAttributes } from "astro/types"
+
+type Props = HTMLAttributes<"button"> & { mark: string }
+const { mark, class: className, ...attrs } = Astro.props
+---
+
+<button
+  class:list={[
+    "inline-flex cursor-pointer items-center gap-8 rounded-[3px] border-0 bg-transparent px-9 py-3 whitespace-nowrap text-subtle [font:inherit] transition-[background-color,color] duration-120 ease-linear hover:bg-lift hover:text-text disabled:cursor-default",
+    "aria-checked:font-semibold aria-checked:text-bright aria-pressed:font-semibold aria-pressed:text-bright aria-selected:font-semibold aria-selected:text-bright",
+    className,
+  ]}
+  type="button"
+  {...attrs}
+>
+  <span class="w-[1ch] text-center" aria-hidden="true" data-mark>{mark}</span>
+  <slot />
+</button>

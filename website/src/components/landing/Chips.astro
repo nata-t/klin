@@ -1,0 +1,11 @@
+---
+/** A wrapping row of <Chip>s, in the mono the chips inherit. */
+import type { HTMLAttributes } from "astro/types"
+
+type Props = HTMLAttributes<"div">
+const { class: className, ...attrs } = Astro.props
+---
+
+<div class:list={["flex flex-wrap gap-x-6 gap-y-2 font-mono text-[13px]", className]} {...attrs}>
+  <slot />
+</div>

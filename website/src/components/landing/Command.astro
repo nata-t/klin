@@ -1,0 +1,38 @@
+---
+/**
+ * A command line with a copy button: `$ bun create klin`. The command sits in a span carrying the `source`
+ * data attribute, which the copy button (motion.ts) and the scripts that swap the command look up.
+ */
+interface Props {
+  /** The data attribute on the command's span, e.g. "data-install-cmd". */
+  source: string
+  command?: string
+  /** The copy button's accessible name. */
+  label?: string
+  /** A key hint inside the copy button. */
+  kbd?: string
+  small?: boolean
+  class?: string
+}
+const { source, command = "", label, kbd, small, class: className } = Astro.props
+---
+
+<div class:list={["flex items-stretch overflow-hidden rounded-box border border-line bg-[rgba(10,10,10,0.72)] font-mono", small ? "text-[13.5px]" : "text-[15px]", className]}>
+  <code class="flex min-w-0 flex-1 items-center gap-12 overflow-x-auto px-18 py-14 whitespace-nowrap text-bright [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+    ><span class="text-subtle select-none">$</span><span {...{ [source]: "" }}>{command}</span></code
+  >
+  <button
+    class="inline-flex flex-none cursor-pointer items-center gap-8 border-0 border-l border-l-line bg-transparent px-16 py-0 font-mono text-[12px] leading-[inherit] tracking-[0.08em] text-muted uppercase transition-[background-color,color] duration-120 ease-linear hover:bg-bright hover:text-bg data-[copied=true]:text-bright"
+    type="button"
+    data-copy-from={`[${source}]`}
+    aria-label={label}
+  >
+    <span data-copy-label>Copy</span>{
+      kbd && (
+        <kbd class="inline-block min-w-0 rounded-[4px] border border-b-2 border-line bg-bar px-5 py-0 text-center text-[10px] leading-[1.5] text-bright" aria-hidden="true">
+          {kbd}
+        </kbd>
+      )
+    }
+  </button>
+</div>

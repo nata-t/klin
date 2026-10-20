@@ -84,7 +84,7 @@ root.classList.add("motion-ready")
 
 // The opening's later beats: the instrument assembles, then the headline's sheen.
 at("instrument", () => root.classList.add("at-instrument"))
-at("copy", () => document.querySelectorAll(".sheen").forEach((el) => el.classList.add("go")))
+at("copy", () => document.querySelectorAll<HTMLElement>("[data-sheen]").forEach((el) => (el.dataset.sheen = "go")))
 
 function decode(el: HTMLElement, text: string) {
   const dust = "░▒▓<>/{}[]=+*#"
@@ -110,7 +110,7 @@ function decode(el: HTMLElement, text: string) {
 const links = new Map(STEPS.map((step) => [step.id, document.querySelector<HTMLAnchorElement>(`[data-step="${step.id}"]`)]))
 const compactNum = document.querySelector<HTMLElement>("[data-compact-num]")
 const compactName = document.querySelector<HTMLElement>("[data-compact-name]")
-const heroCorner = document.querySelector<HTMLElement>(".c-tr")
+const heroCorner = document.querySelector<HTMLElement>("[data-hero-step]")
 
 function setStep(current: number) {
   STEPS.forEach((step, i) => {
