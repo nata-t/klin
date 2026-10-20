@@ -22,17 +22,21 @@ and dark, in a browser tab and in the terminal.
 
 ## Where it's used
 
-- **CLI** — `packages/create-klin/src/ui/logo-art.ts` holds the mark and the
-  wordmark as pixel art (two square pixels per character). The CLI draws the
-  small egg (3 rows) beside the name in the banner and `--help`, and in the
-  banner the egg hatches: it wobbles, cracks and the cap pops up. The
-  full-screen header shows just the version: no text glyph makes a good egg
-  that small. The website's in-browser wizard, a canvas, draws the vector egg
-  at text height before it (`MARK_GLYPH`, `website/src/wizard/glyphs.ts`).
-- **Website** — the hero takes the big pixel art apart: the egg drops in,
-  wobbles, cracks and pops its cap, then its pixels fly out as the word and
-  only "klin" is left. The nav, footer, docs header and the last
-  section use `website/src/components/brand/` (`KlinMark.astro`,
+- **CLI** — the terminal keeps the KLIN wordmark
+  (`packages/create-klin/src/ui/wordmark.ts`): "KLIN" in ANSI Shadow, chrome
+  faces over a box-drawing shadow that echoes each letter, with sparkles. The
+  full-screen header draws the largest that fits under the steps (8, 6 or 3
+  rows, or one line) and a band of light crosses it on first open; the
+  banner draws the regular one. The egg is in
+  `packages/create-klin/src/ui/logo-art.ts` as pixel art (two square pixels
+  per character): `--help` puts the small egg beside the name. The
+  website's in-browser wizard, a canvas, also draws the vector egg at text
+  height before the version (`MARK_GLYPH`, `website/src/wizard/glyphs.ts`).
+- **Website** — the hero hatches KLIN out of the egg: the egg (rasterized
+  from `components/brand/mark-paths.ts`) drops in, wobbles, cracks and pops
+  its cap, then its pixels fly out as the KLIN wordmark's letters, the
+  shadow extrudes and the sparkles pop (`website/src/lib/hero-logo.ts`). The
+  nav, footer, docs header and the last section use `website/src/components/brand/` (`KlinMark.astro`,
   `KlinLockup.astro`, the cap and the shell as separate paths): the nav's egg
   hatches on hover, the last section's every few seconds. Favicons and
   `og.png` are in `website/public/`.

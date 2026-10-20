@@ -369,14 +369,15 @@
 
       <h2>In the terminal</h2>
       <p>
-        The CLI draws the same mark as pixel art, two square pixels per character (<code>▀ ▄ █</code>), in a chrome gradient — from
-        <code>packages/create-klin/src/ui/logo-art.ts</code>, which the website hero and the favicons read too. The banner and
-        <code>--help</code> use the small egg beside the name; in the banner it hatches: it wobbles, cracks and the cap pops up.
+        The CLI draws the mark as pixel art, two square pixels per character (<code>▀ ▄ █</code>), in a chrome gradient — from
+        <code>packages/create-klin/src/ui/logo-art.ts</code>, which the favicons read too; <code>--help</code> puts the small egg
+        beside the name. The screens and the banner keep the KLIN wordmark (<code>wordmark.ts</code>), and the website hero hatches it
+        out of the egg.
       </p>
       <div class="grid terms">
         <figure class="tile wide">
           <pre class="term">{{terminal:10}}</pre>
-          <figcaption class="cap">10 rows · the website hero takes its egg and its letters from here</figcaption>
+          <figcaption class="cap">10 rows · the big pixel lockup (its 20 px egg is the 32 px favicon)</figcaption>
         </figure>
         <figure class="tile">
           <pre class="term">{{terminal:6}}</pre>
@@ -384,7 +385,7 @@
         </figure>
         <figure class="tile">
           <pre class="term">{{terminal:3}}</pre>
-          <figcaption class="cap">3 rows · the banner and <code>--help</code></figcaption>
+          <figcaption class="cap">3 rows · <code>--help</code></figcaption>
         </figure>
       </div>
 

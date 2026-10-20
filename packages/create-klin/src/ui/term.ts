@@ -1,5 +1,6 @@
 import { emitKeypressEvents } from "node:readline"
 import type { Canvas } from "./canvas"
+import { introRunning, playIntro } from "./wordmark"
 
 /**
  * The full-screen session: the alternate screen buffer, raw keyboard input,
@@ -31,6 +32,7 @@ class Screen {
   private view: View | undefined
   private transcript: string[] = []
   private keypressReady = false
+  private introPlayed = false
 
   private readonly onKeypress = (_: string | undefined, raw: Partial<Key> | undefined) => {
     const key: Key = {
@@ -65,6 +67,15 @@ class Screen {
     process.stdin.on("keypress", this.onKeypress)
     process.stdout.on("resize", this.onResize)
     process.stdout.write(ENTER)
+    // The first time the screen opens, a band of light sweeps across the wordmark.
+    if (!this.introPlayed) {
+      this.introPlayed = true
+      playIntro()
+      const timer = setInterval(() => {
+        this.paint()
+        if (!introRunning()) clearInterval(timer)
+      }, 40)
+    }
   }
 
   /** Leaves the full screen and prints what was answered while it was up. */

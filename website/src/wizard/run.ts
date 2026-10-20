@@ -114,6 +114,7 @@ export function mountWizard(host: HTMLElement, input: HTMLTextAreaElement, handl
       void start()
     },
     focus: () => terminal.focus(),
+    playIntro: () => screen.playIntro(),
     text: () => terminal.text(),
   }
 }

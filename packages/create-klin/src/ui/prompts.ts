@@ -69,12 +69,12 @@ const toItems = <T extends string>(options: Option<T>[]): ChipItem[] =>
 
 /**
  * Every prompt keeps room for the tallest one — a heading, a subtitle and a
- * full eight-option list — so a run of them all start on the same row.
+ * full eight-option list — so the wordmark stays one size across a run of them.
  */
 const PROMPT_ROOM = 12
 let room = PROMPT_ROOM
 
-/** A flow with a taller page keeps room for it on every page, so none of them jumps. */
+/** A flow with a taller page keeps room for it on every page, so the wordmark never changes size. */
 export function setPromptRoom(rows: number) {
   room = Math.max(PROMPT_ROOM, rows)
 }
