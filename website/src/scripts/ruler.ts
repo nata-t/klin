@@ -94,13 +94,13 @@ function build(rail: HTMLElement, still: boolean): () => void {
   rail.setAttribute("aria-valuemax", "100")
 
   // Frost: whatever passes under the rail blurs, feathering out toward the page.
-  el("div", "absolute inset-0 bg-bg/58 backdrop-blur-[9px] [mask-image:linear-gradient(to_left,#000_55%,rgba(0,0,0,0.6)_75%,transparent)]", rail)
+  el("div", "absolute inset-0 bg-[rgba(20,20,20,0.58)] backdrop-blur-[9px] [mask-image:linear-gradient(to_left,#000_55%,rgba(0,0,0,0.6)_75%,transparent)]", rail)
   el("div", "absolute inset-y-0 right-0 w-px bg-rule", rail)
   const track = el("div", "absolute inset-x-0 top-0 will-change-transform", rail)
   // The map's "you are here": the visible slice of the page, in crop marks.
   const bracket = el(
     "div",
-    "absolute top-0 right-px left-6 h-0 bg-white/5 opacity-0 before:absolute before:inset-x-0 before:top-0 before:h-7 before:border before:border-b-0 before:border-bright after:absolute after:inset-x-0 after:bottom-0 after:h-7 after:border after:border-t-0 after:border-bright",
+    "absolute top-0 right-px left-6 h-0 bg-[rgba(255,255,255,0.05)] opacity-0 before:absolute before:inset-x-0 before:top-0 before:h-7 before:border before:border-b-0 before:border-bright after:absolute after:inset-x-0 after:bottom-0 after:h-7 after:border after:border-t-0 after:border-bright",
     rail
   )
   // The needle: where you are, meeting its own tick.
@@ -125,7 +125,7 @@ function build(rail: HTMLElement, still: boolean): () => void {
   el("div", "absolute top-0 right-0 h-px w-ruler bg-muted", ghost)
   const ghostLabel = el(
     "div",
-    "absolute top-0 right-[calc(var(--spacing-ruler)+8px)] rounded-[3px] border border-line bg-bg/92 px-7 py-3 font-mono text-[10px] tracking-[0.1em] whitespace-nowrap text-text uppercase transform-[translateY(-50%)] [&_b]:font-[650] [&_b]:text-bright",
+    "absolute top-0 right-[calc(var(--spacing-ruler)+8px)] rounded-[3px] border border-line bg-[rgba(20,20,20,0.92)] px-7 py-3 font-mono text-[10px] tracking-[0.1em] whitespace-nowrap text-text uppercase transform-[translateY(-50%)] [&_b]:font-[650] [&_b]:text-bright",
     ghost
   )
 
