@@ -1,0 +1,836 @@
+<!doctype html>
+<title>klin mark concepts</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" />
+<style>
+  /* One visual world, like brand/preview.html: klin is grayscale ink. */
+  :root {
+    --bg: #121212;
+    --bar: #1a1a1a;
+    --tint: #202020;
+    --line: #2c2c2c;
+    --line-2: #3d3d3d;
+    --subtle: #868686;
+    --muted: #949494;
+    --text: #c6c6c6;
+    --bright: #f0f0ee;
+    --paper: #f4f4f2;
+    --ink: #141414;
+    --term: #0c0c0c;
+    --sans: "Geist", ui-sans-serif, system-ui, sans-serif;
+    --mono: "Geist Mono", ui-monospace, "DejaVu Sans Mono", monospace;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { background: var(--bg); }
+  body {
+    margin: 0;
+    color: var(--text);
+    font: 15px/1.6 var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  main { max-width: 1180px; margin: 0 auto; padding: 48px 16px 96px; }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--bright); outline-offset: 2px; }
+  svg { display: block; }
+
+  /* Grounds: every mark is judged on ink and on paper. */
+  .g-dark { background: #181818; color: var(--bright); }
+  .g-light { background: var(--paper); color: var(--ink); }
+  .tile-ink { background: var(--ink); color: var(--paper); }
+  .tile-paper { background: var(--paper); color: var(--ink); }
+
+  /* Intro */
+  .eyebrow, .label {
+    font: 500 11.5px/1 var(--mono);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0;
+  }
+  h1 {
+    font: 600 clamp(32px, 5vw, 48px)/1.04 var(--sans);
+    letter-spacing: -0.035em;
+    color: var(--bright);
+    margin: 14px 0 0;
+    text-wrap: balance;
+  }
+  .intro p.lead { max-width: 62ch; margin: 18px 0 0; font-size: 16px; }
+  .problem {
+    margin-top: 32px;
+    display: grid;
+    grid-template-columns: minmax(0, 300px) minmax(0, 1fr);
+    gap: 28px;
+    align-items: center;
+    padding: 22px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--bar);
+  }
+  .problem figure { margin: 0; color: var(--bright); }
+  .problem figure svg { width: 100%; height: auto; max-width: 260px; }
+  .problem figcaption { margin-top: 10px; font: 12px/1.4 var(--mono); color: var(--subtle); }
+  .problem p { margin: 0; max-width: 60ch; }
+  .problem strong { color: var(--bright); font-weight: 500; }
+  @media (max-width: 680px) { .problem { grid-template-columns: 1fr; } }
+
+  /* Toolbar */
+  .bar {
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 5;
+    margin: 36px -16px 28px;
+    padding: 12px 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 22px;
+    align-items: center;
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .seg { display: inline-flex; border: 1px solid var(--line-2); border-radius: 7px; padding: 2px; gap: 2px; }
+  .seg button {
+    border: 0;
+    background: none;
+    padding: 6px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .seg button[aria-pressed="true"], .seg button[aria-selected="true"] { background: var(--tint); color: var(--bright); }
+  .seg button:hover { color: var(--bright); }
+  .bar .spacer { flex: 1; }
+  .bar .group { display: inline-flex; align-items: center; gap: 10px; }
+  .count { font: 13px var(--mono); color: var(--muted); }
+  .count b { color: var(--bright); font-weight: 500; }
+
+  /* Gallery */
+  .grid { display: grid; gap: 18px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  @media (max-width: 980px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+  .card {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--bar);
+    display: flex;
+    flex-direction: column;
+  }
+  .card[data-starred="true"] { border-color: var(--line-2); }
+  .card-head { display: flex; align-items: baseline; gap: 10px; padding: 12px 14px 10px; }
+  .num { font: 500 12px var(--mono); color: var(--subtle); }
+  .card h2 { font: 600 17px/1.2 var(--sans); letter-spacing: -0.01em; color: var(--bright); margin: 0; }
+  .type { font: 11px var(--mono); color: var(--subtle); letter-spacing: 0.04em; }
+  .star {
+    margin-left: auto;
+    align-self: center;
+    border: 1px solid var(--line-2);
+    background: none;
+    border-radius: 999px;
+    padding: 3px 10px 3px 8px;
+    font: 12px var(--mono);
+    color: var(--muted);
+    cursor: pointer;
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .star svg { width: 13px; height: 13px; }
+  .star:hover { color: var(--bright); border-color: var(--muted); }
+  .star[aria-pressed="true"] { color: var(--ink); background: var(--bright); border-color: var(--bright); }
+  .stage {
+    border: 0;
+    padding: 0;
+    width: 100%;
+    cursor: zoom-in;
+    display: grid;
+    grid-template-rows: auto auto;
+    text-align: left;
+  }
+  .stage .big { display: grid; place-items: center; padding: 28px 0 18px; }
+  .stage .big svg { width: 46%; max-width: 160px; height: auto; }
+  .stage .lock { display: grid; place-items: center; padding: 6px 18px 26px; }
+  .stage .lock svg { height: 46px; width: auto; max-width: 100%; }
+  .stage:hover .big svg { transform: scale(1.03); }
+  .stage .big svg { transition: transform 0.25s ease; }
+  .card .idea { margin: 0; padding: 14px 14px 4px; font-size: 14px; line-height: 1.5; color: var(--text); }
+  .uses { display: flex; align-items: center; gap: 14px; padding: 12px 14px 14px; margin-top: auto; }
+  .tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 10px;
+    border-radius: 7px 7px 0 0;
+    background: #2a2a2a;
+    font: 11px var(--sans);
+    color: #d8d8d8;
+    white-space: nowrap;
+  }
+  .tab .fav { width: 16px; height: 16px; color: #f0f0f0; }
+  .icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 22%;
+    display: grid;
+    place-items: center;
+    flex: none;
+  }
+  .icon svg { width: 64%; height: 64%; }
+  .term {
+    flex: 1;
+    min-width: 0;
+    height: 52px;
+    border-radius: 6px;
+    background: var(--term);
+    border: 1px solid #1f1f1f;
+    display: grid;
+    place-items: center;
+    color: var(--bright);
+    overflow: hidden;
+  }
+  .term svg { height: 30px; width: auto; max-width: 92%; }
+  .empty-note { padding: 40px 0; color: var(--muted); }
+
+  /* Detail dialog */
+  dialog {
+    width: min(1040px, calc(100vw - 32px));
+    max-height: calc(100vh - 32px);
+    padding: 0;
+    border: 1px solid var(--line-2);
+    border-radius: 12px;
+    background: var(--bg);
+    color: var(--text);
+    overflow: auto;
+  }
+  dialog::backdrop { background: rgba(0, 0, 0, 0.66); backdrop-filter: blur(3px); }
+  .d-head {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    align-items: baseline;
+    padding: 16px 20px;
+    background: var(--bar);
+    border-bottom: 1px solid var(--line);
+  }
+  .d-head h2 { margin: 0; font: 600 22px/1.1 var(--sans); letter-spacing: -0.02em; color: var(--bright); }
+  .d-head .tools { margin-left: auto; display: inline-flex; gap: 8px; align-self: center; }
+  .btn {
+    border: 1px solid var(--line-2);
+    background: var(--tint);
+    border-radius: 7px;
+    padding: 6px 12px;
+    cursor: pointer;
+    color: var(--text);
+    font-size: 14px;
+  }
+  .btn:hover { color: var(--bright); border-color: var(--muted); }
+  .btn.primary { background: var(--bright); color: var(--ink); border-color: var(--bright); font-weight: 500; }
+  .btn.primary:hover { background: #fff; color: var(--ink); }
+  .d-body { padding: 20px; display: grid; gap: 18px; }
+  .d-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .d-pair > div { border-radius: 9px; display: grid; place-items: center; padding: 34px 20px; gap: 26px; }
+  .d-pair .m svg { width: 150px; height: auto; max-width: 100%; }
+  .d-pair .l svg { height: 64px; width: auto; max-width: 100%; }
+  .d-copy { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+  .d-copy p { margin: 6px 0 0; font-size: 16px; color: var(--bright); max-width: 56ch; }
+  .d-copy ul { margin: 6px 0 0; padding-left: 18px; }
+  .d-copy li { margin: 2px 0; }
+  .ctx { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .ctx figure { margin: 0; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; background: var(--bar); }
+  .ctx figcaption { padding: 9px 12px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+  .ctx .wide { grid-column: 1 / -1; }
+  .browser { background: #202124; padding: 10px 12px 0; }
+  .browser .tab { font-size: 12.5px; padding: 8px 14px; background: #35363a; }
+  .browser .site { background: #ffffff; color: #141414; padding: 14px 18px; display: flex; align-items: center; gap: 22px; }
+  .browser .site svg { height: 26px; width: auto; }
+  .browser .site nav { margin-left: auto; display: flex; gap: 18px; font-size: 13.5px; color: #555; }
+  .terminal { background: var(--term); padding: 18px 20px 22px; color: var(--bright); overflow-x: auto; }
+  .terminal .prompt { font: 13px/1.5 var(--mono); color: var(--muted); margin: 0 0 14px; }
+  .terminal .prompt b { color: var(--bright); font-weight: 400; }
+  .terminal svg { height: 70px; width: auto; }
+  .terminal .after { font: 13px/1.5 var(--mono); color: var(--subtle); margin: 14px 0 0; }
+  .icons { display: flex; align-items: flex-end; gap: 18px; padding: 24px; flex-wrap: wrap; }
+  .icons .icon.xl { width: 96px; height: 96px; }
+  .icons .icon.l { width: 60px; height: 60px; }
+  .icons .icon.m { width: 40px; height: 40px; }
+  .icons .favs { display: flex; gap: 10px; align-items: flex-end; }
+  .readme { display: grid; grid-template-columns: 1fr 1fr; }
+  .readme > div { padding: 28px 16px; display: grid; place-items: center; }
+  .readme svg { height: 44px; width: auto; max-width: 100%; }
+  .readme .gh-light { background: #ffffff; color: #1f2328; }
+  .readme .gh-dark { background: #0d1117; color: #f0f6fc; }
+  @media (max-width: 760px) {
+    .d-pair, .d-copy, .ctx, .readme { grid-template-columns: 1fr; }
+  }
+
+  /* Duel */
+  .duel-intro { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; align-items: end; margin-bottom: 22px; }
+  .duel-intro h2 { margin: 0; font: 600 28px/1.1 var(--sans); letter-spacing: -0.025em; color: var(--bright); }
+  .duel-intro p { margin: 8px 0 0; max-width: 60ch; }
+  .setup { border: 1px solid var(--line); border-radius: 10px; background: var(--bar); padding: 22px; display: grid; gap: 18px; }
+  .setup .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .past { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { border: 1px solid var(--line-2); border-radius: 999px; padding: 3px 11px; font: 12px var(--mono); color: var(--text); }
+  .chip b { color: var(--bright); font-weight: 500; }
+  .progress { display: flex; gap: 3px; margin: 0 0 14px; }
+  .progress i { flex: 1; height: 4px; border-radius: 2px; background: var(--line); }
+  .progress i.done { background: var(--muted); }
+  .progress i.now { background: var(--bright); }
+  .match-meta { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; margin-bottom: 14px; }
+  .match-meta .round { font: 600 20px var(--sans); color: var(--bright); letter-spacing: -0.015em; }
+  .match-meta .keys { margin-left: auto; font: 12.5px var(--mono); color: var(--subtle); }
+  kbd { font: 12px var(--mono); border: 1px solid var(--line-2); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; color: var(--text); }
+  .pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  @media (max-width: 720px) { .pair { grid-template-columns: 1fr; } .match-meta .keys { display: none; } }
+  .pick {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--bar);
+    padding: 0;
+    cursor: pointer;
+    text-align: left;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: border-color 0.15s ease, transform 0.15s ease;
+  }
+  .pick:hover { border-color: var(--muted); }
+  .pick.chosen { border-color: var(--bright); transform: scale(0.985); }
+  .pick .show { display: grid; place-items: center; gap: 30px; padding: 44px 24px 36px; }
+  .pick .show .m svg { width: 128px; height: auto; }
+  .pick .show .l svg { height: 58px; width: auto; max-width: 100%; }
+  .pick .foot { display: flex; gap: 14px; align-items: center; padding: 14px 16px; border-top: 1px solid var(--line); }
+  .pick .foot .who { min-width: 0; }
+  .pick .foot h3 { margin: 0; font: 600 16px var(--sans); color: var(--bright); }
+  .pick .foot p { margin: 2px 0 0; font-size: 13.5px; line-height: 1.45; color: var(--muted); }
+  .pick .foot .side { margin-left: auto; display: flex; gap: 10px; align-items: center; flex: none; }
+  .pick .foot .key { font: 12px var(--mono); color: var(--subtle); }
+  .duel-actions { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+  .result { display: grid; gap: 18px; }
+  .champ { border: 1px solid var(--line-2); border-radius: 12px; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
+  .champ .show { display: grid; place-items: center; gap: 30px; padding: 48px 24px; }
+  .champ .show .m svg { width: 150px; height: auto; }
+  .champ .show .l svg { height: 64px; width: auto; max-width: 100%; }
+  .champ .about { padding: 26px; background: var(--bar); display: grid; align-content: start; gap: 10px; }
+  .champ .about h3 { margin: 4px 0 0; font: 600 34px/1 var(--sans); letter-spacing: -0.03em; color: var(--bright); }
+  .champ .about p { margin: 0; }
+  .places { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .place { border: 1px solid var(--line); border-radius: 10px; background: var(--bar); display: flex; gap: 12px; align-items: center; padding: 12px; }
+  .place .icon { width: 44px; height: 44px; }
+  .place h4 { margin: 0; font: 600 15px var(--sans); color: var(--bright); }
+  .place span { font: 11.5px var(--mono); color: var(--subtle); letter-spacing: 0.06em; text-transform: uppercase; }
+  .log { border: 1px solid var(--line); border-radius: 10px; overflow-x: auto; }
+  .log table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  .log th, .log td { padding: 8px 14px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+  .log th { font: 500 11px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--subtle); background: var(--bar); }
+  .log td.win { color: var(--bright); }
+  .log td.lose { color: var(--subtle); text-decoration: line-through; text-decoration-color: var(--line-2); }
+  .log tr:last-child td { border-bottom: 0; }
+  @media (max-width: 760px) { .champ, .places { grid-template-columns: 1fr; } }
+
+  .blink { animation: blink 1.06s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) {
+    .blink { animation: none; }
+    .stage .big svg, .pick { transition: none; }
+  }
+  footer { margin-top: 56px; padding-top: 18px; border-top: 1px solid var(--line); font-size: 13.5px; color: var(--subtle); }
+  footer code { font: 12.5px var(--mono); color: var(--muted); }
+</style>
+
+<main>
+  <header class="intro">
+    <p class="eyebrow">klin · new mark concepts</p>
+    <h1>Fifteen marks, none of them a K</h1>
+    <p class="lead">
+      Each one has a single idea behind it: clean, the starter kit, or the full stack it builds. Star the ones you like,
+      open any mark to see it in the browser tab, the terminal and the README, then let the duel narrow them down.
+    </p>
+    <div class="problem">
+      <figure>
+        <!--{{CURRENT}}-->
+        <figcaption>today: the mark, then the word</figcaption>
+      </figure>
+      <p>
+        The current mark is a K, and the word next to it starts with one too, so the logo reads <strong>“K klin”</strong>.
+        It happens everywhere the two meet: the website hero and header, the CLI banner, the README. None of these
+        fifteen is a letter, so the name is only said once. The wordmark stays as it is.
+      </p>
+    </div>
+  </header>
+
+  <div class="bar" role="toolbar" aria-label="View">
+    <div class="seg" role="tablist" aria-label="Section">
+      <button id="tab-all" role="tab" aria-selected="true" aria-controls="all">All 15</button>
+      <button id="tab-duel" role="tab" aria-selected="false" aria-controls="duel">Pick one of two</button>
+    </div>
+    <div class="group">
+      <span class="label">Ground</span>
+      <div class="seg" aria-label="Background">
+        <button id="g-dark" aria-pressed="true">Ink</button>
+        <button id="g-light" aria-pressed="false">Paper</button>
+      </div>
+    </div>
+    <span class="spacer"></span>
+    <div class="group" id="star-group">
+      <span class="count" id="star-count"></span>
+      <div class="seg" aria-label="Filter">
+        <button id="f-all" aria-pressed="true">Show all</button>
+        <button id="f-star" aria-pressed="false">Starred</button>
+      </div>
+    </div>
+  </div>
+
+  <section id="all" role="tabpanel" aria-labelledby="tab-all">
+    <div class="grid" id="grid"></div>
+    <p class="empty-note" id="no-stars" hidden>Nothing starred yet. Star a few marks in “Show all” first.</p>
+  </section>
+
+  <section id="duel" role="tabpanel" aria-labelledby="tab-duel" hidden>
+    <div class="duel-intro">
+      <div>
+        <h2 id="duel-title">Pick one of two</h2>
+        <p id="duel-sub">
+          A knockout: two marks at a time, you keep one, until one is left. Fifteen marks take fourteen picks. The draw
+          is random each time, so run it twice and see if the same mark wins.
+        </p>
+      </div>
+    </div>
+    <div id="duel-stage"></div>
+  </section>
+
+  <footer>
+    Files: every mark and lockup is in <code>concepts/logos/</code> as SVG. The page and the files are generated by
+    <code>node concepts/src/build.mjs</code>; the terminal previews are pixelated automatically, the real pixel art gets
+    drawn by hand for the mark you pick.
+  </footer>
+</main>
+
+<dialog id="detail" aria-labelledby="d-name"></dialog>
+
+<script>
+/*{{DATA}}*/
+(() => {
+  const byId = Object.fromEntries(CONCEPTS.map((c) => [c.slug, c]))
+  const store = {
+    get(k, d) {
+      try {
+        const v = localStorage.getItem("klin-concepts:" + k)
+        return v == null ? d : JSON.parse(v)
+      } catch {
+        return d
+      }
+    },
+    set(k, v) {
+      try {
+        localStorage.setItem("klin-concepts:" + k, JSON.stringify(v))
+      } catch {}
+    },
+  }
+  const state = {
+    ground: store.get("ground", "dark"),
+    starred: new Set(store.get("starred", []).filter((s) => byId[s])),
+    onlyStarred: false,
+    tab: location.hash === "#duel" ? "duel" : "all",
+  }
+  const $ = (s, el = document) => el.querySelector(s)
+  const g = () => (state.ground === "dark" ? "g-dark" : "g-light")
+  // Icons outside the ground sit on the dark page, so they always get the paper tile.
+  const tileFor = () => "tile-paper"
+  const STAR = '<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1.2l1.95 4.3 4.65.45-3.5 3.1 1.02 4.6L8 11.3l-4.12 2.35 1.02-4.6-3.5-3.1 4.65-.45z"/></svg>'
+
+  // The mark cropped to its ink, in a square: what an icon or favicon shows.
+  const fit = (c, cls = "", pad = 0.04) => {
+    const [x0, y0, x1, y1] = c.box
+    const side = Math.max(x1 - x0, y1 - y0) * (1 + 2 * pad)
+    const cx = (x0 + x1) / 2
+    const cy = (y0 + y1) / 2
+    return `<svg class="${cls}" viewBox="${cx - side / 2} ${cy - side / 2} ${side} ${side}" aria-hidden="true"><path fill="currentColor" d="${c.d}"/></svg>`
+  }
+  const mark = (c) => c.mark.replace("<svg ", '<svg aria-hidden="true" ')
+  const lockup = (c, blink = false) => {
+    let s = c.lockup.replace('role="img"', 'role="img"')
+    if (c.after && blink) s = s.replace(/(<path[^>]*>)(?![\s\S]*<path)/, (p) => p.replace("<path ", '<path class="blink" '))
+    return s
+  }
+
+  // --- Terminal previews: the mark pixelated to 20 px tall, beside klin's 16 px pixel letters ---
+  const PX = 20
+  const bitmaps = {}
+  async function bitmapOf(c) {
+    if (bitmaps[c.slug]) return bitmaps[c.slug]
+    const [x0, y0, x1, y1] = c.box
+    const w = x1 - x0
+    const h = y1 - y0
+    const k = PX / Math.max(w, h)
+    const gw = Math.max(1, Math.round(w * k))
+    let gh = Math.round(h * k)
+    if (gh % 2) gh += 1
+    const vw = gw / k
+    const vh = gh / k
+    const S = 8
+    const src = `<svg xmlns="http://www.w3.org/2000/svg" width="${gw * S}" height="${gh * S}" viewBox="${x0 - (vw - w) / 2} ${y0 - (vh - h) / 2} ${vw} ${vh}"><path fill="#000" d="${c.d}"/></svg>`
+    const img = new Image()
+    img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(src)
+    await img.decode()
+    const cv = document.createElement("canvas")
+    cv.width = gw * S
+    cv.height = gh * S
+    const ctx = cv.getContext("2d", { willReadFrequently: true })
+    ctx.drawImage(img, 0, 0)
+    const px = ctx.getImageData(0, 0, cv.width, cv.height).data
+    const rows = []
+    for (let y = 0; y < gh; y++) {
+      let row = ""
+      for (let x = 0; x < gw; x++) {
+        let sum = 0
+        for (let yy = 0; yy < S; yy++)
+          for (let xx = 0; xx < S; xx++) sum += px[((y * S + yy) * cv.width + x * S + xx) * 4 + 3]
+        row += sum / (S * S * 255) > 0.5 ? "#" : "."
+      }
+      rows.push(row)
+    }
+    return (bitmaps[c.slug] = rows)
+  }
+  function wordPixels() {
+    const letters = ["k", "l", "i", "n"]
+    const rows = Array.from({ length: 16 }, () => "")
+    letters.forEach((l, i) => {
+      WORD16[l].forEach((line, y) => (rows[y] += line + (i < letters.length - 1 ? ".." : "")))
+    })
+    return rows
+  }
+  async function terminalSvg(c, size = 3) {
+    const word = wordPixels()
+    const H = PX
+    const grid = Array.from({ length: H }, () => [])
+    const put = (rows, x, y) => rows.forEach((line, dy) => [...line].forEach((p, dx) => p === "#" && (grid[y + dy][x + dx] = 1)))
+    let W = 0
+    const blinkCells = []
+    if (c.inWord) {
+      put(word, 0, H - 16)
+      W = word[0].length
+    } else if (c.after) {
+      put(word, 0, H - 16)
+      const bx = word[0].length + 3
+      for (let y = H - 16; y < H; y++) for (let x = bx; x < bx + 8; x++) blinkCells.push([x, y])
+      W = bx + 8
+    } else {
+      const m = await bitmapOf(c)
+      const top = Math.floor((H - m.length) / 2 / 2) * 2
+      put(m, 0, top)
+      put(word, m[0].length + 4, H - 16)
+      W = m[0].length + 4 + word[0].length
+    }
+    let rects = ""
+    for (let y = 0; y < H; y++) {
+      let x = 0
+      while (x < W) {
+        if (!grid[y][x]) { x++; continue }
+        let e = x
+        while (e < W && grid[y][e]) e++
+        rects += `<rect x="${x}" y="${y}" width="${e - x}" height="1"/>`
+        x = e
+      }
+    }
+    const blink = blinkCells.length ? `<rect class="blink" x="${blinkCells[0][0]}" y="${H - 16}" width="8" height="16"/>` : ""
+    return `<svg viewBox="0 0 ${W} ${H}" width="${W * size}" height="${H * size}" shape-rendering="crispEdges" aria-hidden="true"><g fill="currentColor">${rects}${blink}</g></svg>`
+  }
+
+  // --- Gallery ---
+  function card(c) {
+    const on = state.starred.has(c.slug)
+    return `<article class="card" data-slug="${c.slug}" data-starred="${on}">
+      <div class="card-head"><span class="num">${c.n}</span><h2>${c.name}</h2><span class="type">${c.type}</span>
+        <button class="star" data-star="${c.slug}" aria-pressed="${on}" aria-label="Star ${c.name}">${STAR}<span>${on ? "Starred" : "Star"}</span></button></div>
+      <button class="stage ${g()}" data-open="${c.slug}" aria-label="Open ${c.name} in context">
+        <div class="big">${mark(c)}</div><div class="lock">${lockup(c)}</div></button>
+      <p class="idea">${c.idea}</p>
+      <div class="uses">
+        <span class="tab" title="Browser tab, 16 px">${fit(c, "fav")}klin</span>
+        <span class="icon ${tileFor()}" title="App icon">${fit(c)}</span>
+        <span class="term" data-term="${c.slug}" title="Terminal header, auto-pixelated"></span>
+      </div>
+    </article>`
+  }
+  async function fillTerms(root) {
+    for (const el of root.querySelectorAll("[data-term]")) el.innerHTML = await terminalSvg(byId[el.dataset.term], 2)
+  }
+  function renderGrid() {
+    const list = CONCEPTS.filter((c) => !state.onlyStarred || state.starred.has(c.slug))
+    $("#grid").innerHTML = list.map(card).join("")
+    $("#no-stars").hidden = list.length > 0
+    fillTerms($("#grid"))
+  }
+  function renderCount() {
+    const n = state.starred.size
+    $("#star-count").innerHTML = `<b>${n}</b> starred`
+  }
+
+  // --- Detail ---
+  let openSlug = null
+  async function openDetail(slug) {
+    const c = byId[slug]
+    openSlug = slug
+    const i = CONCEPTS.indexOf(c)
+    const on = state.starred.has(slug)
+    const dlg = $("#detail")
+    dlg.innerHTML = `<div class="d-head"><span class="num">${c.n} / 15</span><h2 id="d-name">${c.name}</h2><span class="type">${c.type}</span>
+        <div class="tools"><button class="star" data-star="${c.slug}" aria-pressed="${on}" aria-label="Star ${c.name}">${STAR}<span>${on ? "Starred" : "Star"}</span></button>
+        <button class="btn" data-step="-1" aria-label="Previous concept">←</button><button class="btn" data-step="1" aria-label="Next concept">→</button>
+        <button class="btn" data-close autofocus>Close</button></div></div>
+      <div class="d-body">
+        <div class="d-pair"><div class="g-dark"><div class="m">${mark(c)}</div><div class="l">${lockup(c, true)}</div></div>
+          <div class="g-light"><div class="m">${mark(c)}</div><div class="l">${lockup(c, true)}</div></div></div>
+        <div class="d-copy"><div><p class="label">The idea</p><p>${c.idea}</p></div>
+          <div><p class="label">Why it fits</p><ul>${c.why.map((w) => `<li>${w}</li>`).join("")}</ul></div></div>
+        <div class="ctx">
+          <figure class="wide"><div class="browser"><span class="tab">${fit(c, "fav")}klin · spotless full-stack starter</span>
+            <div class="site">${lockup(c)}<nav><span>Docs</span><span>Templates</span><span>GitHub</span></nav></div></div>
+            <figcaption>Browser tab (16 px favicon) and the website header</figcaption></figure>
+          <figure class="wide"><div class="terminal"><p class="prompt">~ $ <b>npm create klin@latest</b></p><div data-term-big></div>
+            <p class="after">${c.inWord ? "In pixels the drop is too small to show; the terminal gets the plain word." : "Pixelated automatically at the CLI's 10-row size; the real pixel art is drawn by hand."}</p></div>
+            <figcaption>The CLI header</figcaption></figure>
+          <figure><div class="icons g-light"><span class="icon xl tile-ink">${fit(c)}</span><span class="icon l tile-ink">${fit(c)}</span><span class="icon m tile-ink">${fit(c)}</span>
+            <span class="favs">${[32, 16].map((s) => `<span style="width:${s}px;height:${s}px;color:var(--ink)">${fit(c, "", 0)}</span>`).join("")}</span></div>
+            <figcaption>App icon, then favicons at 32 and 16 px</figcaption></figure>
+          <figure><div class="readme"><div class="gh-light">${lockup(c)}</div><div class="gh-dark">${lockup(c)}</div></div>
+            <figcaption>The README on GitHub, light and dark</figcaption></figure>
+        </div>
+      </div>`
+    if (!dlg.open) dlg.showModal()
+    $("[data-term-big]", dlg).innerHTML = await terminalSvg(c, 4)
+    void i
+  }
+  function step(d) {
+    const i = CONCEPTS.findIndex((c) => c.slug === openSlug)
+    openDetail(CONCEPTS[(i + d + CONCEPTS.length) % CONCEPTS.length].slug)
+  }
+
+  // --- Duel: a knockout replayed from (draw, picks), so undo is just dropping the last pick ---
+  const duel = { draw: null, picks: [], field: "all", chosen: null }
+  const shuffle = (a) => {
+    a = a.slice()
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[a[i], a[j]] = [a[j], a[i]]
+    }
+    return a
+  }
+  const pow2 = (n) => {
+    let s = 1
+    while (s < n) s *= 2
+    return s
+  }
+  const roundName = (size) => ({ 2: "Final", 4: "Semifinals", 8: "Quarterfinals" })[size] || "First round"
+  function replay(draw, picks) {
+    let entrants = draw.slice()
+    let p = 0
+    const log = []
+    while (entrants.length > 1) {
+      const size = pow2(entrants.length)
+      const byes = size - entrants.length
+      const advance = entrants.slice(0, byes)
+      const rest = entrants.slice(byes)
+      const winners = []
+      for (let i = 0; i < rest.length; i += 2) {
+        const pair = [rest[i], rest[i + 1]]
+        if (p >= picks.length) return { pair, size, log, byes: log.length === 0 && byes ? advance : [] }
+        const w = picks[p++]
+        winners.push(w)
+        log.push({ pair, w, size })
+      }
+      entrants = [...advance, ...winners]
+    }
+    return { champion: entrants[0], log }
+  }
+  const field = () => (duel.field === "starred" ? CONCEPTS.filter((c) => state.starred.has(c.slug)) : CONCEPTS).map((c) => c.slug)
+
+  function renderDuel() {
+    const stage = $("#duel-stage")
+    if (!duel.draw) {
+      const wins = store.get("wins", {})
+      const past = Object.entries(wins).filter(([s]) => byId[s]).sort((a, b) => b[1] - a[1])
+      const n = state.starred.size
+      stage.innerHTML = `<div class="setup">
+        <div class="row"><span class="label">Who plays</span>
+          <div class="seg"><button data-field="all" aria-pressed="${duel.field === "all"}">All 15</button>
+          <button data-field="starred" aria-pressed="${duel.field === "starred"}" ${n < 2 ? "disabled" : ""}>Starred (${n})</button></div>
+          <span class="count">${field().length - 1} picks</span></div>
+        <div class="row"><button class="btn primary" data-start>Start the duel</button>
+          <span class="count">Pick with a click, or <kbd>←</kbd> <kbd>→</kbd>. <kbd>U</kbd> takes a pick back.</span></div>
+        ${past.length ? `<div class="row"><span class="label">Past winners</span><div class="past">${past.map(([s, k]) => `<span class="chip"><b>${byId[s].name}</b> × ${k}</span>`).join("")}</div>
+          <button class="btn" data-clear-wins>Clear</button></div>` : ""}
+      </div>`
+      return
+    }
+    const r = replay(duel.draw, duel.picks)
+    const total = duel.draw.length - 1
+    if (r.champion) return renderResult(r)
+    const bar = Array.from({ length: total }, (_, i) => `<i class="${i < duel.picks.length ? "done" : i === duel.picks.length ? "now" : ""}"></i>`).join("")
+    const side = (slug, key) => {
+      const c = byId[slug]
+      return `<button class="pick" data-pick="${slug}" aria-label="Keep ${c.name}">
+        <div class="show ${g()}"><div class="m">${mark(c)}</div><div class="l">${lockup(c, true)}</div></div>
+        <div class="foot"><div class="who"><h3>${c.name}</h3><p>${c.idea}</p></div>
+          <div class="side"><span class="icon ${tileFor()}">${fit(c)}</span><span class="key">${key}</span></div></div></button>`
+    }
+    stage.innerHTML = `<div class="progress" aria-hidden="true">${bar}</div>
+      <div class="match-meta"><span class="round">${roundName(r.size)}</span><span class="count">pick ${duel.picks.length + 1} of ${total}</span>
+        <span class="keys"><kbd>←</kbd> keep left · <kbd>→</kbd> keep right · <kbd>U</kbd> undo</span></div>
+      <div class="pair">${side(r.pair[0], "←")}${side(r.pair[1], "→")}</div>
+      <div class="duel-actions"><button class="btn" data-undo ${duel.picks.length ? "" : "disabled"}>Undo last pick</button>
+        <button class="btn" data-restart>Start over</button></div>`
+  }
+  function renderResult(r) {
+    const champ = byId[r.champion]
+    const fin = r.log[r.log.length - 1]
+    const runner = fin.pair.find((s) => s !== fin.w)
+    const semis = r.log.filter((m) => m.size === 4).map((m) => m.pair.find((s) => s !== m.w))
+    const place = (slug, label) => {
+      const c = byId[slug]
+      return `<button class="place" data-open="${slug}" style="cursor:pointer;text-align:left"><span class="icon ${tileFor()}">${fit(c)}</span><div><span>${label}</span><h4>${c.name}</h4></div></button>`
+    }
+    $("#duel-stage").innerHTML = `<div class="result">
+      <div class="champ"><div class="show ${g()}"><div class="m">${mark(champ)}</div><div class="l">${lockup(champ, true)}</div></div>
+        <div class="about"><p class="label">Your pick</p><h3>${champ.name}</h3><p>${champ.idea}</p>
+          <div class="duel-actions"><button class="btn primary" data-again>Run it again</button><button class="btn" data-open="${champ.slug}">See it in context</button></div></div></div>
+      <div class="places">${place(runner, "Runner-up")}${semis.map((s) => place(s, "Semifinal")).join("")}</div>
+      <div class="log"><table><thead><tr><th>Round</th><th>Kept</th><th>Over</th></tr></thead><tbody>
+        ${r.log.map((m) => `<tr><td>${roundName(m.size)}</td><td class="win">${byId[m.w].name}</td><td class="lose">${byId[m.pair.find((s) => s !== m.w)].name}</td></tr>`).join("")}
+      </tbody></table></div></div>`
+  }
+  function pick(slug) {
+    if (duel.chosen) return
+    const el = document.querySelector(`[data-pick="${slug}"]`)
+    duel.chosen = slug
+    if (el) el.classList.add("chosen")
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches
+    setTimeout(() => {
+      duel.chosen = null
+      duel.picks.push(slug)
+      const r = replay(duel.draw, duel.picks)
+      if (r.champion) {
+        const wins = store.get("wins", {})
+        wins[r.champion] = (wins[r.champion] || 0) + 1
+        store.set("wins", wins)
+      }
+      renderDuel()
+    }, reduce ? 0 : 160)
+  }
+  const startDuel = () => {
+    duel.draw = shuffle(field())
+    duel.picks = []
+    renderDuel()
+  }
+
+  // --- Wiring ---
+  function setTab(t) {
+    state.tab = t
+    $("#all").hidden = t !== "all"
+    $("#duel").hidden = t !== "duel"
+    $("#tab-all").setAttribute("aria-selected", t === "all")
+    $("#tab-duel").setAttribute("aria-selected", t === "duel")
+    $("#f-all").parentElement.hidden = t !== "all"
+    if (t === "duel") renderDuel()
+    try {
+      history.replaceState(null, "", t === "duel" ? "#duel" : "#all")
+    } catch {}
+  }
+  function setGround(v) {
+    state.ground = v
+    store.set("ground", v)
+    $("#g-dark").setAttribute("aria-pressed", v === "dark")
+    $("#g-light").setAttribute("aria-pressed", v === "light")
+    renderGrid()
+    if (state.tab === "duel") renderDuel()
+  }
+  function toggleStar(slug) {
+    state.starred.has(slug) ? state.starred.delete(slug) : state.starred.add(slug)
+    store.set("starred", [...state.starred])
+    renderCount()
+    for (const b of document.querySelectorAll(`[data-star="${slug}"]`)) {
+      const on = state.starred.has(slug)
+      b.setAttribute("aria-pressed", on)
+      b.querySelector("span").textContent = on ? "Starred" : "Star"
+      const cardEl = b.closest(".card")
+      if (cardEl) cardEl.dataset.starred = on
+    }
+    if (state.onlyStarred) renderGrid()
+    if (state.tab === "duel" && !duel.draw) renderDuel()
+  }
+
+  document.addEventListener("click", (e) => {
+    const t = e.target.closest("button")
+    if (!t) return
+    if (t.id === "tab-all") return setTab("all")
+    if (t.id === "tab-duel") return setTab("duel")
+    if (t.id === "g-dark") return setGround("dark")
+    if (t.id === "g-light") return setGround("light")
+    if (t.id === "f-all" || t.id === "f-star") {
+      state.onlyStarred = t.id === "f-star"
+      $("#f-all").setAttribute("aria-pressed", !state.onlyStarred)
+      $("#f-star").setAttribute("aria-pressed", state.onlyStarred)
+      return renderGrid()
+    }
+    if (t.dataset.star) return toggleStar(t.dataset.star)
+    if (t.dataset.open) return openDetail(t.dataset.open)
+    if (t.dataset.step) return step(Number(t.dataset.step))
+    if (t.hasAttribute("data-close")) return $("#detail").close()
+    if (t.dataset.field) {
+      duel.field = t.dataset.field
+      return renderDuel()
+    }
+    if (t.hasAttribute("data-start") || t.hasAttribute("data-again")) return startDuel()
+    if (t.hasAttribute("data-restart")) {
+      duel.draw = null
+      return renderDuel()
+    }
+    if (t.hasAttribute("data-undo")) {
+      duel.picks.pop()
+      return renderDuel()
+    }
+    if (t.hasAttribute("data-clear-wins")) {
+      store.set("wins", {})
+      return renderDuel()
+    }
+    if (t.dataset.pick) return pick(t.dataset.pick)
+  })
+  $("#detail").addEventListener("click", (e) => {
+    if (e.target === e.currentTarget) e.currentTarget.close()
+  })
+  document.addEventListener("keydown", (e) => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return
+    const dlg = $("#detail")
+    if (dlg.open) {
+      if (e.key === "ArrowRight") step(1)
+      if (e.key === "ArrowLeft") step(-1)
+      return
+    }
+    if (state.tab !== "duel" || !duel.draw) return
+    const r = replay(duel.draw, duel.picks)
+    if (r.champion) return
+    if (e.key === "ArrowLeft") pick(r.pair[0])
+    if (e.key === "ArrowRight") pick(r.pair[1])
+    if ((e.key === "u" || e.key === "U" || e.key === "Backspace") && duel.picks.length) {
+      duel.picks.pop()
+      renderDuel()
+    }
+  })
+
+  $("#g-dark").setAttribute("aria-pressed", state.ground === "dark")
+  $("#g-light").setAttribute("aria-pressed", state.ground === "light")
+  renderCount()
+  renderGrid()
+  setTab(state.tab)
+})()
+</script>

@@ -1,0 +1,837 @@
+<!doctype html>
+<title>klin mark concepts</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" />
+<style>
+  /* One visual world, like brand/preview.html: klin is grayscale ink. */
+  :root {
+    --bg: #121212;
+    --bar: #1a1a1a;
+    --tint: #202020;
+    --line: #2c2c2c;
+    --line-2: #3d3d3d;
+    --subtle: #868686;
+    --muted: #949494;
+    --text: #c6c6c6;
+    --bright: #f0f0ee;
+    --paper: #f4f4f2;
+    --ink: #141414;
+    --term: #0c0c0c;
+    --sans: "Geist", ui-sans-serif, system-ui, sans-serif;
+    --mono: "Geist Mono", ui-monospace, "DejaVu Sans Mono", monospace;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { background: var(--bg); }
+  body {
+    margin: 0;
+    color: var(--text);
+    font: 15px/1.6 var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  main { max-width: 1180px; margin: 0 auto; padding: 48px 16px 96px; }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--bright); outline-offset: 2px; }
+  svg { display: block; }
+
+  /* Grounds: every mark is judged on ink and on paper. */
+  .g-dark { background: #181818; color: var(--bright); }
+  .g-light { background: var(--paper); color: var(--ink); }
+  .tile-ink { background: var(--ink); color: var(--paper); }
+  .tile-paper { background: var(--paper); color: var(--ink); }
+
+  /* Intro */
+  .eyebrow, .label {
+    font: 500 11.5px/1 var(--mono);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0;
+  }
+  h1 {
+    font: 600 clamp(32px, 5vw, 48px)/1.04 var(--sans);
+    letter-spacing: -0.035em;
+    color: var(--bright);
+    margin: 14px 0 0;
+    text-wrap: balance;
+  }
+  .intro p.lead { max-width: 62ch; margin: 18px 0 0; font-size: 16px; }
+  .problem {
+    margin-top: 32px;
+    display: grid;
+    grid-template-columns: minmax(0, 300px) minmax(0, 1fr);
+    gap: 28px;
+    align-items: center;
+    padding: 22px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--bar);
+  }
+  .problem figure { margin: 0; color: var(--bright); }
+  .problem figure svg { width: 100%; height: auto; max-width: 260px; }
+  .problem figcaption { margin-top: 10px; font: 12px/1.4 var(--mono); color: var(--subtle); }
+  .problem p { margin: 0; max-width: 60ch; }
+  .problem strong { color: var(--bright); font-weight: 500; }
+  @media (max-width: 680px) { .problem { grid-template-columns: 1fr; } }
+
+  /* Toolbar */
+  .bar {
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 5;
+    margin: 36px -16px 28px;
+    padding: 12px 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 22px;
+    align-items: center;
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .seg { display: inline-flex; border: 1px solid var(--line-2); border-radius: 7px; padding: 2px; gap: 2px; }
+  .seg button {
+    border: 0;
+    background: none;
+    padding: 6px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .seg button[aria-pressed="true"], .seg button[aria-selected="true"] { background: var(--tint); color: var(--bright); }
+  .seg button:hover { color: var(--bright); }
+  .bar .spacer { flex: 1; }
+  .bar .group { display: inline-flex; align-items: center; gap: 10px; }
+  .count { font: 13px var(--mono); color: var(--muted); }
+  .count b { color: var(--bright); font-weight: 500; }
+
+  /* Gallery */
+  .grid { display: grid; gap: 18px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  @media (max-width: 980px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+  .card {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--bar);
+    display: flex;
+    flex-direction: column;
+  }
+  .card[data-starred="true"] { border-color: var(--line-2); }
+  .card-head { display: flex; align-items: baseline; gap: 10px; padding: 12px 14px 10px; }
+  .num { font: 500 12px var(--mono); color: var(--subtle); }
+  .card h2 { font: 600 17px/1.2 var(--sans); letter-spacing: -0.01em; color: var(--bright); margin: 0; }
+  .type { font: 11px var(--mono); color: var(--subtle); letter-spacing: 0.04em; }
+  .star {
+    margin-left: auto;
+    align-self: center;
+    border: 1px solid var(--line-2);
+    background: none;
+    border-radius: 999px;
+    padding: 3px 10px 3px 8px;
+    font: 12px var(--mono);
+    color: var(--muted);
+    cursor: pointer;
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .star svg { width: 13px; height: 13px; }
+  .star:hover { color: var(--bright); border-color: var(--muted); }
+  .star[aria-pressed="true"] { color: var(--ink); background: var(--bright); border-color: var(--bright); }
+  .stage {
+    border: 0;
+    padding: 0;
+    width: 100%;
+    cursor: zoom-in;
+    display: grid;
+    grid-template-rows: auto auto;
+    text-align: left;
+  }
+  .stage .big { display: grid; place-items: center; padding: 28px 0 18px; }
+  .stage .big svg { width: 46%; max-width: 160px; height: auto; }
+  .stage .lock { display: grid; place-items: center; padding: 6px 18px 26px; }
+  .stage .lock svg { height: 46px; width: auto; max-width: 100%; }
+  .stage:hover .big svg { transform: scale(1.03); }
+  .stage .big svg { transition: transform 0.25s ease; }
+  .card .idea { margin: 0; padding: 14px 14px 4px; font-size: 14px; line-height: 1.5; color: var(--text); }
+  .uses { display: flex; align-items: center; gap: 14px; padding: 12px 14px 14px; margin-top: auto; }
+  .tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 10px;
+    border-radius: 7px 7px 0 0;
+    background: #2a2a2a;
+    font: 11px var(--sans);
+    color: #d8d8d8;
+    white-space: nowrap;
+  }
+  .tab .fav { width: 16px; height: 16px; color: #f0f0f0; }
+  .icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 22%;
+    display: grid;
+    place-items: center;
+    flex: none;
+  }
+  .icon svg { width: 64%; height: 64%; }
+  .term {
+    flex: 1;
+    min-width: 0;
+    height: 52px;
+    border-radius: 6px;
+    background: var(--term);
+    border: 1px solid #1f1f1f;
+    display: grid;
+    place-items: center;
+    color: var(--bright);
+    overflow: hidden;
+  }
+  .term svg { height: 30px; width: auto; max-width: 92%; }
+  .empty-note { padding: 40px 0; color: var(--muted); }
+
+  /* Detail dialog */
+  dialog {
+    width: min(1040px, calc(100vw - 32px));
+    max-height: calc(100vh - 32px);
+    padding: 0;
+    border: 1px solid var(--line-2);
+    border-radius: 12px;
+    background: var(--bg);
+    color: var(--text);
+    overflow: auto;
+  }
+  dialog::backdrop { background: rgba(0, 0, 0, 0.66); backdrop-filter: blur(3px); }
+  .d-head {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    align-items: baseline;
+    padding: 16px 20px;
+    background: var(--bar);
+    border-bottom: 1px solid var(--line);
+  }
+  .d-head h2 { margin: 0; font: 600 22px/1.1 var(--sans); letter-spacing: -0.02em; color: var(--bright); }
+  .d-head .tools { margin-left: auto; display: inline-flex; gap: 8px; align-self: center; }
+  .btn {
+    border: 1px solid var(--line-2);
+    background: var(--tint);
+    border-radius: 7px;
+    padding: 6px 12px;
+    cursor: pointer;
+    color: var(--text);
+    font-size: 14px;
+  }
+  .btn:hover { color: var(--bright); border-color: var(--muted); }
+  .btn.primary { background: var(--bright); color: var(--ink); border-color: var(--bright); font-weight: 500; }
+  .btn.primary:hover { background: #fff; color: var(--ink); }
+  .d-body { padding: 20px; display: grid; gap: 18px; }
+  .d-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .d-pair > div { border-radius: 9px; display: grid; place-items: center; padding: 34px 20px; gap: 26px; }
+  .d-pair .m svg { width: 150px; height: auto; max-width: 100%; }
+  .d-pair .l svg { height: 64px; width: auto; max-width: 100%; }
+  .d-copy { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+  .d-copy p { margin: 6px 0 0; font-size: 16px; color: var(--bright); max-width: 56ch; }
+  .d-copy ul { margin: 6px 0 0; padding-left: 18px; }
+  .d-copy li { margin: 2px 0; }
+  .ctx { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .ctx figure { margin: 0; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; background: var(--bar); }
+  .ctx figcaption { padding: 9px 12px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+  .ctx .wide { grid-column: 1 / -1; }
+  .browser { background: #202124; padding: 10px 12px 0; }
+  .browser .tab { font-size: 12.5px; padding: 8px 14px; background: #35363a; }
+  .browser .site { background: #ffffff; color: #141414; padding: 14px 18px; display: flex; align-items: center; gap: 22px; }
+  .browser .site svg { height: 26px; width: auto; }
+  .browser .site nav { margin-left: auto; display: flex; gap: 18px; font-size: 13.5px; color: #555; }
+  .terminal { background: var(--term); padding: 18px 20px 22px; color: var(--bright); overflow-x: auto; }
+  .terminal .prompt { font: 13px/1.5 var(--mono); color: var(--muted); margin: 0 0 14px; }
+  .terminal .prompt b { color: var(--bright); font-weight: 400; }
+  .terminal svg { height: 70px; width: auto; }
+  .terminal .after { font: 13px/1.5 var(--mono); color: var(--subtle); margin: 14px 0 0; }
+  .icons { display: flex; align-items: flex-end; gap: 18px; padding: 24px; flex-wrap: wrap; }
+  .icons .icon.xl { width: 96px; height: 96px; }
+  .icons .icon.l { width: 60px; height: 60px; }
+  .icons .icon.m { width: 40px; height: 40px; }
+  .icons .favs { display: flex; gap: 10px; align-items: flex-end; }
+  .readme { display: grid; grid-template-columns: 1fr 1fr; }
+  .readme > div { padding: 28px 16px; display: grid; place-items: center; }
+  .readme svg { height: 44px; width: auto; max-width: 100%; }
+  .readme .gh-light { background: #ffffff; color: #1f2328; }
+  .readme .gh-dark { background: #0d1117; color: #f0f6fc; }
+  @media (max-width: 760px) {
+    .d-pair, .d-copy, .ctx, .readme { grid-template-columns: 1fr; }
+  }
+
+  /* Duel */
+  .duel-intro { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; align-items: end; margin-bottom: 22px; }
+  .duel-intro h2 { margin: 0; font: 600 28px/1.1 var(--sans); letter-spacing: -0.025em; color: var(--bright); }
+  .duel-intro p { margin: 8px 0 0; max-width: 60ch; }
+  .setup { border: 1px solid var(--line); border-radius: 10px; background: var(--bar); padding: 22px; display: grid; gap: 18px; }
+  .setup .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .past { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { border: 1px solid var(--line-2); border-radius: 999px; padding: 3px 11px; font: 12px var(--mono); color: var(--text); }
+  .chip b { color: var(--bright); font-weight: 500; }
+  .progress { display: flex; gap: 3px; margin: 0 0 14px; }
+  .progress i { flex: 1; height: 4px; border-radius: 2px; background: var(--line); }
+  .progress i.done { background: var(--muted); }
+  .progress i.now { background: var(--bright); }
+  .match-meta { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; margin-bottom: 14px; }
+  .match-meta .round { font: 600 20px var(--sans); color: var(--bright); letter-spacing: -0.015em; }
+  .match-meta .keys { margin-left: auto; font: 12.5px var(--mono); color: var(--subtle); }
+  kbd { font: 12px var(--mono); border: 1px solid var(--line-2); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; color: var(--text); }
+  .pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  @media (max-width: 720px) { .pair { grid-template-columns: 1fr; } .match-meta .keys { display: none; } }
+  .pick {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--bar);
+    padding: 0;
+    cursor: pointer;
+    text-align: left;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: border-color 0.15s ease, transform 0.15s ease;
+  }
+  .pick:hover { border-color: var(--muted); }
+  .pick.chosen { border-color: var(--bright); transform: scale(0.985); }
+  .pick .show { display: grid; place-items: center; gap: 30px; padding: 44px 24px 36px; }
+  .pick .show .m svg { width: 128px; height: auto; }
+  .pick .show .l svg { height: 58px; width: auto; max-width: 100%; }
+  .pick .foot { display: flex; gap: 14px; align-items: center; padding: 14px 16px; border-top: 1px solid var(--line); }
+  .pick .foot .who { min-width: 0; }
+  .pick .foot h3 { margin: 0; font: 600 16px var(--sans); color: var(--bright); }
+  .pick .foot p { margin: 2px 0 0; font-size: 13.5px; line-height: 1.45; color: var(--muted); }
+  .pick .foot .side { margin-left: auto; display: flex; gap: 10px; align-items: center; flex: none; }
+  .pick .foot .key { font: 12px var(--mono); color: var(--subtle); }
+  .duel-actions { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+  .result { display: grid; gap: 18px; }
+  .champ { border: 1px solid var(--line-2); border-radius: 12px; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
+  .champ .show { display: grid; place-items: center; gap: 30px; padding: 48px 24px; }
+  .champ .show .m svg { width: 150px; height: auto; }
+  .champ .show .l svg { height: 64px; width: auto; max-width: 100%; }
+  .champ .about { padding: 26px; background: var(--bar); display: grid; align-content: start; gap: 10px; }
+  .champ .about h3 { margin: 4px 0 0; font: 600 34px/1 var(--sans); letter-spacing: -0.03em; color: var(--bright); }
+  .champ .about p { margin: 0; }
+  .places { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .place { border: 1px solid var(--line); border-radius: 10px; background: var(--bar); display: flex; gap: 12px; align-items: center; padding: 12px; }
+  .place .icon { width: 44px; height: 44px; }
+  .place h4 { margin: 0; font: 600 15px var(--sans); color: var(--bright); }
+  .place span { font: 11.5px var(--mono); color: var(--subtle); letter-spacing: 0.06em; text-transform: uppercase; }
+  .log { border: 1px solid var(--line); border-radius: 10px; overflow-x: auto; }
+  .log table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  .log th, .log td { padding: 8px 14px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+  .log th { font: 500 11px var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--subtle); background: var(--bar); }
+  .log td.win { color: var(--bright); }
+  .log td.lose { color: var(--subtle); text-decoration: line-through; text-decoration-color: var(--line-2); }
+  .log tr:last-child td { border-bottom: 0; }
+  @media (max-width: 760px) { .champ, .places { grid-template-columns: 1fr; } }
+
+  .blink { animation: blink 1.06s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) {
+    .blink { animation: none; }
+    .stage .big svg, .pick { transition: none; }
+  }
+  footer { margin-top: 56px; padding-top: 18px; border-top: 1px solid var(--line); font-size: 13.5px; color: var(--subtle); }
+  footer code { font: 12.5px var(--mono); color: var(--muted); }
+</style>
+
+<main>
+  <header class="intro">
+    <p class="eyebrow">klin · new mark concepts</p>
+    <h1>Fifteen marks, none of them a K</h1>
+    <p class="lead">
+      Each one has a single idea behind it: clean, the starter kit, or the full stack it builds. Star the ones you like,
+      open any mark to see it in the browser tab, the terminal and the README, then let the duel narrow them down.
+    </p>
+    <div class="problem">
+      <figure>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 557 246" role="img" aria-label="klin"><path fill="currentColor" transform="translate(23 23)" d="M7 0L7 200L-7 200L-7 0L7 0ZM-4.95 95.05L95.05 -4.95L104.95 4.95L4.95 104.95L-4.95 95.05ZM4.95 95.05L104.95 195.05L95.05 204.95L-4.95 104.95L4.95 95.05ZM-13 -23L13 -23A10 10 0 0 1 23 -13L23 13A10 10 0 0 1 13 23L-13 23A10 10 0 0 1 -23 13L-23 -13A10 10 0 0 1 -13 -23ZM-13 77L13 77A10 10 0 0 1 23 87L23 113A10 10 0 0 1 13 123L-13 123A10 10 0 0 1 -23 113L-23 87A10 10 0 0 1 -13 77ZM-13 177L13 177A10 10 0 0 1 23 187L23 213A10 10 0 0 1 13 223L-13 223A10 10 0 0 1 -23 213L-23 187A10 10 0 0 1 -13 177ZM87 -23L113 -23A10 10 0 0 1 123 -13L123 13A10 10 0 0 1 113 23L87 23A10 10 0 0 1 77 13L77 -13A10 10 0 0 1 87 -23ZM87 177L113 177A10 10 0 0 1 123 187L123 213A10 10 0 0 1 113 223L87 223A10 10 0 0 1 77 213L77 187A10 10 0 0 1 87 177Z"/><path fill="currentColor" transform="translate(198 246) scale(1.09)" d="M3 -180L23 -180A3 3 0 0 1 26 -177L26 -74.83A2 2 0 0 0 29.41 -73.41L79.12 -123.12A3 3 0 0 1 81.24 -124L106.7 -124A3 3 0 0 1 108.82 -118.88L54.06 -64.12A3 3 0 0 0 54.06 -59.88L108.82 -5.12A3 3 0 0 1 106.7 0L81.24 0A3 3 0 0 1 79.12 -0.88L29.41 -50.59A2 2 0 0 0 26 -49.17L26 -3A3 3 0 0 1 23 0L3 0A3 3 0 0 1 0 -3L0 -177A3 3 0 0 1 3 -180ZM130.94 -180L150.94 -180A3 3 0 0 1 153.94 -177L153.94 -3A3 3 0 0 1 150.94 0L130.94 0A3 3 0 0 1 127.94 -3L127.94 -177A3 3 0 0 1 130.94 -180ZM182.94 -124L202.94 -124A3 3 0 0 1 205.94 -121L205.94 -3A3 3 0 0 1 202.94 0L182.94 0A3 3 0 0 1 179.94 -3L179.94 -121A3 3 0 0 1 182.94 -124ZM179.94 -159A13 13 0 1 1 205.94 -159A13 13 0 1 1 179.94 -159ZM234.94 -124L257.94 -124L257.94 -3A3 3 0 0 1 254.94 0L234.94 0A3 3 0 0 1 231.94 -3L231.94 -121A3 3 0 0 1 234.94 -124ZM231.94 -78A48 48 0 0 1 327.94 -78V-3A3 3 0 0 1 324.94 0H304.94A3 3 0 0 1 301.94 -3V-78A22 22 0 0 0 257.94 -78Z"/></svg>
+        <figcaption>today: the mark, then the word</figcaption>
+      </figure>
+      <p>
+        The current mark is a K, and the word next to it starts with one too, so the logo reads <strong>“K klin”</strong>.
+        It happens everywhere the two meet: the website hero and header, the CLI banner, the README. None of these
+        fifteen is a letter, so the name is only said once. The wordmark stays as it is.
+      </p>
+    </div>
+  </header>
+
+  <div class="bar" role="toolbar" aria-label="View">
+    <div class="seg" role="tablist" aria-label="Section">
+      <button id="tab-all" role="tab" aria-selected="true" aria-controls="all">All 15</button>
+      <button id="tab-duel" role="tab" aria-selected="false" aria-controls="duel">Pick one of two</button>
+    </div>
+    <div class="group">
+      <span class="label">Ground</span>
+      <div class="seg" aria-label="Background">
+        <button id="g-dark" aria-pressed="true">Ink</button>
+        <button id="g-light" aria-pressed="false">Paper</button>
+      </div>
+    </div>
+    <span class="spacer"></span>
+    <div class="group" id="star-group">
+      <span class="count" id="star-count"></span>
+      <div class="seg" aria-label="Filter">
+        <button id="f-all" aria-pressed="true">Show all</button>
+        <button id="f-star" aria-pressed="false">Starred</button>
+      </div>
+    </div>
+  </div>
+
+  <section id="all" role="tabpanel" aria-labelledby="tab-all">
+    <div class="grid" id="grid"></div>
+    <p class="empty-note" id="no-stars" hidden>Nothing starred yet. Star a few marks in “Show all” first.</p>
+  </section>
+
+  <section id="duel" role="tabpanel" aria-labelledby="tab-duel" hidden>
+    <div class="duel-intro">
+      <div>
+        <h2 id="duel-title">Pick one of two</h2>
+        <p id="duel-sub">
+          A knockout: two marks at a time, you keep one, until one is left. Fifteen marks take fourteen picks. The draw
+          is random each time, so run it twice and see if the same mark wins.
+        </p>
+      </div>
+    </div>
+    <div id="duel-stage"></div>
+  </section>
+
+  <footer>
+    Files: every mark and lockup is in <code>concepts/logos/</code> as SVG. The page and the files are generated by
+    <code>node concepts/src/build.mjs</code>; the terminal previews are pixelated automatically, the real pixel art gets
+    drawn by hand for the mark you pick.
+  </footer>
+</main>
+
+<dialog id="detail" aria-labelledby="d-name"></dialog>
+
+<script>
+const CONCEPTS = [{"n":"01","slug":"glint","name":"Glint","type":"Negative space","idea":"Four parts of a kit, fitted so the clean space between them shines.","why":["Spotless, said with the gap, not the ink","Four tiles: apps and packages in their places","A plain square at 16 px, a sparkle up close"],"d":"M46 24L122 24L122 58.81A104 104 0 0 1 58.81 122L24 122L24 46A22 22 0 0 1 46 24ZM232 46L232 122L197.19 122A104 104 0 0 1 134 58.81L134 24L210 24A22 22 0 0 1 232 46ZM210 232L134 232L134 197.19A104 104 0 0 1 197.19 134L232 134L232 210A22 22 0 0 1 210 232ZM24 210L24 134L58.81 134A104 104 0 0 1 122 197.19L122 232L46 232A22 22 0 0 1 24 210Z","mark":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 256 256\" role=\"img\" aria-label=\"klin concept 01: Glint\"><path fill=\"currentColor\" d=\"M46 24L122 24L122 58.81A104 104 0 0 1 58.81 122L24 122L24 46A22 22 0 0 1 46 24ZM232 46L232 122L197.19 122A104 104 0 0 1 134 58.81L134 24L210 24A22 22 0 0 1 232 46ZM210 232L134 232L134 197.19A104 104 0 0 1 197.19 134L232 134L232 210A22 22 0 0 1 210 232ZM24 210L24 134L58.81 134A104 104 0 0 1 122 197.19L122 232L46 232A22 22 0 0 1 24 210Z\"/></svg>","lockup":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 595.67 209.64\" role=\"img\" aria-label=\"klin\"><path fill=\"currentColor\" d=\"M46 24L122 24L122 58.81A104 104 0 0 1 58.81 122L24 122L24 46A22 22 0 0 1 46 24ZM232 46L232 122L197.19 122A104 104 0 0 1 134 58.81L134 24L210 24A22 22 0 0 1 232 46ZM210 232L134 232L134 197.19A104 104 0 0 1 197.19 134L232 134L232 210A22 22 0 0 1 210 232ZM24 210L24 134L58.81 134A104 104 0 0 1 122 197.19L122 232L46 232A22 22 0 0 1 24 210Z\" transform=\"translate(8 8) scale(0.93096) translate(-24 -24)\"/><path fill=\"currentColor\" d=\"M3 -180L23 -180A3 3 0 0 1 26 -177L26 -74.83A2 2 0 0 0 29.41 -73.41L79.12 -123.12A3 3 0 0 1 81.24 -124L106.7 -124A3 3 0 0 1 108.82 -118.88L54.06 -64.12A3 3 0 0 0 54.06 -59.88L108.82 -5.12A3 3 0 0 1 106.7 0L81.24 0A3 3 0 0 1 79.12 -0.88L29.41 -50.59A2 2 0 0 0 26 -49.17L26 -3A3 3 0 0 1 23 0L3 0A3 3 0 0 1 0 -3L0 -177A3 3 0 0 1 3 -180ZM130.94 -180L150.94 -180A3 3 0 0 1 153.94 -177L153.94 -3A3 3 0 0 1 150.94 0L130.94 0A3 3 0 0 1 127.94 -3L127.94 -177A3 3 0 0 1 130.94 -180ZM182.94 -124L202.94 -124A3 3 0 0 1 205.94 -121L205.94 -3A3 3 0 0 1 202.94 0L182.94 0A3 3 0 0 1 179.94 -3L179.94 -121A3 3 0 0 1 182.94 -124ZM179.94 -159A13 13 0 1 1 205.94 -159A13 13 0 1 1 179.94 -159ZM234.94 -124L257.94 -124L257.94 -3A3 3 0 0 1 254.94 0L234.94 0A3 3 0 0 1 231.94 -3L231.94 -121A3 3 0 0 1 234.94 -124ZM231.94 -78A48 48 0 0 1 327.94 -78V-3A3 3 0 0 1 324.94 0H304.94A3 3 0 0 1 301.94 -3V-78A22 22 0 0 0 257.94 -78Z\" transform=\"translate(259.73 194.82)\"/></svg>","box":[24,24,232,232],"after":false,"inWord":false},{"n":"02","slug":"dovetail","name":"Dovetail","type":"Abstract","idea":"Front end on top, back end below, locked by dovetails: the shared schema is the joint.","why":["Full-stack in one picture","Joinery: fits without glue, like typed code","Two solid blocks, survives 16 px"],"d":"M52 24L204 24A28 28 0 0 1 232 52L232 153L207.64 153A5 5 0 0 1 202.81 146.71L218.73 87.29A5 5 0 0 0 213.9 81L138.1 81A5 5 0 0 0 133.27 87.29L149.19 146.71A5 5 0 0 1 144.36 153L111.64 153A5 5 0 0 1 106.81 146.71L122.73 87.29A5 5 0 0 0 117.9 81L42.1 81A5 5 0 0 0 37.27 87.29L53.19 146.71A5 5 0 0 1 48.36 153L24 153L24 52A28 28 0 0 1 52 24ZM24 167L66.61 167A5 5 0 0 0 71.44 160.71L55.52 101.29A5 5 0 0 1 60.35 95L99.65 95A5 5 0 0 1 104.48 101.29L88.56 160.71A5 5 0 0 0 93.39 167L162.61 167A5 5 0 0 0 167.44 160.71L151.52 101.29A5 5 0 0 1 156.35 95L195.65 95A5 5 0 0 1 200.48 101.29L184.56 160.71A5 5 0 0 0 189.39 167L232 167L232 204A28 28 0 0 1 204 232L52 232A28 28 0 0 1 24 204L24 167Z","mark":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 256 256\" role=\"img\" aria-label=\"klin concept 02: Dovetail\"><path fill=\"currentColor\" d=\"M52 24L204 24A28 28 0 0 1 232 52L232 153L207.64 153A5 5 0 0 1 202.81 146.71L218.73 87.29A5 5 0 0 0 213.9 81L138.1 81A5 5 0 0 0 133.27 87.29L149.19 146.71A5 5 0 0 1 144.36 153L111.64 153A5 5 0 0 1 106.81 146.71L122.73 87.29A5 5 0 0 0 117.9 81L42.1 81A5 5 0 0 0 37.27 87.29L53.19 146.71A5 5 0 0 1 48.36 153L24 153L24 52A28 28 0 0 1 52 24ZM24 167L66.61 167A5 5 0 0 0 71.44 160.71L55.52 101.29A5 5 0 0 1 60.35 95L99.65 95A5 5 0 0 1 104.48 101.29L88.56 160.71A5 5 0 0 0 93.39 167L162.61 167A5 5 0 0 0 167.44 160.71L151.52 101.29A5 5 0 0 1 156.35 95L195.65 95A5 5 0 0 1 200.48 101.29L184.56 160.71A5 5 0 0 0 189.39 167L232 167L232 204A28 28 0 0 1 204 232L52 232A28 28 0 0 1 24 204L24 167Z\"/></svg>","lockup":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 595.67 209.64\" role=\"img\" aria-label=\"klin\"><path fill=\"currentColor\" d=\"M52 24L204 24A28 28 0 0 1 232 52L232 153L207.64 153A5 5 0 0 1 202.81 146.71L218.73 87.29A5 5 0 0 0 213.9 81L138.1 81A5 5 0 0 0 133.27 87.29L149.19 146.71A5 5 0 0 1 144.36 153L111.64 153A5 5 0 0 1 106.81 146.71L122.73 87.29A5 5 0 0 0 117.9 81L42.1 81A5 5 0 0 0 37.27 87.29L53.19 146.71A5 5 0 0 1 48.36 153L24 153L24 52A28 28 0 0 1 52 24ZM24 167L66.61 167A5 5 0 0 0 71.44 160.71L55.52 101.29A5 5 0 0 1 60.35 95L99.65 95A5 5 0 0 1 104.48 101.29L88.56 160.71A5 5 0 0 0 93.39 167L162.61 167A5 5 0 0 0 167.44 160.71L151.52 101.29A5 5 0 0 1 156.35 95L195.65 95A5 5 0 0 1 200.48 101.29L184.56 160.71A5 5 0 0 0 189.39 167L232 167L232 204A28 28 0 0 1 204 232L52 232A28 28 0 0 1 24 204L24 167Z\" transform=\"translate(8 8) scale(0.93096) translate(-24 -24)\"/><path fill=\"currentColor\" d=\"M3 -180L23 -180A3 3 0 0 1 26 -177L26 -74.83A2 2 0 0 0 29.41 -73.41L79.12 -123.12A3 3 0 0 1 81.24 -124L106.7 -124A3 3 0 0 1 108.82 -118.88L54.06 -64.12A3 3 0 0 0 54.06 -59.88L108.82 -5.12A3 3 0 0 1 106.7 0L81.24 0A3 3 0 0 1 79.12 -0.88L29.41 -50.59A2 2 0 0 0 26 -49.17L26 -3A3 3 0 0 1 23 0L3 0A3 3 0 0 1 0 -3L0 -177A3 3 0 0 1 3 -180ZM130.94 -180L150.94 -180A3 3 0 0 1 153.94 -177L153.94 -3A3 3 0 0 1 150.94 0L130.94 0A3 3 0 0 1 127.94 -3L127.94 -177A3 3 0 0 1 130.94 -180ZM182.94 -124L202.94 -124A3 3 0 0 1 205.94 -121L205.94 -3A3 3 0 0 1 202.94 0L182.94 0A3 3 0 0 1 179.94 -3L179.94 -121A3 3 0 0 1 182.94 -124ZM179.94 -159A13 13 0 1 1 205.94 -159A13 13 0 1 1 179.94 -159ZM234.94 -124L257.94 -124L257.94 -3A3 3 0 0 1 254.94 0L234.94 0A3 3 0 0 1 231.94 -3L231.94 -121A3 3 0 0 1 234.94 -124ZM231.94 -78A48 48 0 0 1 327.94 -78V-3A3 3 0 0 1 324.94 0H304.94A3 3 0 0 1 301.94 -3V-78A22 22 0 0 0 257.94 -78Z\" transform=\"translate(259.73 194.82)\"/></svg>","box":[24,24,232,232],"after":false,"inWord":false},{"n":"03","slug":"swept","name":"Swept","type":"Pattern","idea":"A grid of spots with one clean pass wiped through it: literally spot-less.","why":["The name's promise, as a joke you get once","Dots map to terminal pixels one to one","Seeds patterns, loaders and backgrounds"],"d":"M20 36A16 16 0 1 1 52 36A16 16 0 1 1 20 36ZM66 36A16 16 0 1 1 98 36A16 16 0 1 1 66 36ZM112 36A16 16 0 1 1 144 36A16 16 0 1 1 112 36ZM158 36A16 16 0 1 1 190 36A16 16 0 1 1 158 36ZM20 82A16 16 0 1 1 52 82A16 16 0 1 1 20 82ZM66 82A16 16 0 1 1 98 82A16 16 0 1 1 66 82ZM112 82A16 16 0 1 1 144 82A16 16 0 1 1 112 82ZM204 82A16 16 0 1 1 236 82A16 16 0 1 1 204 82ZM20 128A16 16 0 1 1 52 128A16 16 0 1 1 20 128ZM66 128A16 16 0 1 1 98 128A16 16 0 1 1 66 128ZM158 128A16 16 0 1 1 190 128A16 16 0 1 1 158 128ZM204 128A16 16 0 1 1 236 128A16 16 0 1 1 204 128ZM20 174A16 16 0 1 1 52 174A16 16 0 1 1 20 174ZM112 174A16 16 0 1 1 144 174A16 16 0 1 1 112 174ZM158 174A16 16 0 1 1 190 174A16 16 0 1 1 158 174ZM204 174A16 16 0 1 1 236 174A16 16 0 1 1 204 174ZM66 220A16 16 0 1 1 98 220A16 16 0 1 1 66 220ZM112 220A16 16 0 1 1 144 220A16 16 0 1 1 112 220ZM158 220A16 16 0 1 1 190 220A16 16 0 1 1 158 220ZM204 220A16 16 0 1 1 236 220A16 16 0 1 1 204 220Z","mark":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 256 256\" role=\"img\" aria-label=\"klin concept 03: Swept\"><path fill=\"currentColor\" d=\"M20 36A16 16 0 1 1 52 36A16 16 0 1 1 20 36ZM66 36A16 16 0 1 1 98 36A16 16 0 1 1 66 36ZM112 36A16 16 0 1 1 144 36A16 16 0 1 1 112 36ZM158 36A16 16 0 1 1 190 36A16 16 0 1 1 158 36ZM20 82A16 16 0 1 1 52 82A16 16 0 1 1 20 82ZM66 82A16 16 0 1 1 98 82A16 16 0 1 1 66 82ZM112 82A16 16 0 1 1 144 82A16 16 0 1 1 112 82ZM204 82A16 16 0 1 1 236 82A16 16 0 1 1 204 82ZM20 128A16 16 0 1 1 52 128A16 16 0 1 1 20 128ZM66 128A16 16 0 1 1 98 128A16 16 0 1 1 66 128ZM158 128A16 16 0 1 1 190 128A16 16 0 1 1 158 128ZM204 128A16 16 0 1 1 236 128A16 16 0 1 1 204 128ZM20 174A16 16 0 1 1 52 174A16 16 0 1 1 20 174ZM112 174A16 16 0 1 1 144 174A16 16 0 1 1 112 174ZM158 174A16 16 0 1 1 190 174A16 16 0 1 1 158 174ZM204 174A16 16 0 1 1 236 174A16 16 0 1 1 204 174ZM66 220A16 16 0 1 1 98 220A16 16 0 1 1 66 220ZM112 220A16 16 0 1 1 144 220A16 16 0 1 1 112 220ZM158 220A16 16 0 1 1 190 220A16 16 0 1 1 158 220ZM204 220A16 16 0 1 1 236 220A16 16 0 1 1 204 220Z\"/></svg>","lockup":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 611.74 222\" role=\"img\" aria-label=\"klin\"><path fill=\"currentColor\" d=\"M20 36A16 16 0 1 1 52 36A16 16 0 1 1 20 36ZM66 36A16 16 0 1 1 98 36A16 16 0 1 1 66 36ZM112 36A16 16 0 1 1 144 36A16 16 0 1 1 112 36ZM158 36A16 16 0 1 1 190 36A16 16 0 1 1 158 36ZM20 82A16 16 0 1 1 52 82A16 16 0 1 1 20 82ZM66 82A16 16 0 1 1 98 82A16 16 0 1 1 66 82ZM112 82A16 16 0 1 1 144 82A16 16 0 1 1 112 82ZM204 82A16 16 0 1 1 236 82A16 16 0 1 1 204 82ZM20 128A16 16 0 1 1 52 128A16 16 0 1 1 20 128ZM66 128A16 16 0 1 1 98 128A16 16 0 1 1 66 128ZM158 128A16 16 0 1 1 190 128A16 16 0 1 1 158 128ZM204 128A16 16 0 1 1 236 128A16 16 0 1 1 204 128ZM20 174A16 16 0 1 1 52 174A16 16 0 1 1 20 174ZM112 174A16 16 0 1 1 144 174A16 16 0 1 1 112 174ZM158 174A16 16 0 1 1 190 174A16 16 0 1 1 158 174ZM204 174A16 16 0 1 1 236 174A16 16 0 1 1 204 174ZM66 220A16 16 0 1 1 98 220A16 16 0 1 1 66 220ZM112 220A16 16 0 1 1 144 220A16 16 0 1 1 112 220ZM158 220A16 16 0 1 1 190 220A16 16 0 1 1 158 220ZM204 220A16 16 0 1 1 236 220A16 16 0 1 1 204 220Z\" transform=\"translate(8 8) scale(0.9537) translate(-20 -20)\"/><path fill=\"currentColor\" d=\"M3 -180L23 -180A3 3 0 0 1 26 -177L26 -74.83A2 2 0 0 0 29.41 -73.41L79.12 -123.12A3 3 0 0 1 81.24 -124L106.7 -124A3 3 0 0 1 108.82 -118.88L54.06 -64.12A3 3 0 0 0 54.06 -59.88L108.82 -5.12A3 3 0 0 1 106.7 0L81.24 0A3 3 0 0 1 79.12 -0.88L29.41 -50.59A2 2 0 0 0 26 -49.17L26 -3A3 3 0 0 1 23 0L3 0A3 3 0 0 1 0 -3L0 -177A3 3 0 0 1 3 -180ZM130.94 -180L150.94 -180A3 3 0 0 1 153.94 -177L153.94 -3A3 3 0 0 1 150.94 0L130.94 0A3 3 0 0 1 127.94 -3L127.94 -177A3 3 0 0 1 130.94 -180ZM182.94 -124L202.94 -124A3 3 0 0 1 205.94 -121L205.94 -3A3 3 0 0 1 202.94 0L182.94 0A3 3 0 0 1 179.94 -3L179.94 -121A3 3 0 0 1 182.94 -124ZM179.94 -159A13 13 0 1 1 205.94 -159A13 13 0 1 1 179.94 -159ZM234.94 -124L257.94 -124L257.94 -3A3 3 0 0 1 254.94 0L234.94 0A3 3 0 0 1 231.94 -3L231.94 -121A3 3 0 0 1 234.94 -124ZM231.94 -78A48 48 0 0 1 327.94 -78V-3A3 3 0 0 1 324.94 0H304.94A3 3 0 0 1 301.94 -3V-78A22 22 0 0 0 257.94 -78Z\" transform=\"translate(275.8 201)\"/></svg>","box":[20,20,236,236],"after":false,"inWord":false},{"n":"04","slug":"cairn","name":"Cairn","type":"Pictorial","idea":"Three stones balanced: database, API, web. A full stack at rest, and a trail marker that shows where to start.","why":["Calm and steady, not another rocket","Stack and starter in one shape","Three shapes: easy in pixels"],"d":"M113 32L159 32A25 25 0 0 1 184 57L184 57A25 25 0 0 1 159 82L113 82A25 25 0 0 1 88 57L88 57A25 25 0 0 1 113 32ZM72 94L168 94A28 28 0 0 1 196 122L196 122A28 28 0 0 1 168 150L72 150A28 28 0 0 1 44 122L44 122A28 28 0 0 1 72 94ZM55 162L201 162A31 31 0 0 1 232 193L232 193A31 31 0 0 1 201 224L55 224A31 31 0 0 1 24 193L24 193A31 31 0 0 1 55 162Z","mark":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 256 256\" role=\"img\" aria-label=\"klin concept 04: Cairn\"><path fill=\"currentColor\" d=\"M113 32L159 32A25 25 0 0 1 184 57L184 57A25 25 0 0 1 159 82L113 82A25 25 0 0 1 88 57L88 57A25 25 0 0 1 113 32ZM72 94L168 94A28 28 0 0 1 196 122L196 122A28 28 0 0 1 168 150L72 150A28 28 0 0 1 44 122L44 122A28 28 0 0 1 72 94ZM55 162L201 162A31 31 0 0 1 232 193L232 193A31 31 0 0 1 201 224L55 224A31 31 0 0 1 24 193L24 193A31 31 0 0 1 55 162Z\"/></svg>","lockup":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 611.74 206.15\" role=\"img\" aria-label=\"klin\"><path fill=\"currentColor\" d=\"M113 32L159 32A25 25 0 0 1 184 57L184 57A25 25 0 0 1 159 82L113 82A25 25 0 0 1 88 57L88 57A25 25 0 0 1 113 32ZM72 94L168 94A28 28 0 0 1 196 122L196 122A28 28 0 0 1 168 150L72 150A28 28 0 0 1 44 122L44 122A28 28 0 0 1 72 94ZM55 162L201 162A31 31 0 0 1 232 193L232 193A31 31 0 0 1 201 224L55 224A31 31 0 0 1 24 193L24 193A31 31 0 0 1 55 162Z\" transform=\"translate(8 8) scale(0.99038) translate(-24 -32)\"/><path fill=\"currentColor\" d=\"M3 -180L23 -180A3 3 0 0 1 26 -177L26 -74.83A2 2 0 0 0 29.41 -73.41L79.12 -123.12A3 3 0 0 1 81.24 -124L106.7 -124A3 3 0 0 1 108.82 -118.88L54.06 -64.12A3 3 0 0 0 54.06 -59.88L108.82 -5.12A3 3 0 0 1 106.7 0L81.24 0A3 3 0 0 1 79.12 -0.88L29.41 -50.59A2 2 0 0 0 26 -49.17L26 -3A3 3 0 0 1 23 0L3 0A3 3 0 0 1 0 -3L0 -177A3 3 0 0 1 3 -180ZM130.94 -180L150.94 -180A3 3 0 0 1 153.94 -177L153.94 -3A3 3 0 0 1 150.94 0L130.94 0A3 3 0 0 1 127.94 -3L127.94 -177A3 3 0 0 1 130.94 -180ZM182.94 -124L202.94 -124A3 3 0 0 1 205.94 -121L205.94 -3A3 3 0 0 1 202.94 0L182.94 0A3 3 0 0 1 179.94 -3L179.94 -121A3 3 0 0 1 182.94 -124ZM179.94 -159A13 13 0 1 1 205.94 -159A13 13 0 1 1 179.94 -159ZM234.94 -124L257.94 -124L257.94 -3A3 3 0 0 1 254.94 0L234.94 0A3 3 0 0 1 231.94 -3L231.94 -121A3 3 0 0 1 234.94 -124ZM231.94 -78A48 48 0 0 1 327.94 -78V-3A3 3 0 0 1 324.94 0H304.94A3 3 0 0 1 301.94 -3V-78A22 22 0 0 0 257.94 -78Z\" transform=\"translate(275.8 193.08)\"/></svg>","box":[24,32,232,224],"after":false,"inWord":false},{"n":"05","slug":"bubbles","name":"Bubbles","type":"Pictorial","idea":"Soap bubbles, one with a shine: clean, light, and a little playful.","why":["Clean without a broom or a sparkle","Rounds soften a very square category","Big, medium, small reads as apps and packages"],"d":"M22 152A78 78 0 1 1 178 152A78 78 0 1 1 22 152ZM42 152A58 58 0 1 0 158 152A58 58 0 1 0 42 152ZM55.3 137.48A47 47 0 0 1 85.48 107.3A7 7 0 0 1 89.8 120.62A33 33 0 0 0 68.62 141.8A7 7 0 0 1 55.3 137.48ZM152 58A42 42 0 1 1 236 58A42 42 0 1 1 152 58ZM168 58A26 26 0 1 0 220 58A26 26 0 1 0 168 58ZM192 154A14 14 0 1 1 220 154A14 14 0 1 1 192 154Z","mark":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 256 256\" role=\"img\" aria-label=\"klin concept 05: Bubbles\"><path fill=\"currentColor\" d=\"M22 152A78 78 0 1 1 178 152A78 78 0 1 1 22 152ZM42 152A58 58 0 1 0 158 152A58 58 0 1 0 42 152ZM55.3 137.48A47 47 0 0 1 85.48 107.3A7 7 0 0 1 89.8 120.62A33 33 0 0 0 68.62 141.8A7 7 0 0 1 55.3 137.48ZM152 58A42 42 0 1 1 236 58A42 42 0 1 1 152 58ZM168 58A26 26 0 1 0 220 58A26 26 0 1 0 168 58ZM192 154A14 14 0 1 1 220 154A14 14 0 1 1 192 154Z\"/></svg>","lockup":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 622.45 230.24\" role=\"img\" aria-label=\"klin\"><path fill=\"currentColor\" d=\"M22 152A78 78 0 1 1 178 152A78 78 0 1 1 22 152ZM42 152A58 58 0 1 0 158 152A58 58 0 1 0 42 152ZM55.3 137.48A47 47 0 0 1 85.48 107.3A7 7 0 0 1 89.8 120.62A33 33 0 0 0 68.62 141.8A7 7 0 0 1 55.3 137.48ZM152 58A42 42 0 1 1 236 58A42 42 0 1 1 152 58ZM168 58A26 26 0 1 0 220 58A26 26 0 1 0 168 58ZM192 154A14 14 0 1 1 220 154A14 14 0 1 1 192 154Z\" transform=\"translate(8 8) scale(1.00112) translate(-22 -16)\"/><path fill=\"currentColor\" d=\"M3 -180L23 -180A3 3 0 0 1 26 -177L26 -74.83A2 2 0 0 0 29.41 -73.41L79.12 -123.12A3 3 0 0 1 81.24 -124L106.7 -124A3 3 0 0 1 108.82 -118.88L54.06 -64.12A3 3 0 0 0 54.06 -59.88L108.82 -5.12A3 3 0 0 1 106.7 0L81.24 0A3 3 0 0 1 79.12 -0.88L29.41 -50.59A2 2 0 0 0 26 -49.17L26 -3A3 3 0 0 1 23 0L3 0A3 3 0 0 1 0 -3L0 -177A3 3 0 0 1 3 -180ZM130.94 -180L150.94 -180A3 3 0 0 1 153.94 -177L153.94 -3A3 3 0 0 1 150.94 0L130.94 0A3 3 0 0 1 127.94 -3L127.94 -177A3 3 0 0 1 130.94 -180ZM182.94 -124L202.94 -124A3 3 0 0 1 205.94 -121L205.94 -3A3 3 0 0 1 202.94 0L182.94 0A3 3 0 0 1 179.94 -3L179.94 -121A3 3 0 0 1 182.94 -124ZM179.94 -159A13 13 0 1 1 205.94 -159A13 13 0 1 1 179.94 -159ZM234.94 -124L257.94 -124L257.94 -3A3 3 0 0 1 254.94 0L234.94 0A3 3 0 0 1 231.94 -3L231.94 -121A3 3 0 0 1 234.94 -124ZM231.94 -78A48 48 0 0 1 327.94 -78V-3A3 3 0 0 1 324.94 0H304.94A3 3 0 0 1 301.94 -3V-78A22 22 0 0 0 257.94 -78Z\" transform=\"translate(286.51 205.12)\"/></svg>","box":[22,16,236,230],"after":false,"inWord":false},{"n":"06","slug":"cursor","name":"Cursor","type":"Typographic","idea":"The block cursor follows the name, so the logo reads klin▌ as if you just typed it. The icon is an empty screen, cursor waiting.","why":["Born in the terminal, where klin lives","Nothing sits before the name, so nothing doubles","Blinks in the CLI and on the website"],"d":"M54 24L202 24A30 30 0 0 1 232 54L232 202A30 30 0 0 1 202 232L54 232A30 30 0 0 1 24 202L24 54A30 30 0 0 1 54 24ZM70 200L114 200A4 4 0 0 0 118 196L118 112A4 4 0 0 0 114 108L70 108A4 4 0 0 0 66 112L66 196A4 4 0 0 0 70 200Z","mark":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 256 256\" role=\"img\" aria-label=\"klin concept 06: Cursor\"><path fill=\"currentColor\" d=\"M54 24L202 24A30 30 0 0 1 232 54L232 202A30 30 0 0 1 202 232L54 232A30 30 0 0 1 24 202L24 54A30 30 0 0 1 54 24ZM70 200L114 200A4 4 0 0 0 118 196L118 112A4 4 0 0 0 114 108L70 108A4 4 0 0 0 66 112L66 196A4 4 0 0 0 70 200Z\"/></svg>","lockup":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 461.94 196\" role=\"img\" aria-label=\"klin\"><path fill=\"currentColor\" d=\"M3 -180L23 -180A3 3 0 0 1 26 -177L26 -74.83A2 2 0 0 0 29.41 -73.41L79.12 -123.12A3 3 0 0 1 81.24 -124L106.7 -124A3 3 0 0 1 108.82 -118.88L54.06 -64.12A3 3 0 0 0 54.06 -59.88L108.82 -5.12A3 3 0 0 1 106.7 0L81.24 0A3 3 0 0 1 79.12 -0.88L29.41 -50.59A2 2 0 0 0 26 -49.17L26 -3A3 3 0 0 1 23 0L3 0A3 3 0 0 1 0 -3L0 -177A3 3 0 0 1 3 -180ZM130.94 -180L150.94 -180A3 3 0 0 1 153.94 -177L153.94 -3A3 3 0 0 1 150.94 0L130.94 0A3 3 0 0 1 127.94 -3L127.94 -177A3 3 0 0 1 130.94 -180ZM182.94 -124L202.94 -124A3 3 0 0 1 205.94 -121L205.94 -3A3 3 0 0 1 202.94 0L182.94 0A3 3 0 0 1 179.94 -3L179.94 -121A3 3 0 0 1 182.94 -124ZM179.94 -159A13 13 0 1 1 205.94 -159A13 13 0 1 1 179.94 -159ZM234.94 -124L257.94 -124L257.94 -3A3 3 0 0 1 254.94 0L234.94 0A3 3 0 0 1 231.94 -3L231.94 -121A3 3 0 0 1 234.94 -124ZM231.94 -78A48 48 0 0 1 327.94 -78V-3A3 3 0 0 1 324.94 0H304.94A3 3 0 0 1 301.94 -3V-78A22 22 0 0 0 257.94 -78Z\" transform=\"translate(8 188)\"/><path fill=\"currentColor\" d=\"M6 0L86 0A6 6 0 0 1 92 6L92 174A6 6 0 0 1 86 180L6 180A6 6 0 0 1 0 174L0 6A6 6 0 0 1 6 0Z\" transform=\"translate(361.94 8)\"/></svg>","box":[24,24,232,232],"after":true,"inWord":false},{"n":"07","slug":"peel","name":"Peel","type":"Pictorial","idea":"The film peeling off a brand-new screen: nobody has touched this project yet.","why":["Fresh out of the box, the starter feeling","One curl, one idea","A square silhouette for icons"],"d":"M52 24L106 24A126 126 0 0 0 232 150L232 204A28 28 0 0 1 204 232L52 232A28 28 0 0 1 24 204L24 52A28 28 0 0 1 52 24ZM120 24L232 136A112 112 0 0 1 120 24Z","mark":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 256 256\" role=\"img\" aria-label=\"klin concept 07: Peel\"><path fill=\"currentColor\" d=\"M52 24L106 24A126 126 0 0 0 232 150L232 204A28 28 0 0 1 204 232L52 232A28 28 0 0 1 24 204L24 52A28 28 0 0 1 52 24ZM120 24L232 136A112 112 0 0 1 120 24Z\"/></svg>","lockup":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 595.67 209.64\" role=\"img\" aria-label=\"klin\"><path fill=\"currentColor\" d=\"M52 24L106 24A126 126 0 0 0 232 150L232 204A28 28 0 0 1 204 232L52 232A28 28 0 0 1 24 204L24 52A28 28 0 0 1 52 24ZM120 24L232 136A112 112 0 0 1 120 24Z\" transform=\"translate(8 8) scale(0.93096) translate(-24 -24)\"/><path fill=\"currentColor\" d=\"M3 -180L23 -180A3 3 0 0 1 26 -177L26 -74.83A2 2 0 0 0 29.41 -73.41L79.12 -123.12A3 3 0 0 1 81.24 -124L106.7 -124A3 3 0 0 1 108.82 -118.88L54.06 -64.12A3 3 0 0 0 54.06 -59.88L108.82 -5.12A3 3 0 0 1 106.7 0L81.24 0A3 3 0 0 1 79.12 -0.88L29.41 -50.59A2 2 0 0 0 26 -49.17L26 -3A3 3 0 0 1 23 0L3 0A3 3 0 0 1 0 -3L0 -177A3 3 0 0 1 3 -180ZM130.94 -180L150.94 -180A3 3 0 0 1 153.94 -177L153.94 -3A3 3 0 0 1 150.94 0L130.94 0A3 3 0 0 1 127.94 -3L127.94 -177A3 3 0 0 1 130.94 -180ZM182.94 -124L202.94 -124A3 3 0 0 1 205.94 -121L205.94 -3A3 3 0 0 1 202.94 0L182.94 0A3 3 0 0 1 179.94 -3L179.94 -121A3 3 0 0 1 182.94 -124ZM179.94 -159A13 13 0 1 1 205.94 -159A13 13 0 1 1 179.94 -159ZM234.94 -124L257.94 -124L257.94 -3A3 3 0 0 1 254.94 0L234.94 0A3 3 0 0 1 231.94 -3L231.94 -121A3 3 0 0 1 234.94 -124ZM231.94 -78A48 48 0 0 1 327.94 -78V-3A3 3 0 0 1 324.94 0H304.94A3 3 0 0 1 301.94 -3V-78A22 22 0 0 0 257.94 -78Z\" transform=\"translate(259.73 194.82)\"/></svg>","box":[24,24,232,232],"after":false,"inWord":false},{"n":"08","slug":"hatch","name":"Hatch","type":"Pictorial","idea":"A smooth, spotless egg with its first crack: something new is about to start.","why":["Starter, said as gently as possible","Spotless shell, clean break","One oval silhouette, readable at any size"],"d":"M59.43 100L73.51 100L102 128.49L128 102.49L154 128.49L182.49 100L196.57 100A76 102 0 0 1 204 144A76 76 0 0 1 128 220A76 76 0 0 1 52 144A76 102 0 0 1 59.43 100ZM64.48 76A76 102 0 0 1 191.52 76L177.51 76L154 99.51L128 73.51L102 99.51L78.49 76L64.48 76Z","mark":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 256 256\" role=\"img\" aria-label=\"klin concept 08: Hatch\"><path fill=\"currentColor\" d=\"M59.43 100L73.51 100L102 128.49L128 102.49L154 128.49L182.49 100L196.57 100A76 102 0 0 1 204 144A76 76 0 0 1 128 220A76 76 0 0 1 52 144A76 102 0 0 1 59.43 100ZM64.48 76A76 102 0 0 1 191.52 76L177.51 76L154 99.51L128 73.51L102 99.51L78.49 76L64.48 76Z\"/></svg>","lockup":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 579.61 230.24\" role=\"img\" aria-label=\"klin\"><path fill=\"currentColor\" d=\"M59.43 100L73.51 100L102 128.49L128 102.49L154 128.49L182.49 100L196.57 100A76 102 0 0 1 204 144A76 76 0 0 1 128 220A76 76 0 0 1 52 144A76 102 0 0 1 59.43 100ZM64.48 76A76 102 0 0 1 191.52 76L177.51 76L154 99.51L128 73.51L102 99.51L78.49 76L64.48 76Z\" transform=\"translate(8 8) scale(1.12758) translate(-52 -30)\"/><path fill=\"currentColor\" d=\"M3 -180L23 -180A3 3 0 0 1 26 -177L26 -74.83A2 2 0 0 0 29.41 -73.41L79.12 -123.12A3 3 0 0 1 81.24 -124L106.7 -124A3 3 0 0 1 108.82 -118.88L54.06 -64.12A3 3 0 0 0 54.06 -59.88L108.82 -5.12A3 3 0 0 1 106.7 0L81.24 0A3 3 0 0 1 79.12 -0.88L29.41 -50.59A2 2 0 0 0 26 -49.17L26 -3A3 3 0 0 1 23 0L3 0A3 3 0 0 1 0 -3L0 -177A3 3 0 0 1 3 -180ZM130.94 -180L150.94 -180A3 3 0 0 1 153.94 -177L153.94 -3A3 3 0 0 1 150.94 0L130.94 0A3 3 0 0 1 127.94 -3L127.94 -177A3 3 0 0 1 130.94 -180ZM182.94 -124L202.94 -124A3 3 0 0 1 205.94 -121L205.94 -3A3 3 0 0 1 202.94 0L182.94 0A3 3 0 0 1 179.94 -3L179.94 -121A3 3 0 0 1 182.94 -124ZM179.94 -159A13 13 0 1 1 205.94 -159A13 13 0 1 1 179.94 -159ZM234.94 -124L257.94 -124L257.94 -3A3 3 0 0 1 254.94 0L234.94 0A3 3 0 0 1 231.94 -3L231.94 -121A3 3 0 0 1 234.94 -124ZM231.94 -78A48 48 0 0 1 327.94 -78V-3A3 3 0 0 1 324.94 0H304.94A3 3 0 0 1 301.94 -3V-78A22 22 0 0 0 257.94 -78Z\" transform=\"translate(243.66 205.12)\"/></svg>","box":[52,30,204,220],"after":false,"inWord":false},{"n":"09","slug":"bento","name":"Bento","type":"Geometric","idea":"A place for everything, and one compartment left empty for what you generate next.","why":["Tidy monorepo: apps/ and packages/","The empty slot is klin generate","Grid-built, crisp in pixels"],"d":"M52 24L114 24A8 8 0 0 1 122 32L122 224A8 8 0 0 1 114 232L52 232A28 28 0 0 1 24 204L24 52A28 28 0 0 1 52 24ZM142 24L204 24A28 28 0 0 1 232 52L232 114A8 8 0 0 1 224 122L142 122A8 8 0 0 1 134 114L134 32A8 8 0 0 1 142 24ZM144 134L158 134A6 6 0 0 1 164 140L164 140A6 6 0 0 1 158 146L149 146A3 3 0 0 0 146 149L146 158A6 6 0 0 1 140 164L140 164A6 6 0 0 1 134 158L134 144A10 10 0 0 1 144 134ZM232 144L232 158A6 6 0 0 1 226 164L226 164A6 6 0 0 1 220 158L220 149A3 3 0 0 0 217 146L208 146A6 6 0 0 1 202 140L202 140A6 6 0 0 1 208 134L222 134A10 10 0 0 1 232 144ZM222 232L208 232A6 6 0 0 1 202 226L202 226A6 6 0 0 1 208 220L217 220A3 3 0 0 0 220 217L220 208A6 6 0 0 1 226 202L226 202A6 6 0 0 1 232 208L232 222A10 10 0 0 1 222 232ZM134 208L134 208A6 6 0 0 1 140 202L140 202A6 6 0 0 1 146 208L146 217A3 3 0 0 0 149 220L158 220A6 6 0 0 1 164 226L164 226A6 6 0 0 1 158 232L158 232A24 24 0 0 1 134 208ZM180 134L186 134A6 6 0 0 1 192 140L192 140A6 6 0 0 1 186 146L180 146A6 6 0 0 1 174 140L174 140A6 6 0 0 1 180 134ZM180 220L186 220A6 6 0 0 1 192 226L192 226A6 6 0 0 1 186 232L180 232A6 6 0 0 1 174 226L174 226A6 6 0 0 1 180 220ZM140 174L140 174A6 6 0 0 1 146 180L146 186A6 6 0 0 1 140 192L140 192A6 6 0 0 1 134 186L134 180A6 6 0 0 1 140 174ZM226 174L226 174A6 6 0 0 1 232 180L232 186A6 6 0 0 1 226 192L226 192A6 6 0 0 1 220 186L220 180A6 6 0 0 1 226 174Z","mark":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 256 256\" role=\"img\" aria-label=\"klin concept 09: Bento\"><path fill=\"currentColor\" d=\"M52 24L114 24A8 8 0 0 1 122 32L122 224A8 8 0 0 1 114 232L52 232A28 28 0 0 1 24 204L24 52A28 28 0 0 1 52 24ZM142 24L204 24A28 28 0 0 1 232 52L232 114A8 8 0 0 1 224 122L142 122A8 8 0 0 1 134 114L134 32A8 8 0 0 1 142 24ZM144 134L158 134A6 6 0 0 1 164 140L164 140A6 6 0 0 1 158 146L149 146A3 3 0 0 0 146 149L146 158A6 6 0 0 1 140 164L140 164A6 6 0 0 1 134 158L134 144A10 10 0 0 1 144 134ZM232 144L232 158A6 6 0 0 1 226 164L226 164A6 6 0 0 1 220 158L220 149A3 3 0 0 0 217 146L208 146A6 6 0 0 1 202 140L202 140A6 6 0 0 1 208 134L222 134A10 10 0 0 1 232 144ZM222 232L208 232A6 6 0 0 1 202 226L202 226A6 6 0 0 1 208 220L217 220A3 3 0 0 0 220 217L220 208A6 6 0 0 1 226 202L226 202A6 6 0 0 1 232 208L232 222A10 10 0 0 1 222 232ZM134 208L134 208A6 6 0 0 1 140 202L140 202A6 6 0 0 1 146 208L146 217A3 3 0 0 0 149 220L158 220A6 6 0 0 1 164 226L164 226A6 6 0 0 1 158 232L158 232A24 24 0 0 1 134 208ZM180 134L186 134A6 6 0 0 1 192 140L192 140A6 6 0 0 1 186 146L180 146A6 6 0 0 1 174 140L174 140A6 6 0 0 1 180 134ZM180 220L186 220A6 6 0 0 1 192 226L192 226A6 6 0 0 1 186 232L180 232A6 6 0 0 1 174 226L174 226A6 6 0 0 1 180 220ZM140 174L140 174A6 6 0 0 1 146 180L146 186A6 6 0 0 1 140 192L140 192A6 6 0 0 1 134 186L134 180A6 6 0 0 1 140 174ZM226 174L226 174A6 6 0 0 1 232 180L232 186A6 6 0 0 1 226 192L226 192A6 6 0 0 1 220 186L220 180A6 6 0 0 1 226 174Z\"/></svg>","lockup":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 595.67 209.64\" role=\"img\" aria-label=\"klin\"><path fill=\"currentColor\" d=\"M52 24L114 24A8 8 0 0 1 122 32L122 224A8 8 0 0 1 114 232L52 232A28 28 0 0 1 24 204L24 52A28 28 0 0 1 52 24ZM142 24L204 24A28 28 0 0 1 232 52L232 114A8 8 0 0 1 224 122L142 122A8 8 0 0 1 134 114L134 32A8 8 0 0 1 142 24ZM144 134L158 134A6 6 0 0 1 164 140L164 140A6 6 0 0 1 158 146L149 146A3 3 0 0 0 146 149L146 158A6 6 0 0 1 140 164L140 164A6 6 0 0 1 134 158L134 144A10 10 0 0 1 144 134ZM232 144L232 158A6 6 0 0 1 226 164L226 164A6 6 0 0 1 220 158L220 149A3 3 0 0 0 217 146L208 146A6 6 0 0 1 202 140L202 140A6 6 0 0 1 208 134L222 134A10 10 0 0 1 232 144ZM222 232L208 232A6 6 0 0 1 202 226L202 226A6 6 0 0 1 208 220L217 220A3 3 0 0 0 220 217L220 208A6 6 0 0 1 226 202L226 202A6 6 0 0 1 232 208L232 222A10 10 0 0 1 222 232ZM134 208L134 208A6 6 0 0 1 140 202L140 202A6 6 0 0 1 146 208L146 217A3 3 0 0 0 149 220L158 220A6 6 0 0 1 164 226L164 226A6 6 0 0 1 158 232L158 232A24 24 0 0 1 134 208ZM180 134L186 134A6 6 0 0 1 192 140L192 140A6 6 0 0 1 186 146L180 146A6 6 0 0 1 174 140L174 140A6 6 0 0 1 180 134ZM180 220L186 220A6 6 0 0 1 192 226L192 226A6 6 0 0 1 186 232L180 232A6 6 0 0 1 174 226L174 226A6 6 0 0 1 180 220ZM140 174L140 174A6 6 0 0 1 146 180L146 186A6 6 0 0 1 140 192L140 192A6 6 0 0 1 134 186L134 180A6 6 0 0 1 140 174ZM226 174L226 174A6 6 0 0 1 232 180L232 186A6 6 0 0 1 226 192L226 192A6 6 0 0 1 220 186L220 180A6 6 0 0 1 226 174Z\" transform=\"translate(8 8) scale(0.93096) translate(-24 -24)\"/><path fill=\"currentColor\" d=\"M3 -180L23 -180A3 3 0 0 1 26 -177L26 -74.83A2 2 0 0 0 29.41 -73.41L79.12 -123.12A3 3 0 0 1 81.24 -124L106.7 -124A3 3 0 0 1 108.82 -118.88L54.06 -64.12A3 3 0 0 0 54.06 -59.88L108.82 -5.12A3 3 0 0 1 106.7 0L81.24 0A3 3 0 0 1 79.12 -0.88L29.41 -50.59A2 2 0 0 0 26 -49.17L26 -3A3 3 0 0 1 23 0L3 0A3 3 0 0 1 0 -3L0 -177A3 3 0 0 1 3 -180ZM130.94 -180L150.94 -180A3 3 0 0 1 153.94 -177L153.94 -3A3 3 0 0 1 150.94 0L130.94 0A3 3 0 0 1 127.94 -3L127.94 -177A3 3 0 0 1 130.94 -180ZM182.94 -124L202.94 -124A3 3 0 0 1 205.94 -121L205.94 -3A3 3 0 0 1 202.94 0L182.94 0A3 3 0 0 1 179.94 -3L179.94 -121A3 3 0 0 1 182.94 -124ZM179.94 -159A13 13 0 1 1 205.94 -159A13 13 0 1 1 179.94 -159ZM234.94 -124L257.94 -124L257.94 -3A3 3 0 0 1 254.94 0L234.94 0A3 3 0 0 1 231.94 -3L231.94 -121A3 3 0 0 1 234.94 -124ZM231.94 -78A48 48 0 0 1 327.94 -78V-3A3 3 0 0 1 324.94 0H304.94A3 3 0 0 1 301.94 -3V-78A22 22 0 0 0 257.94 -78Z\" transform=\"translate(259.73 194.82)\"/></svg>","box":[24,24,232,232],"after":false,"inWord":false},{"n":"10","slug":"bowtie","name":"Bowtie","type":"Pictorial","idea":"Dressed up and ready to ship; it is also ⋈, the join between front and back.","why":["Neat, sharp, a little witty","A hidden data joke for developers","Wide but solid, unlike any letter"],"d":"M122 100L134 100A8 8 0 0 1 142 108L142 148A8 8 0 0 1 134 156L122 156A8 8 0 0 1 114 148L114 108A8 8 0 0 1 122 100ZM48 72.82L99 102.27A6 6 0 0 1 102 107.46L102 148.54A6 6 0 0 1 99 153.73L48 183.18A16 16 0 0 1 24 169.32L24 86.68A16 16 0 0 1 48 72.82ZM208 183.18L157 153.73A6 6 0 0 1 154 148.54L154 107.46A6 6 0 0 1 157 102.27L208 72.82A16 16 0 0 1 232 86.68L232 169.32A16 16 0 0 1 208 183.18Z","mark":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 256 256\" role=\"img\" aria-label=\"klin concept 10: Bowtie\"><path fill=\"currentColor\" d=\"M122 100L134 100A8 8 0 0 1 142 108L142 148A8 8 0 0 1 134 156L122 156A8 8 0 0 1 114 148L114 108A8 8 0 0 1 122 100ZM48 72.82L99 102.27A6 6 0 0 1 102 107.46L102 148.54A6 6 0 0 1 99 153.73L48 183.18A16 16 0 0 1 24 169.32L24 86.68A16 16 0 0 1 48 72.82ZM208 183.18L157 153.73A6 6 0 0 1 154 148.54L154 107.46A6 6 0 0 1 157 102.27L208 72.82A16 16 0 0 1 232 86.68L232 169.32A16 16 0 0 1 208 183.18Z\"/></svg>","lockup":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 611.74 196\" role=\"img\" aria-label=\"klin\"><path fill=\"currentColor\" d=\"M122 100L134 100A8 8 0 0 1 142 108L142 148A8 8 0 0 1 134 156L122 156A8 8 0 0 1 114 148L114 108A8 8 0 0 1 122 100ZM48 72.82L99 102.27A6 6 0 0 1 102 107.46L102 148.54A6 6 0 0 1 99 153.73L48 183.18A16 16 0 0 1 24 169.32L24 86.68A16 16 0 0 1 48 72.82ZM208 183.18L157 153.73A6 6 0 0 1 154 148.54L154 107.46A6 6 0 0 1 157 102.27L208 72.82A16 16 0 0 1 232 86.68L232 169.32A16 16 0 0 1 208 183.18Z\" transform=\"translate(8 29.63) scale(0.99038) translate(-24 -58.97)\"/><path fill=\"currentColor\" d=\"M3 -180L23 -180A3 3 0 0 1 26 -177L26 -74.83A2 2 0 0 0 29.41 -73.41L79.12 -123.12A3 3 0 0 1 81.24 -124L106.7 -124A3 3 0 0 1 108.82 -118.88L54.06 -64.12A3 3 0 0 0 54.06 -59.88L108.82 -5.12A3 3 0 0 1 106.7 0L81.24 0A3 3 0 0 1 79.12 -0.88L29.41 -50.59A2 2 0 0 0 26 -49.17L26 -3A3 3 0 0 1 23 0L3 0A3 3 0 0 1 0 -3L0 -177A3 3 0 0 1 3 -180ZM130.94 -180L150.94 -180A3 3 0 0 1 153.94 -177L153.94 -3A3 3 0 0 1 150.94 0L130.94 0A3 3 0 0 1 127.94 -3L127.94 -177A3 3 0 0 1 130.94 -180ZM182.94 -124L202.94 -124A3 3 0 0 1 205.94 -121L205.94 -3A3 3 0 0 1 202.94 0L182.94 0A3 3 0 0 1 179.94 -3L179.94 -121A3 3 0 0 1 182.94 -124ZM179.94 -159A13 13 0 1 1 205.94 -159A13 13 0 1 1 179.94 -159ZM234.94 -124L257.94 -124L257.94 -3A3 3 0 0 1 254.94 0L234.94 0A3 3 0 0 1 231.94 -3L231.94 -121A3 3 0 0 1 234.94 -124ZM231.94 -78A48 48 0 0 1 327.94 -78V-3A3 3 0 0 1 324.94 0H304.94A3 3 0 0 1 301.94 -3V-78A22 22 0 0 0 257.94 -78Z\" transform=\"translate(275.8 188)\"/></svg>","box":[24,58.966679003209194,232,197.0333209967908],"after":false,"inWord":false},{"n":"11","slug":"spin","name":"Spin","type":"Pictorial","idea":"A washing machine on a clean cycle: put a project in, it comes out spotless.","why":["The most memorable of the set","Plays on klin = clean without spelling it","Friendly, not corporate"],"d":"M58 20L198 20A30 30 0 0 1 228 50L228 206A30 30 0 0 1 198 236L58 236A30 30 0 0 1 28 206L28 50A30 30 0 0 1 58 20ZM62 60L104 60A8 8 0 0 0 112 52L112 52A8 8 0 0 0 104 44L62 44A8 8 0 0 0 54 52L54 52A8 8 0 0 0 62 60ZM184 52A10 10 0 1 0 204 52A10 10 0 1 0 184 52ZM56 148A72 72 0 1 0 200 148A72 72 0 1 0 56 148ZM68.54 140A34 34 0 0 1 108.18 140A34 34 0 0 0 147.82 140A34 34 0 0 1 187.46 140A60 60 0 1 1 68.54 140Z","mark":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 256 256\" role=\"img\" aria-label=\"klin concept 11: Spin\"><path fill=\"currentColor\" d=\"M58 20L198 20A30 30 0 0 1 228 50L228 206A30 30 0 0 1 198 236L58 236A30 30 0 0 1 28 206L28 50A30 30 0 0 1 58 20ZM62 60L104 60A8 8 0 0 0 112 52L112 52A8 8 0 0 0 104 44L62 44A8 8 0 0 0 54 52L54 52A8 8 0 0 0 62 60ZM184 52A10 10 0 1 0 204 52A10 10 0 1 0 184 52ZM56 148A72 72 0 1 0 200 148A72 72 0 1 0 56 148ZM68.54 140A34 34 0 0 1 108.18 140A34 34 0 0 0 147.82 140A34 34 0 0 1 187.46 140A60 60 0 1 1 68.54 140Z\"/></svg>","lockup":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 581.33 209.64\" role=\"img\" aria-label=\"klin\"><path fill=\"currentColor\" d=\"M58 20L198 20A30 30 0 0 1 228 50L228 206A30 30 0 0 1 198 236L58 236A30 30 0 0 1 28 206L28 50A30 30 0 0 1 58 20ZM62 60L104 60A8 8 0 0 0 112 52L112 52A8 8 0 0 0 104 44L62 44A8 8 0 0 0 54 52L54 52A8 8 0 0 0 62 60ZM184 52A10 10 0 1 0 204 52A10 10 0 1 0 184 52ZM56 148A72 72 0 1 0 200 148A72 72 0 1 0 56 148ZM68.54 140A34 34 0 0 1 108.18 140A34 34 0 0 0 147.82 140A34 34 0 0 1 187.46 140A60 60 0 1 1 68.54 140Z\" transform=\"translate(8 8) scale(0.89648) translate(-28 -20)\"/><path fill=\"currentColor\" d=\"M3 -180L23 -180A3 3 0 0 1 26 -177L26 -74.83A2 2 0 0 0 29.41 -73.41L79.12 -123.12A3 3 0 0 1 81.24 -124L106.7 -124A3 3 0 0 1 108.82 -118.88L54.06 -64.12A3 3 0 0 0 54.06 -59.88L108.82 -5.12A3 3 0 0 1 106.7 0L81.24 0A3 3 0 0 1 79.12 -0.88L29.41 -50.59A2 2 0 0 0 26 -49.17L26 -3A3 3 0 0 1 23 0L3 0A3 3 0 0 1 0 -3L0 -177A3 3 0 0 1 3 -180ZM130.94 -180L150.94 -180A3 3 0 0 1 153.94 -177L153.94 -3A3 3 0 0 1 150.94 0L130.94 0A3 3 0 0 1 127.94 -3L127.94 -177A3 3 0 0 1 130.94 -180ZM182.94 -124L202.94 -124A3 3 0 0 1 205.94 -121L205.94 -3A3 3 0 0 1 202.94 0L182.94 0A3 3 0 0 1 179.94 -3L179.94 -121A3 3 0 0 1 182.94 -124ZM179.94 -159A13 13 0 1 1 205.94 -159A13 13 0 1 1 179.94 -159ZM234.94 -124L257.94 -124L257.94 -3A3 3 0 0 1 254.94 0L234.94 0A3 3 0 0 1 231.94 -3L231.94 -121A3 3 0 0 1 234.94 -124ZM231.94 -78A48 48 0 0 1 327.94 -78V-3A3 3 0 0 1 324.94 0H304.94A3 3 0 0 1 301.94 -3V-78A22 22 0 0 0 257.94 -78Z\" transform=\"translate(245.39 194.82)\"/></svg>","box":[28,20,228,236],"after":false,"inWord":false},{"n":"12","slug":"sprue","name":"Sprue","type":"Pictorial","idea":"A model-kit frame: every part comes attached and ready to snap out.","why":["Starter kit, taken literally and lovingly","Frame, runner and parts make a system","Fits the website's kit-snapping intro"],"d":"M52 24L204 24A28 28 0 0 1 232 52L232 204A28 28 0 0 1 204 232L52 232A28 28 0 0 1 24 204L24 52A28 28 0 0 1 52 24ZM44 122L212 122A4 4 0 0 0 216 118L216 54A14 14 0 0 0 202 40L54 40A14 14 0 0 0 40 54L40 118A4 4 0 0 0 44 122ZM54 216L202 216A14 14 0 0 0 216 202L216 138A4 4 0 0 0 212 134L44 134A4 4 0 0 0 40 138L40 202A14 14 0 0 0 54 216ZM60 80A30 30 0 1 1 120 80A30 30 0 1 1 60 80ZM86 107L94 107L94 123L86 123L86 107ZM39 76L63 76L63 84L39 84L39 76ZM147 146L187 146A9 9 0 0 1 196 155L196 195A9 9 0 0 1 187 204L147 204A9 9 0 0 1 138 195L138 155A9 9 0 0 1 147 146ZM163 133L171 133L171 148L163 148L163 133ZM194 171L217 171L217 179L194 179L194 171Z","mark":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 256 256\" role=\"img\" aria-label=\"klin concept 12: Sprue\"><path fill=\"currentColor\" d=\"M52 24L204 24A28 28 0 0 1 232 52L232 204A28 28 0 0 1 204 232L52 232A28 28 0 0 1 24 204L24 52A28 28 0 0 1 52 24ZM44 122L212 122A4 4 0 0 0 216 118L216 54A14 14 0 0 0 202 40L54 40A14 14 0 0 0 40 54L40 118A4 4 0 0 0 44 122ZM54 216L202 216A14 14 0 0 0 216 202L216 138A4 4 0 0 0 212 134L44 134A4 4 0 0 0 40 138L40 202A14 14 0 0 0 54 216ZM60 80A30 30 0 1 1 120 80A30 30 0 1 1 60 80ZM86 107L94 107L94 123L86 123L86 107ZM39 76L63 76L63 84L39 84L39 76ZM147 146L187 146A9 9 0 0 1 196 155L196 195A9 9 0 0 1 187 204L147 204A9 9 0 0 1 138 195L138 155A9 9 0 0 1 147 146ZM163 133L171 133L171 148L163 148L163 133ZM194 171L217 171L217 179L194 179L194 171Z\"/></svg>","lockup":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 595.67 209.64\" role=\"img\" aria-label=\"klin\"><path fill=\"currentColor\" d=\"M52 24L204 24A28 28 0 0 1 232 52L232 204A28 28 0 0 1 204 232L52 232A28 28 0 0 1 24 204L24 52A28 28 0 0 1 52 24ZM44 122L212 122A4 4 0 0 0 216 118L216 54A14 14 0 0 0 202 40L54 40A14 14 0 0 0 40 54L40 118A4 4 0 0 0 44 122ZM54 216L202 216A14 14 0 0 0 216 202L216 138A4 4 0 0 0 212 134L44 134A4 4 0 0 0 40 138L40 202A14 14 0 0 0 54 216ZM60 80A30 30 0 1 1 120 80A30 30 0 1 1 60 80ZM86 107L94 107L94 123L86 123L86 107ZM39 76L63 76L63 84L39 84L39 76ZM147 146L187 146A9 9 0 0 1 196 155L196 195A9 9 0 0 1 187 204L147 204A9 9 0 0 1 138 195L138 155A9 9 0 0 1 147 146ZM163 133L171 133L171 148L163 148L163 133ZM194 171L217 171L217 179L194 179L194 171Z\" transform=\"translate(8 8) scale(0.93096) translate(-24 -24)\"/><path fill=\"currentColor\" d=\"M3 -180L23 -180A3 3 0 0 1 26 -177L26 -74.83A2 2 0 0 0 29.41 -73.41L79.12 -123.12A3 3 0 0 1 81.24 -124L106.7 -124A3 3 0 0 1 108.82 -118.88L54.06 -64.12A3 3 0 0 0 54.06 -59.88L108.82 -5.12A3 3 0 0 1 106.7 0L81.24 0A3 3 0 0 1 79.12 -0.88L29.41 -50.59A2 2 0 0 0 26 -49.17L26 -3A3 3 0 0 1 23 0L3 0A3 3 0 0 1 0 -3L0 -177A3 3 0 0 1 3 -180ZM130.94 -180L150.94 -180A3 3 0 0 1 153.94 -177L153.94 -3A3 3 0 0 1 150.94 0L130.94 0A3 3 0 0 1 127.94 -3L127.94 -177A3 3 0 0 1 130.94 -180ZM182.94 -124L202.94 -124A3 3 0 0 1 205.94 -121L205.94 -3A3 3 0 0 1 202.94 0L182.94 0A3 3 0 0 1 179.94 -3L179.94 -121A3 3 0 0 1 182.94 -124ZM179.94 -159A13 13 0 1 1 205.94 -159A13 13 0 1 1 179.94 -159ZM234.94 -124L257.94 -124L257.94 -3A3 3 0 0 1 254.94 0L234.94 0A3 3 0 0 1 231.94 -3L231.94 -121A3 3 0 0 1 234.94 -124ZM231.94 -78A48 48 0 0 1 327.94 -78V-3A3 3 0 0 1 324.94 0H304.94A3 3 0 0 1 301.94 -3V-78A22 22 0 0 0 257.94 -78Z\" transform=\"translate(259.73 194.82)\"/></svg>","box":[24,24,232,232],"after":false,"inWord":false},{"n":"13","slug":"tangram","name":"Tangram","type":"Geometric","idea":"Seven pieces make one clean square; the last one is sliding home.","why":["A kit of parts that fits exactly","The pieces can fly in on the website","Square footprint for every icon"],"d":"M45.73 30L210.27 30A3 3 0 0 1 212.39 35.12L130.12 117.39A3 3 0 0 1 125.88 117.39L43.61 35.12A3 3 0 0 1 45.73 30ZM35.12 43.61L117.39 125.88A3 3 0 0 1 117.39 130.12L35.12 212.39A3 3 0 0 1 30 210.27L30 45.73A3 3 0 0 1 35.12 43.61ZM240 163.73L240 237A3 3 0 0 1 237 240L163.73 240A3 3 0 0 1 161.61 234.88L234.88 161.61A3 3 0 0 1 240 163.73ZM226 45.73L226 124.27A3 3 0 0 1 225.12 126.39L191.12 160.39A3 3 0 0 1 186 158.27L186 79.73A3 3 0 0 1 186.88 77.61L220.88 43.61A3 3 0 0 1 226 45.73ZM138.61 125.88L168.88 95.61A3 3 0 0 1 174 97.73L174 158.27A3 3 0 0 1 168.88 160.39L138.61 130.12A3 3 0 0 1 138.61 125.88ZM130.12 138.61L169.39 177.88A3 3 0 0 1 169.39 182.12L130.12 221.39A3 3 0 0 1 125.88 221.39L86.61 182.12A3 3 0 0 1 86.61 177.88L125.88 138.61A3 3 0 0 1 130.12 138.61ZM78.12 190.61L108.39 220.88A3 3 0 0 1 106.27 226L45.73 226A3 3 0 0 1 43.61 220.88L73.88 190.61A3 3 0 0 1 78.12 190.61Z","mark":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 256 256\" role=\"img\" aria-label=\"klin concept 13: Tangram\"><path fill=\"currentColor\" d=\"M45.73 30L210.27 30A3 3 0 0 1 212.39 35.12L130.12 117.39A3 3 0 0 1 125.88 117.39L43.61 35.12A3 3 0 0 1 45.73 30ZM35.12 43.61L117.39 125.88A3 3 0 0 1 117.39 130.12L35.12 212.39A3 3 0 0 1 30 210.27L30 45.73A3 3 0 0 1 35.12 43.61ZM240 163.73L240 237A3 3 0 0 1 237 240L163.73 240A3 3 0 0 1 161.61 234.88L234.88 161.61A3 3 0 0 1 240 163.73ZM226 45.73L226 124.27A3 3 0 0 1 225.12 126.39L191.12 160.39A3 3 0 0 1 186 158.27L186 79.73A3 3 0 0 1 186.88 77.61L220.88 43.61A3 3 0 0 1 226 45.73ZM138.61 125.88L168.88 95.61A3 3 0 0 1 174 97.73L174 158.27A3 3 0 0 1 168.88 160.39L138.61 130.12A3 3 0 0 1 138.61 125.88ZM130.12 138.61L169.39 177.88A3 3 0 0 1 169.39 182.12L130.12 221.39A3 3 0 0 1 125.88 221.39L86.61 182.12A3 3 0 0 1 86.61 177.88L125.88 138.61A3 3 0 0 1 130.12 138.61ZM78.12 190.61L108.39 220.88A3 3 0 0 1 106.27 226L45.73 226A3 3 0 0 1 43.61 220.88L73.88 190.61A3 3 0 0 1 78.12 190.61Z\"/></svg>","lockup":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 595.67 209.64\" role=\"img\" aria-label=\"klin\"><path fill=\"currentColor\" d=\"M45.73 30L210.27 30A3 3 0 0 1 212.39 35.12L130.12 117.39A3 3 0 0 1 125.88 117.39L43.61 35.12A3 3 0 0 1 45.73 30ZM35.12 43.61L117.39 125.88A3 3 0 0 1 117.39 130.12L35.12 212.39A3 3 0 0 1 30 210.27L30 45.73A3 3 0 0 1 35.12 43.61ZM240 163.73L240 237A3 3 0 0 1 237 240L163.73 240A3 3 0 0 1 161.61 234.88L234.88 161.61A3 3 0 0 1 240 163.73ZM226 45.73L226 124.27A3 3 0 0 1 225.12 126.39L191.12 160.39A3 3 0 0 1 186 158.27L186 79.73A3 3 0 0 1 186.88 77.61L220.88 43.61A3 3 0 0 1 226 45.73ZM138.61 125.88L168.88 95.61A3 3 0 0 1 174 97.73L174 158.27A3 3 0 0 1 168.88 160.39L138.61 130.12A3 3 0 0 1 138.61 125.88ZM130.12 138.61L169.39 177.88A3 3 0 0 1 169.39 182.12L130.12 221.39A3 3 0 0 1 125.88 221.39L86.61 182.12A3 3 0 0 1 86.61 177.88L125.88 138.61A3 3 0 0 1 130.12 138.61ZM78.12 190.61L108.39 220.88A3 3 0 0 1 106.27 226L45.73 226A3 3 0 0 1 43.61 220.88L73.88 190.61A3 3 0 0 1 78.12 190.61Z\" transform=\"translate(8 8) scale(0.87225) translate(-24 -24)\"/><path fill=\"currentColor\" d=\"M3 -180L23 -180A3 3 0 0 1 26 -177L26 -74.83A2 2 0 0 0 29.41 -73.41L79.12 -123.12A3 3 0 0 1 81.24 -124L106.7 -124A3 3 0 0 1 108.82 -118.88L54.06 -64.12A3 3 0 0 0 54.06 -59.88L108.82 -5.12A3 3 0 0 1 106.7 0L81.24 0A3 3 0 0 1 79.12 -0.88L29.41 -50.59A2 2 0 0 0 26 -49.17L26 -3A3 3 0 0 1 23 0L3 0A3 3 0 0 1 0 -3L0 -177A3 3 0 0 1 3 -180ZM130.94 -180L150.94 -180A3 3 0 0 1 153.94 -177L153.94 -3A3 3 0 0 1 150.94 0L130.94 0A3 3 0 0 1 127.94 -3L127.94 -177A3 3 0 0 1 130.94 -180ZM182.94 -124L202.94 -124A3 3 0 0 1 205.94 -121L205.94 -3A3 3 0 0 1 202.94 0L182.94 0A3 3 0 0 1 179.94 -3L179.94 -121A3 3 0 0 1 182.94 -124ZM179.94 -159A13 13 0 1 1 205.94 -159A13 13 0 1 1 179.94 -159ZM234.94 -124L257.94 -124L257.94 -3A3 3 0 0 1 254.94 0L234.94 0A3 3 0 0 1 231.94 -3L231.94 -121A3 3 0 0 1 234.94 -124ZM231.94 -78A48 48 0 0 1 327.94 -78V-3A3 3 0 0 1 324.94 0H304.94A3 3 0 0 1 301.94 -3V-78A22 22 0 0 0 257.94 -78Z\" transform=\"translate(259.73 194.82)\"/></svg>","box":[24,24,246,246],"after":false,"inWord":false},{"n":"14","slug":"droplet","name":"Droplet","type":"Wordmark detail","idea":"The i is dotted with a drop of water; on its own, the drop is the icon, so the name never repeats.","why":["Removes the mark-plus-word problem entirely","Fresh water: clean","The drop doubles as the favicon"],"d":"M122 48L208 48L208 134A86 86 0 1 1 122 48Z","mark":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 256 256\" role=\"img\" aria-label=\"klin concept 14: Droplet\"><path fill=\"currentColor\" d=\"M122 48L208 48L208 134A86 86 0 1 1 122 48Z\"/></svg>","lockup":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 343.94 210\" role=\"img\" aria-label=\"klin\"><path fill=\"currentColor\" d=\"M3 -180L23 -180A3 3 0 0 1 26 -177L26 -74.83A2 2 0 0 0 29.41 -73.41L79.12 -123.12A3 3 0 0 1 81.24 -124L106.7 -124A3 3 0 0 1 108.82 -118.88L54.06 -64.12A3 3 0 0 0 54.06 -59.88L108.82 -5.12A3 3 0 0 1 106.7 0L81.24 0A3 3 0 0 1 79.12 -0.88L29.41 -50.59A2 2 0 0 0 26 -49.17L26 -3A3 3 0 0 1 23 0L3 0A3 3 0 0 1 0 -3L0 -177A3 3 0 0 1 3 -180ZM130.94 -180L150.94 -180A3 3 0 0 1 153.94 -177L153.94 -3A3 3 0 0 1 150.94 0L130.94 0A3 3 0 0 1 127.94 -3L127.94 -177A3 3 0 0 1 130.94 -180ZM182.94 -124L202.94 -124A3 3 0 0 1 205.94 -121L205.94 -3A3 3 0 0 1 202.94 0L182.94 0A3 3 0 0 1 179.94 -3L179.94 -121A3 3 0 0 1 182.94 -124ZM192.94 -178L208.94 -178L208.94 -162A16 16 0 1 1 192.94 -178ZM234.94 -124L257.94 -124L257.94 -3A3 3 0 0 1 254.94 0L234.94 0A3 3 0 0 1 231.94 -3L231.94 -121A3 3 0 0 1 234.94 -124ZM231.94 -78A48 48 0 0 1 327.94 -78V-3A3 3 0 0 1 324.94 0H304.94A3 3 0 0 1 301.94 -3V-78A22 22 0 0 0 257.94 -78Z\" transform=\"translate(8 202)\"/></svg>","box":[36,48,208,220],"after":false,"inWord":true},{"n":"15","slug":"weave","name":"Weave","type":"Abstract","idea":"Threads woven through three layers, web, API and database: one schema holds the whole stack together.","why":["klin's core opinion, drawn as cloth","Woven means well made","Bars and gaps snap to terminal pixels"],"d":"M36 32L52 32A5 5 0 0 1 57 37L57 79A5 5 0 0 1 52 84L36 84A12 12 0 0 1 24 72L24 44A12 12 0 0 1 36 32ZM116 32L220 32A12 12 0 0 1 232 44L232 72A12 12 0 0 1 220 84L116 84A5 5 0 0 1 111 79L111 37A5 5 0 0 1 116 32ZM36 102L140 102A5 5 0 0 1 145 107L145 149A5 5 0 0 1 140 154L36 154A12 12 0 0 1 24 142L24 114A12 12 0 0 1 36 102ZM204 102L220 102A12 12 0 0 1 232 114L232 142A12 12 0 0 1 220 154L204 154A5 5 0 0 1 199 149L199 107A5 5 0 0 1 204 102ZM36 172L52 172A5 5 0 0 1 57 177L57 219A5 5 0 0 1 52 224L36 224A12 12 0 0 1 24 212L24 184A12 12 0 0 1 36 172ZM116 172L220 172A12 12 0 0 1 232 184L232 212A12 12 0 0 1 220 224L116 224A5 5 0 0 1 111 219L111 177A5 5 0 0 1 116 172ZM74 12L94 12A8 8 0 0 1 102 20L102 89A4 4 0 0 1 98 93L70 93A4 4 0 0 1 66 89L66 20A8 8 0 0 1 74 12ZM70 163L98 163A4 4 0 0 1 102 167L102 236A8 8 0 0 1 94 244L74 244A8 8 0 0 1 66 236L66 167A4 4 0 0 1 70 163ZM162 12L182 12A8 8 0 0 1 190 20L190 19A4 4 0 0 1 186 23L158 23A4 4 0 0 1 154 19L154 20A8 8 0 0 1 162 12ZM158 93L186 93A4 4 0 0 1 190 97L190 159A4 4 0 0 1 186 163L158 163A4 4 0 0 1 154 159L154 97A4 4 0 0 1 158 93ZM158 233L186 233A4 4 0 0 1 190 237L190 236A8 8 0 0 1 182 244L162 244A8 8 0 0 1 154 236L154 237A4 4 0 0 1 158 233Z","mark":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 256 256\" role=\"img\" aria-label=\"klin concept 15: Weave\"><path fill=\"currentColor\" d=\"M36 32L52 32A5 5 0 0 1 57 37L57 79A5 5 0 0 1 52 84L36 84A12 12 0 0 1 24 72L24 44A12 12 0 0 1 36 32ZM116 32L220 32A12 12 0 0 1 232 44L232 72A12 12 0 0 1 220 84L116 84A5 5 0 0 1 111 79L111 37A5 5 0 0 1 116 32ZM36 102L140 102A5 5 0 0 1 145 107L145 149A5 5 0 0 1 140 154L36 154A12 12 0 0 1 24 142L24 114A12 12 0 0 1 36 102ZM204 102L220 102A12 12 0 0 1 232 114L232 142A12 12 0 0 1 220 154L204 154A5 5 0 0 1 199 149L199 107A5 5 0 0 1 204 102ZM36 172L52 172A5 5 0 0 1 57 177L57 219A5 5 0 0 1 52 224L36 224A12 12 0 0 1 24 212L24 184A12 12 0 0 1 36 172ZM116 172L220 172A12 12 0 0 1 232 184L232 212A12 12 0 0 1 220 224L116 224A5 5 0 0 1 111 219L111 177A5 5 0 0 1 116 172ZM74 12L94 12A8 8 0 0 1 102 20L102 89A4 4 0 0 1 98 93L70 93A4 4 0 0 1 66 89L66 20A8 8 0 0 1 74 12ZM70 163L98 163A4 4 0 0 1 102 167L102 236A8 8 0 0 1 94 244L74 244A8 8 0 0 1 66 236L66 167A4 4 0 0 1 70 163ZM162 12L182 12A8 8 0 0 1 190 20L190 19A4 4 0 0 1 186 23L158 23A4 4 0 0 1 154 19L154 20A8 8 0 0 1 162 12ZM158 93L186 93A4 4 0 0 1 190 97L190 159A4 4 0 0 1 186 163L158 163A4 4 0 0 1 154 159L154 97A4 4 0 0 1 158 93ZM158 233L186 233A4 4 0 0 1 190 237L190 236A8 8 0 0 1 182 244L162 244A8 8 0 0 1 154 236L154 237A4 4 0 0 1 158 233Z\"/></svg>","lockup":"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 585.5 217.88\" role=\"img\" aria-label=\"klin\"><path fill=\"currentColor\" d=\"M36 32L52 32A5 5 0 0 1 57 37L57 79A5 5 0 0 1 52 84L36 84A12 12 0 0 1 24 72L24 44A12 12 0 0 1 36 32ZM116 32L220 32A12 12 0 0 1 232 44L232 72A12 12 0 0 1 220 84L116 84A5 5 0 0 1 111 79L111 37A5 5 0 0 1 116 32ZM36 102L140 102A5 5 0 0 1 145 107L145 149A5 5 0 0 1 140 154L36 154A12 12 0 0 1 24 142L24 114A12 12 0 0 1 36 102ZM204 102L220 102A12 12 0 0 1 232 114L232 142A12 12 0 0 1 220 154L204 154A5 5 0 0 1 199 149L199 107A5 5 0 0 1 204 102ZM36 172L52 172A5 5 0 0 1 57 177L57 219A5 5 0 0 1 52 224L36 224A12 12 0 0 1 24 212L24 184A12 12 0 0 1 36 172ZM116 172L220 172A12 12 0 0 1 232 184L232 212A12 12 0 0 1 220 224L116 224A5 5 0 0 1 111 219L111 177A5 5 0 0 1 116 172ZM74 12L94 12A8 8 0 0 1 102 20L102 89A4 4 0 0 1 98 93L70 93A4 4 0 0 1 66 89L66 20A8 8 0 0 1 74 12ZM70 163L98 163A4 4 0 0 1 102 167L102 236A8 8 0 0 1 94 244L74 244A8 8 0 0 1 66 236L66 167A4 4 0 0 1 70 163ZM162 12L182 12A8 8 0 0 1 190 20L190 19A4 4 0 0 1 186 23L158 23A4 4 0 0 1 154 19L154 20A8 8 0 0 1 162 12ZM158 93L186 93A4 4 0 0 1 190 97L190 159A4 4 0 0 1 186 163L158 163A4 4 0 0 1 154 159L154 97A4 4 0 0 1 158 93ZM158 233L186 233A4 4 0 0 1 190 237L190 236A8 8 0 0 1 182 244L162 244A8 8 0 0 1 154 236L154 237A4 4 0 0 1 158 233Z\" transform=\"translate(8 8) scale(0.87017) translate(-24 -12)\"/><path fill=\"currentColor\" d=\"M3 -180L23 -180A3 3 0 0 1 26 -177L26 -74.83A2 2 0 0 0 29.41 -73.41L79.12 -123.12A3 3 0 0 1 81.24 -124L106.7 -124A3 3 0 0 1 108.82 -118.88L54.06 -64.12A3 3 0 0 0 54.06 -59.88L108.82 -5.12A3 3 0 0 1 106.7 0L81.24 0A3 3 0 0 1 79.12 -0.88L29.41 -50.59A2 2 0 0 0 26 -49.17L26 -3A3 3 0 0 1 23 0L3 0A3 3 0 0 1 0 -3L0 -177A3 3 0 0 1 3 -180ZM130.94 -180L150.94 -180A3 3 0 0 1 153.94 -177L153.94 -3A3 3 0 0 1 150.94 0L130.94 0A3 3 0 0 1 127.94 -3L127.94 -177A3 3 0 0 1 130.94 -180ZM182.94 -124L202.94 -124A3 3 0 0 1 205.94 -121L205.94 -3A3 3 0 0 1 202.94 0L182.94 0A3 3 0 0 1 179.94 -3L179.94 -121A3 3 0 0 1 182.94 -124ZM179.94 -159A13 13 0 1 1 205.94 -159A13 13 0 1 1 179.94 -159ZM234.94 -124L257.94 -124L257.94 -3A3 3 0 0 1 254.94 0L234.94 0A3 3 0 0 1 231.94 -3L231.94 -121A3 3 0 0 1 234.94 -124ZM231.94 -78A48 48 0 0 1 327.94 -78V-3A3 3 0 0 1 324.94 0H304.94A3 3 0 0 1 301.94 -3V-78A22 22 0 0 0 257.94 -78Z\" transform=\"translate(249.56 198.94)\"/></svg>","box":[24,12,232,244],"after":false,"inWord":false}];
+const WORD16 = {"k":["##.......","##.......","##.......","##.......","##.......","##.....##","##....##.","##...##..","##..##...","##.##....","####.....","##.##....","##..##...","##...##..","##....##.","##.....##"],"l":["##","##","##","##","##","##","##","##","##","##","##","##","##","##","##","##"],"i":["##","##","..","..","..","##","##","##","##","##","##","##","##","##","##","##"],"n":["........","........","........","........","........","#######.","########","##....##","##....##","##....##","##....##","##....##","##....##","##....##","##....##","##....##"]};
+(() => {
+  const byId = Object.fromEntries(CONCEPTS.map((c) => [c.slug, c]))
+  const store = {
+    get(k, d) {
+      try {
+        const v = localStorage.getItem("klin-concepts:" + k)
+        return v == null ? d : JSON.parse(v)
+      } catch {
+        return d
+      }
+    },
+    set(k, v) {
+      try {
+        localStorage.setItem("klin-concepts:" + k, JSON.stringify(v))
+      } catch {}
+    },
+  }
+  const state = {
+    ground: store.get("ground", "dark"),
+    starred: new Set(store.get("starred", []).filter((s) => byId[s])),
+    onlyStarred: false,
+    tab: location.hash === "#duel" ? "duel" : "all",
+  }
+  const $ = (s, el = document) => el.querySelector(s)
+  const g = () => (state.ground === "dark" ? "g-dark" : "g-light")
+  // Icons outside the ground sit on the dark page, so they always get the paper tile.
+  const tileFor = () => "tile-paper"
+  const STAR = '<svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1.2l1.95 4.3 4.65.45-3.5 3.1 1.02 4.6L8 11.3l-4.12 2.35 1.02-4.6-3.5-3.1 4.65-.45z"/></svg>'
+
+  // The mark cropped to its ink, in a square: what an icon or favicon shows.
+  const fit = (c, cls = "", pad = 0.04) => {
+    const [x0, y0, x1, y1] = c.box
+    const side = Math.max(x1 - x0, y1 - y0) * (1 + 2 * pad)
+    const cx = (x0 + x1) / 2
+    const cy = (y0 + y1) / 2
+    return `<svg class="${cls}" viewBox="${cx - side / 2} ${cy - side / 2} ${side} ${side}" aria-hidden="true"><path fill="currentColor" d="${c.d}"/></svg>`
+  }
+  const mark = (c) => c.mark.replace("<svg ", '<svg aria-hidden="true" ')
+  const lockup = (c, blink = false) => {
+    let s = c.lockup.replace('role="img"', 'role="img"')
+    if (c.after && blink) s = s.replace(/(<path[^>]*>)(?![\s\S]*<path)/, (p) => p.replace("<path ", '<path class="blink" '))
+    return s
+  }
+
+  // --- Terminal previews: the mark pixelated to 20 px tall, beside klin's 16 px pixel letters ---
+  const PX = 20
+  const bitmaps = {}
+  async function bitmapOf(c) {
+    if (bitmaps[c.slug]) return bitmaps[c.slug]
+    const [x0, y0, x1, y1] = c.box
+    const w = x1 - x0
+    const h = y1 - y0
+    const k = PX / Math.max(w, h)
+    const gw = Math.max(1, Math.round(w * k))
+    let gh = Math.round(h * k)
+    if (gh % 2) gh += 1
+    const vw = gw / k
+    const vh = gh / k
+    const S = 8
+    const src = `<svg xmlns="http://www.w3.org/2000/svg" width="${gw * S}" height="${gh * S}" viewBox="${x0 - (vw - w) / 2} ${y0 - (vh - h) / 2} ${vw} ${vh}"><path fill="#000" d="${c.d}"/></svg>`
+    const img = new Image()
+    img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(src)
+    await img.decode()
+    const cv = document.createElement("canvas")
+    cv.width = gw * S
+    cv.height = gh * S
+    const ctx = cv.getContext("2d", { willReadFrequently: true })
+    ctx.drawImage(img, 0, 0)
+    const px = ctx.getImageData(0, 0, cv.width, cv.height).data
+    const rows = []
+    for (let y = 0; y < gh; y++) {
+      let row = ""
+      for (let x = 0; x < gw; x++) {
+        let sum = 0
+        for (let yy = 0; yy < S; yy++)
+          for (let xx = 0; xx < S; xx++) sum += px[((y * S + yy) * cv.width + x * S + xx) * 4 + 3]
+        row += sum / (S * S * 255) > 0.5 ? "#" : "."
+      }
+      rows.push(row)
+    }
+    return (bitmaps[c.slug] = rows)
+  }
+  function wordPixels() {
+    const letters = ["k", "l", "i", "n"]
+    const rows = Array.from({ length: 16 }, () => "")
+    letters.forEach((l, i) => {
+      WORD16[l].forEach((line, y) => (rows[y] += line + (i < letters.length - 1 ? ".." : "")))
+    })
+    return rows
+  }
+  async function terminalSvg(c, size = 3) {
+    const word = wordPixels()
+    const H = PX
+    const grid = Array.from({ length: H }, () => [])
+    const put = (rows, x, y) => rows.forEach((line, dy) => [...line].forEach((p, dx) => p === "#" && (grid[y + dy][x + dx] = 1)))
+    let W = 0
+    const blinkCells = []
+    if (c.inWord) {
+      put(word, 0, H - 16)
+      W = word[0].length
+    } else if (c.after) {
+      put(word, 0, H - 16)
+      const bx = word[0].length + 3
+      for (let y = H - 16; y < H; y++) for (let x = bx; x < bx + 8; x++) blinkCells.push([x, y])
+      W = bx + 8
+    } else {
+      const m = await bitmapOf(c)
+      const top = Math.floor((H - m.length) / 2 / 2) * 2
+      put(m, 0, top)
+      put(word, m[0].length + 4, H - 16)
+      W = m[0].length + 4 + word[0].length
+    }
+    let rects = ""
+    for (let y = 0; y < H; y++) {
+      let x = 0
+      while (x < W) {
+        if (!grid[y][x]) { x++; continue }
+        let e = x
+        while (e < W && grid[y][e]) e++
+        rects += `<rect x="${x}" y="${y}" width="${e - x}" height="1"/>`
+        x = e
+      }
+    }
+    const blink = blinkCells.length ? `<rect class="blink" x="${blinkCells[0][0]}" y="${H - 16}" width="8" height="16"/>` : ""
+    return `<svg viewBox="0 0 ${W} ${H}" width="${W * size}" height="${H * size}" shape-rendering="crispEdges" aria-hidden="true"><g fill="currentColor">${rects}${blink}</g></svg>`
+  }
+
+  // --- Gallery ---
+  function card(c) {
+    const on = state.starred.has(c.slug)
+    return `<article class="card" data-slug="${c.slug}" data-starred="${on}">
+      <div class="card-head"><span class="num">${c.n}</span><h2>${c.name}</h2><span class="type">${c.type}</span>
+        <button class="star" data-star="${c.slug}" aria-pressed="${on}" aria-label="Star ${c.name}">${STAR}<span>${on ? "Starred" : "Star"}</span></button></div>
+      <button class="stage ${g()}" data-open="${c.slug}" aria-label="Open ${c.name} in context">
+        <div class="big">${mark(c)}</div><div class="lock">${lockup(c)}</div></button>
+      <p class="idea">${c.idea}</p>
+      <div class="uses">
+        <span class="tab" title="Browser tab, 16 px">${fit(c, "fav")}klin</span>
+        <span class="icon ${tileFor()}" title="App icon">${fit(c)}</span>
+        <span class="term" data-term="${c.slug}" title="Terminal header, auto-pixelated"></span>
+      </div>
+    </article>`
+  }
+  async function fillTerms(root) {
+    for (const el of root.querySelectorAll("[data-term]")) el.innerHTML = await terminalSvg(byId[el.dataset.term], 2)
+  }
+  function renderGrid() {
+    const list = CONCEPTS.filter((c) => !state.onlyStarred || state.starred.has(c.slug))
+    $("#grid").innerHTML = list.map(card).join("")
+    $("#no-stars").hidden = list.length > 0
+    fillTerms($("#grid"))
+  }
+  function renderCount() {
+    const n = state.starred.size
+    $("#star-count").innerHTML = `<b>${n}</b> starred`
+  }
+
+  // --- Detail ---
+  let openSlug = null
+  async function openDetail(slug) {
+    const c = byId[slug]
+    openSlug = slug
+    const i = CONCEPTS.indexOf(c)
+    const on = state.starred.has(slug)
+    const dlg = $("#detail")
+    dlg.innerHTML = `<div class="d-head"><span class="num">${c.n} / 15</span><h2 id="d-name">${c.name}</h2><span class="type">${c.type}</span>
+        <div class="tools"><button class="star" data-star="${c.slug}" aria-pressed="${on}" aria-label="Star ${c.name}">${STAR}<span>${on ? "Starred" : "Star"}</span></button>
+        <button class="btn" data-step="-1" aria-label="Previous concept">←</button><button class="btn" data-step="1" aria-label="Next concept">→</button>
+        <button class="btn" data-close autofocus>Close</button></div></div>
+      <div class="d-body">
+        <div class="d-pair"><div class="g-dark"><div class="m">${mark(c)}</div><div class="l">${lockup(c, true)}</div></div>
+          <div class="g-light"><div class="m">${mark(c)}</div><div class="l">${lockup(c, true)}</div></div></div>
+        <div class="d-copy"><div><p class="label">The idea</p><p>${c.idea}</p></div>
+          <div><p class="label">Why it fits</p><ul>${c.why.map((w) => `<li>${w}</li>`).join("")}</ul></div></div>
+        <div class="ctx">
+          <figure class="wide"><div class="browser"><span class="tab">${fit(c, "fav")}klin · spotless full-stack starter</span>
+            <div class="site">${lockup(c)}<nav><span>Docs</span><span>Templates</span><span>GitHub</span></nav></div></div>
+            <figcaption>Browser tab (16 px favicon) and the website header</figcaption></figure>
+          <figure class="wide"><div class="terminal"><p class="prompt">~ $ <b>npm create klin@latest</b></p><div data-term-big></div>
+            <p class="after">${c.inWord ? "In pixels the drop is too small to show; the terminal gets the plain word." : "Pixelated automatically at the CLI's 10-row size; the real pixel art is drawn by hand."}</p></div>
+            <figcaption>The CLI header</figcaption></figure>
+          <figure><div class="icons g-light"><span class="icon xl tile-ink">${fit(c)}</span><span class="icon l tile-ink">${fit(c)}</span><span class="icon m tile-ink">${fit(c)}</span>
+            <span class="favs">${[32, 16].map((s) => `<span style="width:${s}px;height:${s}px;color:var(--ink)">${fit(c, "", 0)}</span>`).join("")}</span></div>
+            <figcaption>App icon, then favicons at 32 and 16 px</figcaption></figure>
+          <figure><div class="readme"><div class="gh-light">${lockup(c)}</div><div class="gh-dark">${lockup(c)}</div></div>
+            <figcaption>The README on GitHub, light and dark</figcaption></figure>
+        </div>
+      </div>`
+    if (!dlg.open) dlg.showModal()
+    $("[data-term-big]", dlg).innerHTML = await terminalSvg(c, 4)
+    void i
+  }
+  function step(d) {
+    const i = CONCEPTS.findIndex((c) => c.slug === openSlug)
+    openDetail(CONCEPTS[(i + d + CONCEPTS.length) % CONCEPTS.length].slug)
+  }
+
+  // --- Duel: a knockout replayed from (draw, picks), so undo is just dropping the last pick ---
+  const duel = { draw: null, picks: [], field: "all", chosen: null }
+  const shuffle = (a) => {
+    a = a.slice()
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[a[i], a[j]] = [a[j], a[i]]
+    }
+    return a
+  }
+  const pow2 = (n) => {
+    let s = 1
+    while (s < n) s *= 2
+    return s
+  }
+  const roundName = (size) => ({ 2: "Final", 4: "Semifinals", 8: "Quarterfinals" })[size] || "First round"
+  function replay(draw, picks) {
+    let entrants = draw.slice()
+    let p = 0
+    const log = []
+    while (entrants.length > 1) {
+      const size = pow2(entrants.length)
+      const byes = size - entrants.length
+      const advance = entrants.slice(0, byes)
+      const rest = entrants.slice(byes)
+      const winners = []
+      for (let i = 0; i < rest.length; i += 2) {
+        const pair = [rest[i], rest[i + 1]]
+        if (p >= picks.length) return { pair, size, log, byes: log.length === 0 && byes ? advance : [] }
+        const w = picks[p++]
+        winners.push(w)
+        log.push({ pair, w, size })
+      }
+      entrants = [...advance, ...winners]
+    }
+    return { champion: entrants[0], log }
+  }
+  const field = () => (duel.field === "starred" ? CONCEPTS.filter((c) => state.starred.has(c.slug)) : CONCEPTS).map((c) => c.slug)
+
+  function renderDuel() {
+    const stage = $("#duel-stage")
+    if (!duel.draw) {
+      const wins = store.get("wins", {})
+      const past = Object.entries(wins).filter(([s]) => byId[s]).sort((a, b) => b[1] - a[1])
+      const n = state.starred.size
+      stage.innerHTML = `<div class="setup">
+        <div class="row"><span class="label">Who plays</span>
+          <div class="seg"><button data-field="all" aria-pressed="${duel.field === "all"}">All 15</button>
+          <button data-field="starred" aria-pressed="${duel.field === "starred"}" ${n < 2 ? "disabled" : ""}>Starred (${n})</button></div>
+          <span class="count">${field().length - 1} picks</span></div>
+        <div class="row"><button class="btn primary" data-start>Start the duel</button>
+          <span class="count">Pick with a click, or <kbd>←</kbd> <kbd>→</kbd>. <kbd>U</kbd> takes a pick back.</span></div>
+        ${past.length ? `<div class="row"><span class="label">Past winners</span><div class="past">${past.map(([s, k]) => `<span class="chip"><b>${byId[s].name}</b> × ${k}</span>`).join("")}</div>
+          <button class="btn" data-clear-wins>Clear</button></div>` : ""}
+      </div>`
+      return
+    }
+    const r = replay(duel.draw, duel.picks)
+    const total = duel.draw.length - 1
+    if (r.champion) return renderResult(r)
+    const bar = Array.from({ length: total }, (_, i) => `<i class="${i < duel.picks.length ? "done" : i === duel.picks.length ? "now" : ""}"></i>`).join("")
+    const side = (slug, key) => {
+      const c = byId[slug]
+      return `<button class="pick" data-pick="${slug}" aria-label="Keep ${c.name}">
+        <div class="show ${g()}"><div class="m">${mark(c)}</div><div class="l">${lockup(c, true)}</div></div>
+        <div class="foot"><div class="who"><h3>${c.name}</h3><p>${c.idea}</p></div>
+          <div class="side"><span class="icon ${tileFor()}">${fit(c)}</span><span class="key">${key}</span></div></div></button>`
+    }
+    stage.innerHTML = `<div class="progress" aria-hidden="true">${bar}</div>
+      <div class="match-meta"><span class="round">${roundName(r.size)}</span><span class="count">pick ${duel.picks.length + 1} of ${total}</span>
+        <span class="keys"><kbd>←</kbd> keep left · <kbd>→</kbd> keep right · <kbd>U</kbd> undo</span></div>
+      <div class="pair">${side(r.pair[0], "←")}${side(r.pair[1], "→")}</div>
+      <div class="duel-actions"><button class="btn" data-undo ${duel.picks.length ? "" : "disabled"}>Undo last pick</button>
+        <button class="btn" data-restart>Start over</button></div>`
+  }
+  function renderResult(r) {
+    const champ = byId[r.champion]
+    const fin = r.log[r.log.length - 1]
+    const runner = fin.pair.find((s) => s !== fin.w)
+    const semis = r.log.filter((m) => m.size === 4).map((m) => m.pair.find((s) => s !== m.w))
+    const place = (slug, label) => {
+      const c = byId[slug]
+      return `<button class="place" data-open="${slug}" style="cursor:pointer;text-align:left"><span class="icon ${tileFor()}">${fit(c)}</span><div><span>${label}</span><h4>${c.name}</h4></div></button>`
+    }
+    $("#duel-stage").innerHTML = `<div class="result">
+      <div class="champ"><div class="show ${g()}"><div class="m">${mark(champ)}</div><div class="l">${lockup(champ, true)}</div></div>
+        <div class="about"><p class="label">Your pick</p><h3>${champ.name}</h3><p>${champ.idea}</p>
+          <div class="duel-actions"><button class="btn primary" data-again>Run it again</button><button class="btn" data-open="${champ.slug}">See it in context</button></div></div></div>
+      <div class="places">${place(runner, "Runner-up")}${semis.map((s) => place(s, "Semifinal")).join("")}</div>
+      <div class="log"><table><thead><tr><th>Round</th><th>Kept</th><th>Over</th></tr></thead><tbody>
+        ${r.log.map((m) => `<tr><td>${roundName(m.size)}</td><td class="win">${byId[m.w].name}</td><td class="lose">${byId[m.pair.find((s) => s !== m.w)].name}</td></tr>`).join("")}
+      </tbody></table></div></div>`
+  }
+  function pick(slug) {
+    if (duel.chosen) return
+    const el = document.querySelector(`[data-pick="${slug}"]`)
+    duel.chosen = slug
+    if (el) el.classList.add("chosen")
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches
+    setTimeout(() => {
+      duel.chosen = null
+      duel.picks.push(slug)
+      const r = replay(duel.draw, duel.picks)
+      if (r.champion) {
+        const wins = store.get("wins", {})
+        wins[r.champion] = (wins[r.champion] || 0) + 1
+        store.set("wins", wins)
+      }
+      renderDuel()
+    }, reduce ? 0 : 160)
+  }
+  const startDuel = () => {
+    duel.draw = shuffle(field())
+    duel.picks = []
+    renderDuel()
+  }
+
+  // --- Wiring ---
+  function setTab(t) {
+    state.tab = t
+    $("#all").hidden = t !== "all"
+    $("#duel").hidden = t !== "duel"
+    $("#tab-all").setAttribute("aria-selected", t === "all")
+    $("#tab-duel").setAttribute("aria-selected", t === "duel")
+    $("#f-all").parentElement.hidden = t !== "all"
+    if (t === "duel") renderDuel()
+    try {
+      history.replaceState(null, "", t === "duel" ? "#duel" : "#all")
+    } catch {}
+  }
+  function setGround(v) {
+    state.ground = v
+    store.set("ground", v)
+    $("#g-dark").setAttribute("aria-pressed", v === "dark")
+    $("#g-light").setAttribute("aria-pressed", v === "light")
+    renderGrid()
+    if (state.tab === "duel") renderDuel()
+  }
+  function toggleStar(slug) {
+    state.starred.has(slug) ? state.starred.delete(slug) : state.starred.add(slug)
+    store.set("starred", [...state.starred])
+    renderCount()
+    for (const b of document.querySelectorAll(`[data-star="${slug}"]`)) {
+      const on = state.starred.has(slug)
+      b.setAttribute("aria-pressed", on)
+      b.querySelector("span").textContent = on ? "Starred" : "Star"
+      const cardEl = b.closest(".card")
+      if (cardEl) cardEl.dataset.starred = on
+    }
+    if (state.onlyStarred) renderGrid()
+    if (state.tab === "duel" && !duel.draw) renderDuel()
+  }
+
+  document.addEventListener("click", (e) => {
+    const t = e.target.closest("button")
+    if (!t) return
+    if (t.id === "tab-all") return setTab("all")
+    if (t.id === "tab-duel") return setTab("duel")
+    if (t.id === "g-dark") return setGround("dark")
+    if (t.id === "g-light") return setGround("light")
+    if (t.id === "f-all" || t.id === "f-star") {
+      state.onlyStarred = t.id === "f-star"
+      $("#f-all").setAttribute("aria-pressed", !state.onlyStarred)
+      $("#f-star").setAttribute("aria-pressed", state.onlyStarred)
+      return renderGrid()
+    }
+    if (t.dataset.star) return toggleStar(t.dataset.star)
+    if (t.dataset.open) return openDetail(t.dataset.open)
+    if (t.dataset.step) return step(Number(t.dataset.step))
+    if (t.hasAttribute("data-close")) return $("#detail").close()
+    if (t.dataset.field) {
+      duel.field = t.dataset.field
+      return renderDuel()
+    }
+    if (t.hasAttribute("data-start") || t.hasAttribute("data-again")) return startDuel()
+    if (t.hasAttribute("data-restart")) {
+      duel.draw = null
+      return renderDuel()
+    }
+    if (t.hasAttribute("data-undo")) {
+      duel.picks.pop()
+      return renderDuel()
+    }
+    if (t.hasAttribute("data-clear-wins")) {
+      store.set("wins", {})
+      return renderDuel()
+    }
+    if (t.dataset.pick) return pick(t.dataset.pick)
+  })
+  $("#detail").addEventListener("click", (e) => {
+    if (e.target === e.currentTarget) e.currentTarget.close()
+  })
+  document.addEventListener("keydown", (e) => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return
+    const dlg = $("#detail")
+    if (dlg.open) {
+      if (e.key === "ArrowRight") step(1)
+      if (e.key === "ArrowLeft") step(-1)
+      return
+    }
+    if (state.tab !== "duel" || !duel.draw) return
+    const r = replay(duel.draw, duel.picks)
+    if (r.champion) return
+    if (e.key === "ArrowLeft") pick(r.pair[0])
+    if (e.key === "ArrowRight") pick(r.pair[1])
+    if ((e.key === "u" || e.key === "U" || e.key === "Backspace") && duel.picks.length) {
+      duel.picks.pop()
+      renderDuel()
+    }
+  })
+
+  $("#g-dark").setAttribute("aria-pressed", state.ground === "dark")
+  $("#g-light").setAttribute("aria-pressed", state.ground === "light")
+  renderCount()
+  renderGrid()
+  setTab(state.tab)
+})()
+</script>
