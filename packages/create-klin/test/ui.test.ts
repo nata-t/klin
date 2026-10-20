@@ -4,7 +4,7 @@ import { join } from "node:path"
 import { describe, expect, it } from "vitest"
 import { describeName } from "../src/commands/wizard"
 import { type ChipField, type ChipItem, Form, type InputField, type Page } from "../src/ui/form"
-import { HATCH, hatchPose, logoArt } from "../src/ui/logo"
+import { HATCH, hatchPose, logoArt, MARK_GLYPH, markImage } from "../src/ui/logo"
 import { PIXEL_MARKS } from "../src/ui/logo-art"
 import type { Key } from "../src/ui/term"
 import { hue, parseColor, width, wrap } from "../src/ui/theme"
@@ -108,27 +108,24 @@ function grid() {
 }
 
 const rowOf = (text: string, needle: string) => text.split("\n").findIndex((line) => line.includes(needle))
-/** The small egg's middle row, with the version beside it. */
-const EGG = /▄▄█▄▄ +v9\.9\.9/
-
 describe("full-screen layout", () => {
-  it("puts the small egg before the version in the corner, and no big logo", () => {
+  it("shows the version in the corner, with no logo in a terminal", () => {
     const p = { ...page().p, version: "v9.9.9" }
-    const form = new Form(p)
-    const big = form.render(120, 40).toString()
-    expect(big).toMatch(EGG)
-    expect(rowOf(big, "v9.9.9")).toBe(1)
-    expect(big).not.toContain("▄▄████▄▄")
-    expect(big).not.toContain("▀█▀  ▀█▀")
-    expect(rowOf(big, p.heading)).toBeGreaterThan(rowOf(big, "TOOLBOX"))
-    // Too narrow for the steps beside the egg: they move down under it.
-    const narrow = form.render(56, 24).toString()
-    expect(narrow).toMatch(EGG)
-    expect(rowOf(narrow, "TOOLBOX")).toBeGreaterThan(rowOf(narrow, "v9.9.9") + 1)
-    // Short terminals keep every row for the page: just the version.
-    const short = form.render(120, 14).toString()
-    expect(short).toContain("v9.9.9")
-    expect(short).not.toMatch(EGG)
+    const text = new Form(p).render(120, 40).toString()
+    expect(rowOf(text, "v9.9.9")).toBe(0)
+    expect(text).not.toMatch(/[▄▀]█|█[▄▀]/)
+    expect(text).not.toContain(MARK_GLYPH)
+    expect(rowOf(text, p.heading)).toBeGreaterThan(rowOf(text, "TOOLBOX"))
+  })
+
+  it("puts the egg before the version where the renderer can draw it as an image", () => {
+    markImage.on = true
+    try {
+      const text = new Form({ ...page().p, version: "v9.9.9" }).render(120, 40).toString()
+      expect(text.split("\n")[0]).toMatch(new RegExp(`${MARK_GLYPH}  v9\\.9\\.9`))
+    } finally {
+      markImage.on = false
+    }
   })
 
   it("starts every page of a flow on the same row", () => {

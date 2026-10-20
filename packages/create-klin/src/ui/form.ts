@@ -1,14 +1,13 @@
 import { Canvas } from "./canvas"
-import { drawMark, MARK_HEIGHT, MARK_WIDTH } from "./logo"
+import { MARK_GLYPH, markImage } from "./logo"
 import type { Key } from "./term"
 import { colorEnabled, depth, hue, type RGB, type Style, sym, truncate, unicode, width, wrap } from "./theme"
 
 /**
  * One full-screen page of the CLI, centered on a softly vignetted background:
  *
- *                                                               ▄█▀█▄
- *             ✓ 1 BASE ┈┈ ◆ 2 STACK ┈┈ ○ 3 AUTH ┈┈ ○ 4 TOOLBOX  ▄▄█▄▄  v0.2.0
- *                                                               ▀███▀
+ *                                                                     v0.2.0
+ *             ✓ 1 BASE ┈┈ ◆ 2 STACK ┈┈ ○ 3 AUTH ┈┈ ○ 4 TOOLBOX ┈┈ …
  *
  *                              Pick your engine.
  *                 How the API is built and where the data lives.
@@ -390,29 +389,27 @@ export class Form {
   }
 
   /**
-   * The step indicator (or the page title) on its own line at the top, and in
-   * the corner the small klin egg with the version beside it. When the steps
-   * would run into the egg they move down under it. Returns the first row
-   * free below them.
+   * The step indicator (or the page title) on its own line at the top, the
+   * version in the corner — with the egg just before it where the renderer
+   * can draw it as an image (see `markImage`). Returns the first row free
+   * below it.
    */
   private topLine(canvas: Canvas, w: number, h: number): number {
+    const y = h >= 20 ? 1 : 0
     const { steps, title, version } = this.page
     const segments = steps ? (stepSegments(steps, w - 4) ?? []) : title ? ([[truncate(title, w - 4), S.muted]] as Segment[]) : []
     const x = Math.floor((w - segmentsWidth(segments)) / 2)
-    const y = h >= 20 ? 1 : 0
-    const vx = version ? w - width(version) - 2 : w
-    const mx = vx - 2 - MARK_WIDTH
-    // The egg spans the top three rows with the version beside its middle one.
-    if (version && h >= 16 && mx > 2 && drawMark(canvas, mx, 0)) {
-      canvas.text(vx, 1, version, S.line)
-      const below = x + segmentsWidth(segments) + 2 >= mx
-      const row = below ? MARK_HEIGHT : y
-      drawSegments(canvas, x, row, segments)
-      return Math.max(row + 2, MARK_HEIGHT + 1)
-    }
     drawSegments(canvas, x, y, segments)
-    // No room for the egg: just the version, above the steps or beside them if they don't touch.
-    if (version && (y > 0 || vx > x + segmentsWidth(segments) + 2)) canvas.text(vx, 0, version, S.line)
+    // Above the steps when there's a spare row; beside them only if they don't touch.
+    if (version) {
+      const vx = w - width(version) - 2
+      // The egg takes two cells and a space.
+      const mark = markImage.on ? 3 : 0
+      if (y > 0 || vx - mark > x + segmentsWidth(segments) + 2) {
+        canvas.text(vx, 0, version, S.line)
+        if (mark) canvas.text(vx - mark, 0, MARK_GLYPH, S.muted)
+      }
+    }
     return y + 2
   }
 

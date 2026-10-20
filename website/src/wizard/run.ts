@@ -1,6 +1,7 @@
 import manifestJson from "../../../template/klin.template.json"
 import { buildProgress, wizard } from "@cli/commands/wizard"
 import { type Manifest, normalizeAnswers, stepsFor, validateManifest } from "@cli/engine/manifest"
+import { markImage } from "@cli/ui/logo"
 import { CANCEL } from "@cli/ui/prompts"
 import { commandFor, type Picks } from "./command"
 import { terminalSize } from "./shims/process"
@@ -9,6 +10,9 @@ import { Terminal } from "./terminal"
 
 const manifest = manifestJson as unknown as Manifest
 validateManifest(manifest)
+
+// This terminal is a canvas, so it can draw the egg before the version (glyphs.ts draws MARK_GLYPH).
+markImage.on = true
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -110,7 +114,6 @@ export function mountWizard(host: HTMLElement, input: HTMLTextAreaElement, handl
       void start()
     },
     focus: () => terminal.focus(),
-    playIntro: () => screen.playIntro(),
     text: () => terminal.text(),
   }
 }

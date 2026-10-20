@@ -1,8 +1,12 @@
+import { MARK_GLYPH } from "@cli/ui/logo"
+import { MARK_PATHS } from "../components/brand/mark-paths"
+
 /**
  * Draws one terminal cell's glyph on a 2D canvas. Block elements and
- * box-drawing characters are drawn as geometry, so the KLIN logo and the
- * wizard's frames join seamlessly whatever fonts the visitor has; anything
- * else is plain text.
+ * box-drawing characters are drawn as geometry, so the klin logo and the
+ * wizard's frames join seamlessly whatever fonts the visitor has; the CLI's
+ * MARK_GLYPH is drawn as the egg itself, at text height; anything else is
+ * plain text.
  */
 
 export const FONT_STACK = '"Geist Mono Variable", "DejaVu Sans Mono", ui-monospace, SFMono-Regular, Menlo, monospace'
@@ -62,6 +66,10 @@ export function isGeometric(ch: string) {
 export function drawGeometric(ctx: CanvasRenderingContext2D, ch: string, x: number, y: number, w: number, h: number, color: string, scale = 1) {
   ctx.fillStyle = color
   ctx.strokeStyle = color
+  if (ch === MARK_GLYPH) {
+    drawEgg(ctx, x, y, w, h)
+    return true
+  }
   switch (ch) {
     case "█":
       ctx.fillRect(x, y, Math.ceil(w), Math.ceil(h))
@@ -188,4 +196,19 @@ export function drawGeometric(ctx: CanvasRenderingContext2D, ch: string, x: numb
     return true
   }
   return false
+}
+
+let egg: { cap: Path2D; shell: Path2D } | undefined
+
+/** The klin egg, a little taller than the digits beside it, centred in its two cells. */
+function drawEgg(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
+  egg ??= { cap: new Path2D(MARK_PATHS.cap), shell: new Path2D(MARK_PATHS.shell) }
+  const k = (h * 0.72) / MARK_PATHS.height
+  ctx.save()
+  ctx.translate(x + w - (MARK_PATHS.width * k) / 2, y + (h - MARK_PATHS.height * k) / 2)
+  ctx.scale(k, k)
+  ctx.translate(MARK_PATHS.x, MARK_PATHS.y)
+  ctx.fill(egg.shell)
+  ctx.fill(egg.cap)
+  ctx.restore()
 }

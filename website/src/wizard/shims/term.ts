@@ -1,5 +1,4 @@
 import type { Canvas } from "@cli/ui/canvas"
-import { introRunning, playIntro } from "@cli/ui/logo"
 import { terminalSize } from "./process"
 
 /**
@@ -31,7 +30,6 @@ class Screen {
   private active = false
   private view: View | undefined
   private sink: Sink | undefined
-  private sweep: ReturnType<typeof setInterval> | undefined
 
   get isOpen() {
     return this.active
@@ -44,16 +42,6 @@ class Screen {
   attach(sink: Sink) {
     this.sink = sink
     this.paint()
-  }
-
-  /** The egg hatching and the band of light across the logo, as when the CLI's screen first opens. */
-  playIntro() {
-    playIntro()
-    clearInterval(this.sweep)
-    this.sweep = setInterval(() => {
-      this.paint()
-      if (!introRunning()) clearInterval(this.sweep)
-    }, 40)
   }
 
   open() {
