@@ -33,8 +33,8 @@ const SHOWN = { autoAlpha: 1, y: 0, filter: "blur(0px)", duration: 0.9, ease: "p
 if (!still) {
   // Sections build their frame first: the top rule draws across, the ticks pop in.
   gsap.utils.toArray<HTMLElement>("[data-choreo]").forEach((section) => {
-    const rule = section.querySelector<HTMLElement>(":scope > .rule")
-    const ticks = section.querySelectorAll<HTMLElement>(":scope > .rail > .tick")
+    const rule = section.querySelector<HTMLElement>(":scope > [data-rule]")
+    const ticks = section.querySelectorAll<HTMLElement>(":scope > [data-rail] > [data-tick]")
     if (rule) gsap.set(rule, { scaleX: 0 })
     if (ticks.length) gsap.set(ticks, { scale: 0, opacity: 0 })
     ScrollTrigger.create({

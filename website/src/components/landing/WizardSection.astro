@@ -1,15 +1,15 @@
 ---
+import SectionHead from "./SectionHead.astro"
 import SectionShell from "./SectionShell.astro"
 ---
 
 <SectionShell id="wizard" index="02" label="The wizard" note="Real code · runs in your browser · writes nothing">
-  <div class="section-head">
-    <h2 class="display" data-reveal>Try it before<br />you install it.</h2>
-    <p class="lede" data-reveal>
-      This is the actual create-klin wizard — the same code as the CLI, drawing into a terminal on this page. Pick your parts; when
-      you build, you get the one command that makes exactly that kit.
-    </p>
-  </div>
+  <SectionHead>
+    <Fragment slot="title">Try it before<br />you install it.</Fragment>
+    This is the actual create-klin wizard — the same code as the CLI, drawing into a terminal on this page. Pick your parts; when
+    you build, you get the one command that makes exactly that kit.
+
+  </SectionHead>
 
   <div class="stage" data-reveal>
     <div class="window">

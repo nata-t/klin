@@ -1,5 +1,6 @@
 ---
 import KlinMark from "../brand/KlinMark.astro"
+import SectionHead from "./SectionHead.astro"
 import SectionShell from "./SectionShell.astro"
 import { INSTALL, REPO } from "../../lib/site"
 
@@ -16,10 +17,10 @@ const notFor = [
 ---
 
 <SectionShell id="ship" index="06" label="Ship it" note="MIT · open source">
-  <div class="section-head">
-    <h2 class="display" data-reveal>Is it for you?</h2>
-    <p class="lede" data-reveal>klin has opinions. Here's where they help, and where they'd get in your way.</p>
-  </div>
+  <SectionHead>
+    <Fragment slot="title">Is it for you?</Fragment>
+    klin has opinions. Here's where they help, and where they'd get in your way.
+  </SectionHead>
 
   <div class="fit">
     <div class="col" data-reveal>
