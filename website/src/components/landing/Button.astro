@@ -1,0 +1,35 @@
+---
+/**
+ * The page's buttons: an outlined one that fills on hover, and a filled primary. A link when it has an
+ * href, a <button> otherwise. `arrow` adds a glyph that nudges right on hover.
+ */
+import type { HTMLAttributes } from "astro/types"
+
+type Props = HTMLAttributes<"a"> &
+  HTMLAttributes<"button"> & {
+    primary?: boolean
+    small?: boolean
+    arrow?: string
+  }
+const { primary, small, arrow, class: className, ...attrs } = Astro.props
+const Tag = attrs.href ? "a" : "button"
+---
+
+<Tag
+  class:list={[
+    "group/btn inline-flex cursor-pointer items-center gap-10 rounded-[4px] border py-0 font-mono font-[550] tracking-[0.02em] no-underline transition-[background-color,color,border-color] duration-140 ease-linear",
+    small ? "h-34 px-14 text-[12px]" : "h-44 px-18 text-[13px]",
+    primary ? "border-bright bg-bright text-bg hover:bg-white" : "border-line bg-transparent text-bright hover:border-bright hover:bg-bright hover:text-bg",
+    className,
+  ]}
+  {...attrs}
+>
+  <slot />
+  {
+    arrow && (
+      <span class="transition-[transform] duration-160 ease-[ease] group-hover/btn:transform-[translateX(3px)]" aria-hidden="true">
+        {arrow}
+      </span>
+    )
+  }
+</Tag>

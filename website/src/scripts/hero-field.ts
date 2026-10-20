@@ -218,7 +218,7 @@ function heroCells() {
 }
 
 export function mountHeroField(hero: HTMLElement) {
-  const canvas = hero.querySelector<HTMLCanvasElement>("canvas.field")!
+  const canvas = hero.querySelector<HTMLCanvasElement>("canvas")!
   const slot = hero.querySelector<HTMLElement>("[data-logo-slot]")!
   const countLabel = hero.querySelector<HTMLElement>("[data-hero-count]")
   const pointerLabel = hero.querySelector<HTMLElement>("[data-hero-pointer]")

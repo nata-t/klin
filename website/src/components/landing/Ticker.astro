@@ -26,14 +26,17 @@ const parts = [
 ]
 ---
 
-<div class="ticker" aria-label="The stack">
-  <div class="track">
+<div
+  class="group/ticker relative overflow-hidden border-y border-y-rule bg-[rgba(10,10,10,0.5)] [mask-image:linear-gradient(90deg,transparent,#000_10%,#000_90%,transparent)]"
+  aria-label="The stack"
+>
+  <div class="flex w-max animate-slide group-hover/ticker:[animation-play-state:paused]">
     {
       [0, 1].map((copy) => (
-        <ul aria-hidden={copy === 1 ? "true" : undefined}>
+        <ul class="m-0 flex list-none p-0" aria-hidden={copy === 1 ? "true" : undefined}>
           {parts.map((part) => (
-            <li>
-              <span class="sep" aria-hidden="true">
+            <li class="flex items-center gap-22 px-11 py-15 font-mono text-[12px] tracking-[0.14em] whitespace-nowrap text-muted uppercase">
+              <span class="text-[9px] text-line" aria-hidden="true">
                 ✦
               </span>
               {part}
@@ -44,49 +47,3 @@ const parts = [
     }
   </div>
 </div>
-
-<style>
-  .ticker {
-    position: relative;
-    overflow: hidden;
-    border-top: 1px solid var(--rule);
-    border-bottom: 1px solid var(--rule);
-    background: rgba(10, 10, 10, 0.5);
-    mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
-  }
-  .track {
-    display: flex;
-    width: max-content;
-    animation: slide 60s linear infinite;
-  }
-  .ticker:hover .track {
-    animation-play-state: paused;
-  }
-  ul {
-    display: flex;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-  li {
-    display: flex;
-    align-items: center;
-    gap: 22px;
-    padding: 15px 11px;
-    font-family: var(--mono);
-    font-size: 12px;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--muted);
-    white-space: nowrap;
-  }
-  .sep {
-    color: var(--line);
-    font-size: 9px;
-  }
-  @keyframes slide {
-    to {
-      transform: translateX(-50%);
-    }
-  }
-</style>
