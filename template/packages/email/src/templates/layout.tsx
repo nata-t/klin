@@ -14,22 +14,22 @@ import type { ReactNode } from "react"
 export const APP_NAME = "Klin App"
 
 /**
- * The klin mark (a K drawn as a dependency graph) as pixel art: email
- * clients drop SVG, but every one of them draws table cells.
+ * The klin mark (an egg with its first crack, the cap lifted) as pixel art:
+ * email clients drop SVG, but every one of them draws table cells.
  */
 const MARK = [
-  "##...##",
-  "##...##",
-  "#...#..",
-  "#..#...",
-  "#.#....",
-  "##.....",
-  "##.....",
-  "#.#....",
-  "#..#...",
-  "#...#..",
-  "##...##",
-  "##...##",
+  "...####...",
+  "..######..",
+  ".###..###.",
+  "..#....#..",
+  "....##....",
+  ".#.####.#.",
+  "##########",
+  "##########",
+  "##########",
+  ".########.",
+  "..######..",
+  "...####...",
 ]
 const PIXEL = 2
 

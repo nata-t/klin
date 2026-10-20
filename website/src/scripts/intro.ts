@@ -4,8 +4,8 @@
  *
  *   type        a cursor types `npm create klin@latest`
  *   enter       the line collapses like a CRT switching over
- *   parts       K, L, I and N fly in as separate parts and snap together
- *   depth       the shadow layer extrudes behind them
+ *   parts       the egg, then k, l, i and n, fly in as separate parts and snap together
+ *   hatch       the egg wobbles, cracks and pops its cap
  *   chrome      the chrome gradient pours in, the CLI's light band sweeps
  *   sparks      the sparkles pop
  *   instrument  the nav and the scroll ruler assemble
@@ -21,12 +21,12 @@ export const BEATS = {
   type: 0.25,
   enter: 1.05,
   parts: 1.22,
-  depth: 2.12,
-  chrome: 2.28,
-  sparks: 2.62,
-  instrument: 2.5,
-  copy: 2.72,
-  done: 3.6,
+  hatch: 1.9,
+  chrome: 2.45,
+  sparks: 2.75,
+  instrument: 2.6,
+  copy: 2.85,
+  done: 3.7,
 } as const
 
 export type Beat = keyof typeof BEATS

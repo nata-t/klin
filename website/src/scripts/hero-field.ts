@@ -1,35 +1,37 @@
-import { logoArt, logoShade } from "@cli/ui/logo"
+import { LID_CLOSED, logoArt, logoShade } from "@cli/ui/logo"
 import { drawGeometric, FONT_STACK } from "../wizard/glyphs"
 import { BEATS, intro } from "./intro"
 
 /**
  * The hero: starter kits, snapped together.
  *
- * The logo's cells come from the CLI's own logo art — the graph mark (five
- * package nodes joined by wires) and the "klin" wordmark, in the same chrome
- * gradient as the wizard's header — grouped into parts: one per node and one
- * per letter. The opening (timed by ./intro.ts) types the create command,
- * collapses the line like a CRT switching over, then flies the nodes and the
- * letters in from all sides; each lands with a flash, a jolt, crop marks
- * closing on it and a burst of sparks. Then the wires draw in between the
- * nodes, the chrome pours in top-down and the CLI's band of light sweeps across.
+ * The logo's cells come from the CLI's own logo art — the egg (its cap and
+ * its shell) and the "klin" wordmark, in the same chrome gradient as the
+ * wizard's header — grouped into parts: the egg, then one per letter. The
+ * opening (timed by ./intro.ts) types the create command, collapses the line
+ * like a CRT switching over, then flies the egg and the letters in from all
+ * sides; each lands with a flash, a jolt, crop marks closing on it and a
+ * burst of sparks. Then the egg hatches — it wobbles, cracks, and the cap
+ * pops up, shedding bits of shell — the chrome pours in top-down and the
+ * CLI's band of light sweeps across.
  *
  * Settled, every cell lives on its own spring: the cursor nudges cells aside
  * and lights them, scrolling away lets them drift apart, and a click flies
- * the parts out and snaps them back together.
+ * the parts out, snaps them back together and hatches the egg again.
  */
-
-type Kind = "face" | "shadow" | "spark"
 
 interface Cell {
   col: number
   row: number
   glyph: string
-  kind: Kind
+  /** The egg's cap: it sits closed until the egg hatches, then pops up. */
+  cap: boolean
+  /** Part of the egg (cap or shell): it wobbles as one. */
+  egg: boolean
   shade: number
   /** Where the band of light reaches it, 0..1 across the logo (the CLI's sweep). */
   at: number
-  /** Which part it belongs to (a node, or a letter after them), or -1 for a sparkle. */
+  /** Which part it belongs to: 0 the egg, then one per letter. */
   part: number
   x: number
   y: number
@@ -57,6 +59,8 @@ interface Spark {
   born: number
   life: number
   glyph: string
+  /** Bits of shell fall; landing sparks drift to a stop. */
+  gravity?: boolean
 }
 
 interface Mote {
@@ -76,6 +80,7 @@ const COMMAND = "npm create klin@latest"
 const DUST = "{}[]()<>;:=+*/|&!?#@$%~^.,_01xz".split("")
 const TOKENS = ["z.object()", "createZodDto", "@Public()", "useAppForm", "prisma", "klin:if", "→", "✓", "z.infer", "betterAuth", "queryOptions", "@repo/validators", "turbo dev", "pnpm", "bun", "klin:only", "// TODO", "export", "import", "<Route />"]
 const SPARK_GLYPHS = ["+", "·", "×", "·"]
+const SHELL_GLYPHS = ["▘", "▝", "▖", "▗", "·"]
 
 /** Where part `i` of `n` flies in from: around the hero, a fraction of its size away, a little turned. */
 const partFrom = (i: number, n: number) => {
@@ -92,6 +97,11 @@ const IMPACT = 0.5
 /** Click replay: the pull-away before the parts fly back in. */
 const PULL = 0.3
 
+/** The hatch, in seconds from its start: a wobble, the crack, the cap's hop, and settled. */
+const WOBBLE = 0.5
+const CRACK = 0.62
+const SETTLED = 1.25
+
 const rand = (a: number, b: number) => a + Math.random() * (b - a)
 const pick = <T>(list: readonly T[]) => list[Math.floor(Math.random() * list.length)]!
 const clamp = (v: number, a = 0, b = 1) => Math.max(a, Math.min(b, v))
@@ -99,7 +109,6 @@ const pad = (n: number, width: number) => String(Math.round(Math.max(0, n))).pad
 const easeInOutCubic = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2)
 const easeOutCubic = (t: number) => 1 - (1 - t) ** 3
 const easeInCubic = (t: number) => t * t * t
-const easeOutBack = (t: number) => 1 + 2.7 * (t - 1) ** 3 + 1.7 * (t - 1) ** 2
 
 /**
  * How far a part still is from its slot during a flight: 1 at the start pose,
@@ -117,18 +126,15 @@ function flight(local: number) {
 function logoCells() {
   const art = logoArt(LOGO_SIZE)
   const columns = art.width
-  const nodes = art.cells.filter((c) => c.kind === "node")
-  // A wire travels with the node nearest to it, and draws in once they've all landed.
-  const nearest = (col: number, row: number) =>
-    nodes.reduce((best, n) => (Math.hypot(n.col - col, (n.row - row) * 2) < Math.hypot(best.col - col, (best.row - row) * 2) ? n : best)).part
   const cells: Cell[] = art.cells.map((c) => ({
     col: c.col,
     row: c.row,
     glyph: c.ch,
-    kind: c.kind === "wire" ? "shadow" : "face",
+    cap: c.kind === "cap",
+    egg: c.kind === "cap" || c.kind === "shell",
     shade: logoShade(c.kind, c.row, art.height),
     at: (c.col + c.row * 2) / (columns + LOGO_SIZE * 2),
-    part: c.part >= 0 ? c.part : nearest(c.col, c.row),
+    part: c.part,
     x: 0,
     y: 0,
     vx: 0,
@@ -138,14 +144,42 @@ function logoCells() {
   }))
   const parts: Part[] = Array.from({ length: art.parts }, (_, i) => {
     const own = cells.filter((c) => c.part === i)
-    const faces = own.filter((c) => c.kind === "face")
-    const c0 = Math.min(...faces.map((c) => c.col))
-    const c1 = Math.max(...faces.map((c) => c.col)) + 1
-    const r0 = Math.min(...faces.map((c) => c.row))
-    const r1 = Math.max(...faces.map((c) => c.row)) + 1
+    const c0 = Math.min(...own.map((c) => c.col))
+    const c1 = Math.max(...own.map((c) => c.col)) + 1
+    const r0 = Math.min(...own.map((c) => c.row))
+    const r1 = Math.max(...own.map((c) => c.row)) + 1
     return { cells: own, from: partFrom(i, art.parts), center: { col: (c0 + c1) / 2, row: (r0 + r1) / 2 }, box: { c0, c1, r0, r1 }, snapped: false, snapAt: -1 }
   })
-  return { cells, parts, columns, faces: cells.length }
+  const egg = parts[0]!.box
+  const shellTop = Math.min(...cells.filter((c) => c.egg && !c.cap).map((c) => c.row))
+  return { cells, parts, columns, faces: cells.length, egg, shellTop }
+}
+
+/**
+ * The egg `t` seconds into its hatch: `lid` is how many pixels lower than at
+ * rest the cap sits (negative: higher), `tilt` the whole egg's rock and
+ * `capTilt` the cap's own turn as it pops.
+ */
+function hatchPose(t: number) {
+  const closed = LID_CLOSED[20]
+  if (t < 0) return { lid: closed, tilt: 0, capTilt: 0 }
+  if (t < WOBBLE) {
+    const k = t / WOBBLE
+    return { lid: closed, tilt: 0.085 * Math.sin(k * Math.PI * 4) * (1 - k * 0.6), capTilt: 0 }
+  }
+  if (t < CRACK) {
+    // The crack opens: the cap lifts a pixel, the egg gives one last shiver.
+    const k = (t - WOBBLE) / (CRACK - WOBBLE)
+    return { lid: closed - easeOutCubic(k), tilt: 0.03 * Math.sin(k * Math.PI * 2), capTilt: 0 }
+  }
+  if (t < SETTLED) {
+    // The hop: up and a little turned, then down onto its resting place with a small bounce.
+    const u = (t - CRACK) / (SETTLED - CRACK)
+    const up = Math.sin(Math.PI * clamp(u / 0.7))
+    const bounce = u > 0.7 ? Math.sin(Math.PI * clamp((u - 0.7) / 0.3)) : 0
+    return { lid: (closed - 1) * (1 - clamp(u * 4)) - 4.5 * up - 0.7 * bounce, tilt: 0, capTilt: -0.14 * up }
+  }
+  return { lid: 0, tilt: 0, capTilt: 0 }
 }
 
 export function mountHeroField(hero: HTMLElement) {
@@ -159,8 +193,7 @@ export function mountHeroField(hero: HTMLElement) {
   hero.dataset.field = "on"
 
   const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  const { cells, parts, columns, faces } = logoCells()
-  const sparkles = cells.filter((c) => c.kind === "spark")
+  const { cells, parts, columns, faces, egg, shellTop } = logoCells()
 
   let width = 0
   let height = 0
@@ -179,6 +212,10 @@ export function mountHeroField(hero: HTMLElement) {
   let mode: "letters" | "cells" = "letters"
   let replayAt = -1
   let snappedCount = 0
+  /** When a click replay's hatch starts (performance.now() ms); -1 while the opening's own hatch applies. */
+  let rehatchAt = -1
+  /** Which hatch moments have shed their bits of shell, so each sheds once. */
+  const shed = { crack: false, pop: false }
 
   function layout() {
     const rect = hero.getBoundingClientRect()
@@ -265,10 +302,62 @@ export function mountHeroField(hero: HTMLElement) {
     return shade
   }
 
-  /** The wires draw in between the nodes once they've landed, along the sweep's diagonal. */
-  function shadowState(c: Cell) {
-    const k = easeOutCubic(clamp((intro.t - BEATS.depth - c.at * 0.3) / 0.22))
-    return { k, dx: -(1 - k) * cw * 0.5, dy: -(1 - k) * rh * 0.3 }
+  /* ─── The hatch ───────────────────────────────────────────────────── */
+
+  /** Seconds into the hatch: the opening's own, or a click replay's. */
+  const hatchT = (now: number) => (rehatchAt > 0 ? (now - rehatchAt) / 1000 : intro.t - BEATS.hatch)
+
+  /** The egg's pivot (its bottom middle) and the cap's (the middle of the crack), in hero pixels. */
+  function pivots(dx = 0, dy = 0) {
+    const x = ox + ((egg.c0 + egg.c1) / 2) * cw + dx
+    const y = oy - scroll * height * 0.18 + dy
+    return { egg: { x, y: y + egg.r1 * rh }, cap: { x, y: y + shellTop * rh } }
+  }
+
+  /** Bits of shell from along the crack: a few as it opens, a burst as the cap pops. */
+  function shedShell(now: number, count: number, speed: number) {
+    const p = pivots()
+    const half = ((egg.c1 - egg.c0) / 2) * cw
+    for (let n = 0; n < count; n++) {
+      const x = p.cap.x + rand(-half, half) * 0.9
+      const y = p.cap.y + rand(-rh * 0.4, rh * 0.2)
+      const out = (x - p.cap.x) / half
+      sparks.push({ x, y, vx: out * speed * rand(0.4, 1), vy: -speed * rand(0.5, 1.1), born: now, life: rand(520, 900), glyph: pick(SHELL_GLYPHS), gravity: true })
+    }
+  }
+
+  /** Draws the egg's cells (cap and shell) as the hatch has them, at `place(cell)`. */
+  function drawEgg(own: Cell[], place: (c: Cell) => { x: number; y: number }, shade: (c: Cell) => number, alpha: number, now: number, dx = 0, dy = 0) {
+    const t = hatchT(now)
+    const pose = hatchPose(t)
+    // Only while it's hatching: a skipped or settled opening sheds nothing.
+    if (t >= WOBBLE && t < SETTLED && !shed.crack) {
+      shed.crack = true
+      shedShell(now, 5, 90)
+    }
+    if (t >= CRACK && t < SETTLED && !shed.pop) {
+      shed.pop = true
+      shedShell(now, 14, 260)
+    }
+    const p = pivots(dx, dy)
+    ctx.save()
+    ctx.translate(p.egg.x, p.egg.y)
+    ctx.rotate(pose.tilt)
+    ctx.translate(-p.egg.x, -p.egg.y)
+    for (const c of own) {
+      if (c.cap) continue
+      const at = place(c)
+      drawCell(c, at.x, at.y, shade(c), alpha)
+    }
+    ctx.translate(p.cap.x, p.cap.y + (pose.lid * rh) / 2)
+    ctx.rotate(pose.capTilt)
+    ctx.translate(-p.cap.x, -p.cap.y)
+    for (const c of own) {
+      if (!c.cap) continue
+      const at = place(c)
+      drawCell(c, at.x, at.y, shade(c), alpha)
+    }
+    ctx.restore()
   }
 
   /* ─── Flights ─────────────────────────────────────────────────────── */
@@ -330,18 +419,10 @@ export function mountHeroField(hero: HTMLElement) {
       ctx.rotate(at.rot)
       ctx.scale(at.scale, at.scale)
       ctx.translate(-cx, -cy)
-      for (const c of part.cells) {
-        const x = ox + c.col * cw
-        const y = oy + c.row * rh - scroll * height * 0.18
-        if (c.kind === "shadow") {
-          if (ghost) continue
-          const s = shadowState(c)
-          if (s.k <= 0) continue
-          drawCell(c, x + s.dx, y + s.dy, c.shade, alpha * s.k)
-        } else {
-          drawCell(c, x, y, ghost ? 0x90 : faceShade(c, now), alpha)
-        }
-      }
+      const place = (c: Cell) => ({ x: ox + c.col * cw, y: oy + c.row * rh - scroll * height * 0.18 })
+      const shade = (c: Cell) => (ghost ? 0x90 : faceShade(c, now))
+      if (i === 0) drawEgg(part.cells, place, shade, alpha, now)
+      else for (const c of part.cells) drawCell(c, place(c).x, place(c).y, shade(c), alpha)
       ctx.restore()
     }
     // Motion trail: the part a few moments ago, fainter the further back — close enough to read as a streak.
@@ -481,31 +562,17 @@ export function mountHeroField(hero: HTMLElement) {
     if (mode === "letters" || replaying) {
       for (let i = 0; i < parts.length; i++) drawPart(i, replaying ? replayT : intro.t, replaying, now)
     } else {
-      for (const c of cells) {
-        if (c.kind === "spark") continue
-        if (c.kind === "shadow") {
-          const s = shadowState(c)
-          drawCell(c, c.x + s.dx, c.y + s.dy, c.shade, s.k)
-        } else {
-          drawCell(c, c.x, c.y, faceShade(c, now), 1)
-        }
-      }
+      for (const c of cells) if (!c.egg) drawCell(c, c.x, c.y, faceShade(c, now), 1)
+      // The egg's cells sit on their springs too; the hatch moves them from where they are.
+      drawEgg(
+        parts[0]!.cells,
+        (c) => ({ x: c.x, y: c.y }),
+        (c) => faceShade(c, now),
+        1,
+        now
+      )
     }
 
-    // Sparkles pop in, then twinkle.
-    sparkles.forEach((c, i) => {
-      const k = clamp((intro.t - BEATS.sparks - i * 0.06) / 0.35)
-      if (k <= 0) return
-      const t = target(c)
-      const pop = easeOutBack(k)
-      ctx.save()
-      ctx.translate(t.x + cw / 2, t.y + rh / 2)
-      ctx.rotate((1 - k) * Math.PI)
-      ctx.scale(pop, pop)
-      ctx.translate(-(t.x + cw / 2), -(t.y + rh / 2))
-      drawCell(c, t.x, t.y, c.shade, 0.55 + 0.45 * Math.sin(now / 520 + c.phase))
-      ctx.restore()
-    })
     ctx.globalAlpha = 1
 
     for (const part of parts) drawCropMarks(part, now)
@@ -518,8 +585,13 @@ export function mountHeroField(hero: HTMLElement) {
         sparks.splice(i, 1)
         continue
       }
-      s.vx *= 0.9 ** (dt * 60)
-      s.vy *= 0.9 ** (dt * 60)
+      if (s.gravity) {
+        s.vx *= 0.98 ** (dt * 60)
+        s.vy += 900 * dt
+      } else {
+        s.vx *= 0.9 ** (dt * 60)
+        s.vy *= 0.9 ** (dt * 60)
+      }
       s.x += s.vx * dt
       s.y += s.vy * dt
       ctx.font = `400 ${clamp(cw * 1.1, 10, 18)}px ${FONT_STACK}`
@@ -535,7 +607,6 @@ export function mountHeroField(hero: HTMLElement) {
   function step(dtFrames: number) {
     if (mode !== "cells" || replayAt > 0) return
     for (const c of cells) {
-      if (c.kind === "spark") continue
       const t = target(c)
       c.vx += (t.x - c.x) * 0.075 * dtFrames
       c.vy += (t.y - c.y) * 0.075 * dtFrames
@@ -612,10 +683,13 @@ export function mountHeroField(hero: HTMLElement) {
     pointer.active = false
   })
 
-  // A click on the settled logo flies the parts out and snaps them back.
+  // A click on the settled logo flies the parts out, snaps them back and hatches the egg again.
   slot.addEventListener("click", () => {
     if (mode !== "cells" || replayAt > 0) return
     replayAt = performance.now()
+    rehatchAt = replayAt + (PULL + FLIGHT * IMPACT + 0.2) * 1000
+    shed.crack = false
+    shed.pop = false
     snappedCount = 0
     for (const part of parts) {
       part.snapped = false

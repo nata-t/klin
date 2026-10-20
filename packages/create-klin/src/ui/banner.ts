@@ -1,6 +1,6 @@
 import { setTimeout as sleep } from "node:timers/promises"
 import { center } from "./log"
-import { logoArt, logoShade } from "./logo"
+import { HATCH, hatchPose, type LogoPose, logoArt, logoShade } from "./logo"
 import { c, colorEnabled, paint, pick, RESET, sgr, sym, unicode } from "./theme"
 
 const TAGLINES = [
@@ -13,12 +13,12 @@ const TAGLINES = [
 ]
 
 /**
- * One frame of the logo — nodes and letters in the chrome gradient, wires in
- * gray — with a band of light sweeping diagonally across (`at` 0..1).
+ * One frame of the logo — the egg and the letters in the chrome gradient —
+ * posed mid-hatch, with a band of light sweeping diagonally across (`at` 0..1).
  */
-function frame(at: number | null) {
-  const art = logoArt(6)
-  const rows = art.lines.map((line) => [...line].map(() => " "))
+function frame(pose: LogoPose | undefined, at: number | null) {
+  const art = logoArt(6, pose)
+  const rows = logoArt(6).lines.map(() => [...Array(logoArt(6).width + 1)].map(() => " "))
   for (const cell of art.cells) {
     let level = logoShade(cell.kind, cell.row, art.height)
     if (at !== null) {
@@ -27,12 +27,12 @@ function frame(at: number | null) {
     }
     rows[cell.row]![cell.col] = colorEnabled ? `${sgr({ fg: [level, level, level] })}${cell.ch}` : cell.ch
   }
-  return rows.map((row) => row.join("") + (colorEnabled ? RESET : ""))
+  return rows.map((row) => row.join("").trimEnd() + (colorEnabled ? RESET : ""))
 }
 
 /**
- * The klin logo, centered. In an interactive terminal a band of light
- * sweeps across it once; everywhere else (CI, pipes, --no-banner, narrow
+ * The klin logo, centered. In an interactive terminal the egg hatches and a
+ * band of light sweeps across it once; everywhere else (CI, pipes, --no-banner, narrow
  * terminals) it's a single line.
  */
 export async function banner(version: string, options: { compact?: boolean } = {}) {
@@ -48,12 +48,23 @@ export async function banner(version: string, options: { compact?: boolean } = {
   console.log()
   // The logo's rows are all one width, so they move right together.
   const pad = " ".repeat(Math.max(2, Math.floor((columns - logoArt(6).width) / 2)))
-  const frames = colorEnabled ? 18 : 1
-  for (let i = 0; i < frames; i++) {
-    const lines = frame(frames > 1 ? -0.2 + (i / (frames - 1)) * 1.4 : null)
-    if (i > 0) process.stdout.write(`\x1b[${lines.length}A`)
+  const show = (lines: string[], first: boolean) => {
+    if (!first) process.stdout.write(`\x1b[${lines.length}A`)
     process.stdout.write(lines.map((l) => `\x1b[2K${pad}${l}`).join("\n") + "\n")
-    if (frames > 1) await sleep(26)
+  }
+  if (!colorEnabled) show(frame(undefined, null), true)
+  else {
+    // The egg hatches (a wobble, a crack, the cap pops), then the band of light sweeps across.
+    for (const [i, key] of HATCH.entries()) {
+      show(frame(hatchPose(6, key.ms), null), i === 0)
+      const next = HATCH[i + 1]
+      if (next) await sleep(next.ms - key.ms)
+    }
+    const sweeps = 18
+    for (let i = 0; i < sweeps; i++) {
+      show(frame(undefined, -0.2 + (i / (sweeps - 1)) * 1.4), false)
+      await sleep(26)
+    }
   }
   console.log(center(`${paint(tagline, { fg: "muted" })}  ${c.faint(`v${version}`)}`))
 }

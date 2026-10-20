@@ -1,10 +1,11 @@
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs"
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { describe, expect, it } from "vitest"
 import { describeName } from "../src/commands/wizard"
 import { type ChipField, type ChipItem, Form, type InputField, type Page } from "../src/ui/form"
-import { logoSizeFor } from "../src/ui/logo"
+import { HATCH, hatchPose, logoArt, logoSizeFor } from "../src/ui/logo"
+import { PIXEL_MARKS } from "../src/ui/logo-art"
 import type { Key } from "../src/ui/term"
 import { hue, parseColor, width, wrap } from "../src/ui/theme"
 
@@ -49,7 +50,7 @@ describe("full-screen form", () => {
       if (w < 40 || h < 12) expect(text).toContain("more room")
       else {
         // The header (steps + logo) stays put even when the body scrolls.
-        expect(text).toMatch(/klin|█▄▀|████    ████/)
+        expect(text).toMatch(/klin|▀█▀  ▀█▀|▄▄████▄▄/)
         expect(text).toContain("TOOLBOX")
         if (h >= 24) expect(text).toContain("Fill the toolbox.")
         if (h >= 24) expect(text).toContain("SECURITY")
@@ -109,14 +110,14 @@ function grid() {
 
 const rowOf = (text: string, needle: string) => text.split("\n").findIndex((line) => line.includes(needle))
 /** Which logo a screen shows: the big lockup, the regular one, the compact one, or the one-liner. */
-const logoIn = (text: string) => (text.includes("████    ████") ? 10 : text.includes("█▄▀") ? 6 : /███ +klin/.test(text) ? 3 : 1)
+const logoIn = (text: string) => (text.includes("▄▄████▄▄") ? 10 : text.includes("▀█▀  ▀█▀") ? 6 : /▄▄█▄▄ +klin/.test(text) ? 3 : 1)
 
 describe("full-screen layout", () => {
   it("puts the logo under the step indicator and shrinks it to fit", () => {
     const form = new Form(page().p)
     const big = form.render(120, 40).toString()
     expect(logoIn(big)).toBe(10)
-    expect(rowOf(big, "TOOLBOX")).toBeLessThan(rowOf(big, "████    ████"))
+    expect(rowOf(big, "TOOLBOX")).toBeLessThan(rowOf(big, "▄▄████▄▄"))
     expect(big).not.toMatch(/TOOLBOX.*██/)
     expect(logoIn(form.render(80, 28).toString())).toBe(3)
     expect(logoIn(form.render(60, 20).toString())).toBe(1)
@@ -138,6 +139,28 @@ describe("full-screen layout", () => {
     const room = (width: number) => Math.max(new Form(short).bodyHeight(width), new Form(tall).bodyHeight(width))
     const sizes = [short, tall].map((p) => logoIn(new Form({ ...p, room }).render(100, 28).toString()))
     expect(sizes[0]).toBe(sizes[1])
+  })
+
+  it("hatches the egg: closed, cracked, then the resting logo", () => {
+    for (const size of [10, 6, 3] as const) {
+      const cap = (lid: number) => logoArt(size, { lid, nudge: 0 }).cells.filter((c) => c.kind === "cap")
+      const shell = logoArt(size).cells.filter((c) => c.kind === "shell")
+      const closed = hatchPose(size, 0)
+      // Closed, the cap sits on the shell with no empty row between them.
+      const capBottom = Math.max(...cap(closed.lid).map((c) => c.row))
+      const shellTop = Math.min(...shell.map((c) => c.row))
+      expect(shellTop - capBottom).toBeLessThanOrEqual(1)
+      // The last keyframe is the logo at rest, and the egg is one part with both halves.
+      expect(logoArt(size, hatchPose(size, HATCH.at(-1)!.ms)).lines).toEqual(logoArt(size).lines)
+      expect(new Set(logoArt(size).cells.filter((c) => c.kind !== "text" && c.kind !== "word").map((c) => c.part))).toEqual(new Set([0]))
+    }
+  })
+
+  it("keeps the template's copies of the logo in step with the CLI's", () => {
+    const template = (path: string) => readFileSync(new URL(`../../../template/${path}`, import.meta.url), "utf8")
+    const strings = (source: string, name: string) => [...source.split(`const ${name} = [`)[1]!.split("]")[0]!.matchAll(/"([^"]*)"/g)].map((m) => m[1])
+    expect(strings(template("apps/web/src/features/landing/terminal-hero.tsx"), "LOGO")).toEqual(logoArt(6).lines)
+    expect(strings(template("packages/email/src/templates/layout.tsx"), "MARK")).toEqual(PIXEL_MARKS[12].map((row) => row.replaceAll("o", "#")))
   })
 
   it("lists each group in one column, two side by side, the odd one out centered below", () => {

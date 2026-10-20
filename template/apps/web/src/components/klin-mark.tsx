@@ -1,15 +1,15 @@
-/** The klin mark (a K drawn as a dependency graph). Swap it for your own logo in ./logo.tsx. */
+/** The klin mark (an egg with its first crack, the cap lifted). Swap it for your own logo in ./logo.tsx. */
 export function KlinMark({ className }: { className?: string }) {
   return (
     <svg
       className={className}
-      viewBox="0 0 146 246"
+      viewBox="0 0 152 190"
       fill="currentColor"
       aria-hidden
     >
       <path
-        transform="translate(23 23)"
-        d="M7 0L7 200L-7 200L-7 0L7 0ZM-4.95 95.05L95.05 -4.95L104.95 4.95L4.95 104.95L-4.95 95.05ZM4.95 95.05L104.95 195.05L95.05 204.95L-4.95 104.95L4.95 95.05ZM-13 -23L13 -23A10 10 0 0 1 23 -13L23 13A10 10 0 0 1 13 23L-13 23A10 10 0 0 1 -23 13L-23 -13A10 10 0 0 1 -13 -23ZM-13 77L13 77A10 10 0 0 1 23 87L23 113A10 10 0 0 1 13 123L-13 123A10 10 0 0 1 -23 113L-23 87A10 10 0 0 1 -13 77ZM-13 177L13 177A10 10 0 0 1 23 187L23 213A10 10 0 0 1 13 223L-13 223A10 10 0 0 1 -23 213L-23 187A10 10 0 0 1 -13 177ZM87 -23L113 -23A10 10 0 0 1 123 -13L123 13A10 10 0 0 1 113 23L87 23A10 10 0 0 1 77 13L77 -13A10 10 0 0 1 87 -23ZM87 177L113 177A10 10 0 0 1 123 187L123 213A10 10 0 0 1 113 223L87 223A10 10 0 0 1 77 213L77 187A10 10 0 0 1 87 177Z"
+        transform="translate(76 114)"
+        d="M-63.52 -68A76 102 0 0 1 63.52 -68L49.51 -68L26 -44.49L0 -70.49L-26 -44.49L-49.51 -68L-63.52 -68ZM-68.57 -44L-54.49 -44L-26 -15.51L0 -41.51L26 -15.51L54.49 -44L68.57 -44A76 102 0 0 1 76 0A76 76 0 0 1 0 76A76 76 0 0 1 -76 0A76 102 0 0 1 -68.57 -44Z"
       />
     </svg>
   )

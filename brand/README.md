@@ -1,9 +1,9 @@
 # klin brand
 
-The mark is a **K drawn as a dependency graph**: five package nodes on a grid,
-joined by wires at 0° and 45° — the shape of the monorepo klin builds. Next to
-it sits a geometric lowercase **klin** whose k shares the mark's 45° chevron.
-It's one colour and always gray: ink on light, white on dark.
+The mark is **an egg with its first crack, the cap lifted**: something new
+hatching, out of a clean shell. Next to it sits a geometric lowercase
+**klin**; the mark isn't a letter, so the name is only said once. It's one
+colour and always gray: ink on light, white on dark.
 
 Open [`preview.html`](./preview.html) to see every file at real size, on light
 and dark, in a browser tab and in the terminal.
@@ -25,11 +25,14 @@ and dark, in a browser tab and in the terminal.
 - **CLI** — `packages/create-klin/src/ui/logo-art.ts` holds the mark and the
   wordmark as pixel art (two square pixels per character). The full-screen
   header, the banner and `--help` draw the largest size that fits (10, 6 or 3
-  rows, or one line).
-- **Website** — the hero animates that same pixel art; the nav, footer, docs
-  header and the last section use `website/src/components/brand/`
-  (`KlinMark.astro`, `KlinLockup.astro`); favicons and `og.png` are in
-  `website/public/`.
+  rows, or one line). The first time the full screen opens (and in the
+  banner), the egg hatches: it wobbles, cracks and the cap pops up.
+- **Website** — the hero animates that same pixel art: the egg flies in,
+  wobbles, cracks and pops its cap. The nav, footer, docs header and the last
+  section use `website/src/components/brand/` (`KlinMark.astro`,
+  `KlinLockup.astro`, the cap and the shell as separate paths): the nav's egg
+  hatches on hover, the last section's every few seconds. Favicons and
+  `og.png` are in `website/public/`.
 - **Generated app** — `template/apps/web/public/favicon.svg`, `<Logo>` (the
   mark on the app's brand color, from `components/klin-mark.tsx`), the landing
   page's terminal and the email header (the 12 px pixel mark as table cells,
@@ -39,13 +42,14 @@ and dark, in a browser tab and in the terminal.
 
 ## Rules
 
-- **Clear space:** one node's width on every side.
+- **Clear space:** the cap's height on every side.
 - **Smallest sizes:** the mark at 16 px tall; under 48 px use the favicon files
   (pixel-aligned cuts). The lockup at 80 px wide on screen, 20 mm in print.
-- **Colours:** Ink `#141414`, White `#ffffff`. The terminal draws wires in
-  `#727272` so the nodes read first.
+- **Colours:** Ink `#141414`, White `#ffffff`. The terminal draws it in a
+  chrome gradient, white at the top to silver at the bottom.
 - **Don't** color it, add gradients, shadows or outlines, rotate, mirror or
-  stretch it, move the nodes, or set the name in another typeface beside it.
+  stretch it, close the crack (outside the hatching animations), or set the
+  name in another typeface beside it.
 
 ## Rebuilding
 

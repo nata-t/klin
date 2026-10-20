@@ -135,14 +135,12 @@
         color: var(--text);
         background: radial-gradient(120% 90% at 50% 0%, #1c1c1c 0%, #141414 60%, #0f0f0f 100%);
       }
-      .term .node,
-      .term .word {
+      .term .t-cap,
+      .term .t-shell,
+      .term .t-word {
         color: #f0f0f0;
       }
-      .term .wire {
-        color: #727272;
-      }
-      .term .text {
+      .term .t-text {
         color: #eeeeee;
         font-weight: 700;
       }
@@ -332,9 +330,9 @@
         <h1>klin brand</h1>
       </div>
       <p>
-        The mark is a K drawn as a dependency graph: five package nodes on a grid, joined by wires at 0° and 45° — the shape of
-        the monorepo klin builds. It's one colour, always gray: ink on light, white on dark. Next to it, a geometric lowercase
-        <code>klin</code> whose k shares the mark's 45° chevron.
+        The mark is an egg with its first crack, the cap lifted: something new hatching, out of a clean shell. It's one colour,
+        always gray: ink on light, white on dark. Next to it, a geometric lowercase <code>klin</code>. The mark isn't a letter,
+        so the name is only said once.
       </p>
 
       <h2>Mark</h2>
@@ -371,9 +369,9 @@
 
       <h2>In the terminal</h2>
       <p>
-        The CLI draws the same mark as pixel art, two square pixels per character (<code>▀ ▄ █</code>): nodes and letters bright, wires
-        gray. It picks the largest that fits — from <code>packages/create-klin/src/ui/logo-art.ts</code>, which the website hero and the
-        favicons read too.
+        The CLI draws the same mark as pixel art, two square pixels per character (<code>▀ ▄ █</code>), in a chrome gradient. It picks
+        the largest that fits — from <code>packages/create-klin/src/ui/logo-art.ts</code>, which the website hero and the favicons read
+        too. The first time the screen opens, the egg hatches: it wobbles, cracks and the cap pops up.
       </p>
       <div class="grid terms">
         <figure class="tile wide">
@@ -458,7 +456,7 @@
       <div class="rules">
         <div>
           <h3>Clear space</h3>
-          <p>Keep one node's width free on every side.</p>
+          <p>Keep the cap's height free on every side.</p>
           <div class="light" style="margin-top: 12px; padding: 18px; border-radius: 7px; display: inline-block">
             <span class="space"><img src="{{asset:logo/klin-lockup-black.svg}}" width="200" alt="" /></span>
           </div>
@@ -474,7 +472,7 @@
           <h3>Don't</h3>
           <ul>
             <li>Color it, or add gradients, shadows or outlines.</li>
-            <li>Rotate, mirror or stretch it, or move the nodes.</li>
+            <li>Rotate, mirror or stretch it, or close the crack (animations aside).</li>
             <li>Set the name in another typeface next to the mark.</li>
           </ul>
         </div>
@@ -484,7 +482,6 @@
         <div class="swatch"><i style="background: #141414"></i><span>Ink · #141414</span></div>
         <div class="swatch"><i style="background: #ffffff"></i><span>White · #ffffff</span></div>
         <div class="swatch"><i style="background: #eeeeee"></i><span>Bright · #eeeeee</span></div>
-        <div class="swatch"><i style="background: #727272"></i><span>Wire (terminal) · #727272</span></div>
       </div>
 
       <h2>Files</h2>

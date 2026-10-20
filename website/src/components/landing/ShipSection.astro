@@ -61,7 +61,7 @@ const notFor = [
   </div>
 
   <div class="final">
-    <p class="spark" aria-hidden="true" data-reveal><KlinMark class="mark" /></p>
+    <p class="spark hatch-loop" aria-hidden="true" data-reveal><KlinMark class="mark" /></p>
     <h2 class="display chrome" data-reveal>Everything's in its place.<br />Your move.</h2>
     <div class="install" data-reveal>
       <div class="chips" role="tablist" aria-label="Package manager" data-final-pm>
@@ -172,16 +172,10 @@ const notFor = [
     background: radial-gradient(closest-side, rgba(255, 255, 255, 0.06), transparent);
     pointer-events: none;
   }
+  /* The egg hatches every few seconds (hatch-loop, from the brand components). */
   .spark {
     margin: 0 0 22px;
     color: var(--bright);
-    animation: twinkle 3.2s ease-in-out infinite;
-  }
-  /* The mark breathes, slowly. */
-  @keyframes twinkle {
-    50% {
-      opacity: 0.45;
-    }
   }
   .spark :global(.mark) {
     display: block;

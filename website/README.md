@@ -40,8 +40,9 @@ The site reads the real thing wherever it can, so it can't drift:
   `packages/create-klin/src` browser stand-ins for `node:fs`, `node:path`,
   `process` and the terminal `screen` (see `src/wizard/shims/`). When a visitor
   builds, it hands them the shortest `create klin` command for their picks.
-- **The hero logo** comes from the CLI's `drawLogo()` — the same gradient,
-  shadow glyphs and sparkles.
+- **The hero logo** is the CLI's own pixel art (`logoArt()`), in the same
+  chrome gradient. The egg flies in, wobbles, cracks and pops its cap
+  (`src/scripts/hero-field.ts`, timed by `src/scripts/intro.ts`).
 - **The "only what you picked" demo** runs the template's real
   `packages/auth/src/auth.ts` through the CLI's marker engine.
 - **Options, presets, flags and the kit grid** are generated from
