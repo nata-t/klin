@@ -26,6 +26,21 @@
         "value": "geist mono",
         "createdAt": "2026-10-19T14:11:13.994Z",
         "reason": "project's established typeface: website/src/styles/landing.css and astro.config.mjs load Geist/Geist Mono via @fontsource; the brand sheet matches the site on purpose"
+      },
+      {
+        "rule": "overused-font",
+        "value": "geist",
+        "createdAt": "2026-10-20T07:26:13.232Z",
+        "reason": "Claude: Geist/Geist Mono are klin's existing brand faces (brand/src/preview.html, website); the concepts page matches them on purpose"
+      },
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          "concepts/src/preview.html"
+        ],
+        "createdAt": "2026-10-20T07:26:13.244Z",
+        "reason": "Claude: static detector assumes a white ground; the page is dark (#121212). Rendered-page check of every visible text node found no pair under 4.5:1"
       }
     ]
   }
