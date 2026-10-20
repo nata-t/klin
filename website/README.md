@@ -27,7 +27,7 @@ website/
     content/docs/docs/    the docs, served under /docs
     scripts/              landing-page behavior: the intro clock, hero, scroll ruler, motion, demos, grow story
     wizard/               the on-page terminal and the browser stand-ins for the CLI
-    styles/               landing.css and docs.css
+    styles/               the Tailwind entry points: landing.css and docs.css
     lib/                  data the pages share (manifest, schema demo fields, grow transcripts)
 ```
 
@@ -77,6 +77,30 @@ visitors get it compressed. The scroll ruler (`src/scripts/ruler.ts`) replaces
 the scrollbar on desktop pointers: a tick track 1:1 with the page, a needle
 that points at its own percentage, the sections on the spine, and a page map
 on hover. Phones and tablets keep their native scrollbar.
+
+## Styling
+
+Everything is styled with [Tailwind CSS](https://tailwindcss.com) v4
+(`@tailwindcss/vite`), utilities in the markup. Two entry points:
+
+- `src/styles/landing.css` — the landing page. Its theme is the CLI's grays
+  and nothing else (`text-muted`, `bg-bar`, `border-line` …), the two fonts,
+  and pixel spacing (`--spacing: 1px`, so `p-14` is 14px). The breakpoints
+  are desktop-first variants, `max-720:` meaning `(max-width: 720px)`.
+  `hud` (the mono micro-label) and `assemble` (the opening's transition) are
+  its two custom utilities; animations are theme tokens (`animate-sheen` …).
+- `src/styles/docs.css` — Starlight's custom CSS: Tailwind's utilities layered
+  after Starlight's own, with a theme that points at Starlight's variables
+  (`text-gray-3` follows light and dark). Its plain CSS restyles Starlight's
+  markup, which takes no classes of ours.
+
+Neither loads Tailwind's Preflight: the landing page keeps a small base layer
+of its own, and Starlight has its reset. Repeated pieces are components
+(`Button`, `Chip`, `Command`, `FileHeader`, `SectionHead` …), not classes.
+HTML the scripts generate either carries utilities itself (the schema form,
+the ruler) or marks tokens (`.k`, `.line`, `.drop` …) that its container
+styles with arbitrary variants (`[&_.k]:text-bright`), so the highlighter's
+output can look different in different panes.
 
 ## Before launch
 
