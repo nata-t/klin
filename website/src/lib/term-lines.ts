@@ -7,7 +7,7 @@ export function styleLine(raw: string): string {
   const line = raw.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
   // "  klin add   my-app" — the command chip header.
   const header = /^(\s*)(klin \w+)(\s{2,})(.*)$/.exec(line)
-  if (header) return `${header[1]}<span class="chip">${header[2]}</span>${header[3]}<span class="note">${header[4]}</span>`
+  if (header) return `${header[1]}<span class="badge">${header[2]}</span>${header[3]}<span class="note">${header[4]}</span>`
   if (/spotless ✦|Every layer wired|All tidy/.test(line)) return `<span class="shine">${line}</span>`
   if (/^\s{2}[A-Z][a-z]+$/.test(line)) return `<span class="head">${line}</span>`
   return line

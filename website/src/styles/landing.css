@@ -106,6 +106,13 @@
       border-left-color: transparent;
     }
   }
+  /* The grow terminal's cursor. */
+  --animate-blink: blink 1s steps(1) infinite;
+  @keyframes blink {
+    50% {
+      opacity: 0;
+    }
+  }
   /* The stack marquee. */
   --animate-slide: slide 60s linear infinite;
   @keyframes slide {

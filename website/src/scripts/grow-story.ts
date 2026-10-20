@@ -43,7 +43,7 @@ export function mountGrowStory(story: HTMLElement) {
     acts.forEach((el, i) => {
       const state = i < index ? "passed" : i === index ? "here" : "ahead"
       el.dataset.state = state
-      el.querySelector(".mark")!.textContent = state === "passed" ? "✓" : state === "here" ? "◆" : "○"
+      el.querySelector("[data-mark]")!.textContent = state === "passed" ? "✓" : state === "here" ? "◆" : "○"
     })
   }
 
