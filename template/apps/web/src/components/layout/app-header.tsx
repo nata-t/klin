@@ -44,7 +44,7 @@ export function AppHeader() {
   return (
     <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
       <SidebarTrigger className="-ml-1" />
-      <Separator orientation="vertical" className="mr-1 h-4" />
+      <Separator orientation="vertical" className="mr-1 data-vertical:h-4 data-vertical:self-center" />
       <h2 className="truncate text-sm font-medium">{title}</h2>
       <div className="ml-auto flex items-center gap-1">
         <LanguageSwitcher /> {/* klin:only i18n */}
