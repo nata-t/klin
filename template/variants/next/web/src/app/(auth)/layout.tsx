@@ -23,7 +23,7 @@ export default async function AuthLayout({ children }: { children: ReactNode }) 
         <div className="bg-glow absolute inset-0 opacity-80" />
         <div className="absolute -right-24 -bottom-24 size-96 rounded-full bg-brand/30 blur-3xl" />
         <Link href="/" className="relative">
-          <Logo />
+          <Logo hatch="loop" />
         </Link>
         <div className="relative mt-auto space-y-6">
           <p className="max-w-md text-3xl leading-tight font-semibold tracking-tight">
