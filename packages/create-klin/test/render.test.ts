@@ -203,6 +203,30 @@ describe("template rendering", () => {
     expect(text(files, "packages/auth/src/auth.ts")).not.toContain("organization(")
   })
 
+  it("makes the web app installable with Vite or Next.js, or leaves it out", async () => {
+    const vite = await renderPreset("everything")
+    expect(JSON.parse(text(vite, "apps/web/package.json")).devDependencies).toHaveProperty("vite-plugin-pwa")
+    expect(text(vite, "apps/web/vite.config.ts")).toContain("VitePWA({")
+    expect(text(vite, "apps/web/src/main.tsx")).toContain("initPWA()")
+    expect(vite.has("apps/web/public/icon-maskable-512.png")).toBe(true)
+
+    const next = await renderPreset("everything", "pnpm", { web: "next" })
+    expect(next.has("apps/web/src/app/manifest.ts")).toBe(true)
+    expect(next.has("apps/web/src/app/sw.js/route.ts")).toBe(true)
+    expect(text(next, "apps/web/src/app/providers.tsx")).toContain("initPWA()")
+    expect(text(next, "apps/web/src/lib/pwa.ts")).toContain('process.env.NODE_ENV !== "production"')
+
+    for (const web of ["vite", "next"]) {
+      const files = await renderPreset("everything", "pnpm", { web, plugins: ["admin"] })
+      const paths = [...files.keys()]
+      expect(paths.filter((path) => /pwa|sw\.js|manifest\.ts|icon-\d|apple-touch/.test(path)), web).toEqual([])
+      expect(JSON.parse(text(files, "apps/web/package.json")).devDependencies, web).not.toHaveProperty("vite-plugin-pwa")
+      for (const [path, file] of files) {
+        if (!Buffer.isBuffer(file.content)) expect(file.content, `${web}: ${path}`).not.toMatch(/PWA|appleWebApp/)
+      }
+    }
+  })
+
   it("adapts commands and workspaces to the package manager", async () => {
     const npm = await renderPreset("recommended", "npm")
     const pkg = JSON.parse(text(npm, "package.json"))

@@ -1,4 +1,5 @@
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next" // klin:only pwa
+//? import type { Metadata } from "next" // klin:only !pwa
 import type { ReactNode } from "react"
 import { siteConfig } from "@/config/site"
 import { getLanguage } from "@/i18n/server" // klin:only i18n
@@ -9,8 +10,22 @@ import "@/styles.css" // klin:only apps-web
 export const metadata: Metadata = {
   title: { default: siteConfig.name, template: `%s · ${siteConfig.name}` },
   description: siteConfig.description,
-  icons: { icon: "/favicon.svg" },
+  // klin:if pwa
+  icons: { icon: "/favicon.svg", apple: "/apple-touch-icon.png" },
+  appleWebApp: { title: siteConfig.name },
+  // klin:else
+  //? icons: { icon: "/favicon.svg" },
+  // klin:endif
 }
+// klin:if pwa
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+  ],
+}
+// klin:endif
 
 // Applies the saved theme before first paint (no flash of the wrong theme).
 const themeScript = `try {
