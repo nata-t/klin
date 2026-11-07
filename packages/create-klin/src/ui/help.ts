@@ -24,7 +24,7 @@ export function help() {
     ${flag("--db")} ${dim("<name>")}          postgres · mysql · sqlite
     ${flag("--web")} ${dim("<name>")}         vite · next ${dim("(picked once, at create)")}
     ${flag("--auth")} ${dim("<list>")}        password,google,github,magic-link,two-factor,passkey
-    ${flag("--plugins")} ${dim("<list>")}     organizations,admin,api-keys ${dim("(or none)")}
+    ${flag("--plugins")} ${dim("<list>")}     organizations,admin,api-keys,pwa ${dim("(or none)")}
     ${flag("--security")} ${dim("<list>")}    cors,helmet,rate-limit ${dim("(or none)")}
     ${flag("--extras")} ${dim("<list>")}      email,uploads,queues,i18n,docker,ci ${dim("(or none)")}
     ${flag("--components")} ${dim("<where>")} apps-web · packages-ui
