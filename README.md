@@ -93,7 +93,7 @@ app. If you'd rather have no API at all, use a framework built for that.
 | **Web** (React 19 on Vite or Next.js) | public / auth / dashboard layouts · **Vite:** TanStack Router with `beforeLoad` guards · **Next.js 16:** the App Router, signed-in pages checked on the server (`proxy.ts` + layouts) and `/api` rewritten to the API · typed API client + query-key conventions · TanStack Form + shadcn/ui form kit (in `apps/web` or a shared `packages/ui`, `pnpm ui:add <component>`) · 18 shadcn theme colors · dark mode · error, 404 & loading states |
 | **Monorepo** | Turborepo with caching and `db:*` tasks · `dev` in the split-pane TUI: Prisma client generated first, then web, API and Prisma Studio side by side · shared TS/ESLint/Prettier configs · husky + lint-staged + commitlint · Vitest + Playwright |
 | **Ops** | Docker Compose for local services · production Dockerfiles (API, and the web app on nginx or Next's standalone server) · GitHub Actions · Renovate · `.env` with generated secrets |
-| **Optional modules** | organizations & RBAC · admin dashboard · API keys · transactional email (Resend + React Email) · file uploads (S3/R2 presigned) · background jobs (BullMQ) · i18n (English to start) |
+| **Optional modules** | organizations & RBAC · admin dashboard · API keys · installable app (PWA) · transactional email (Resend + React Email) · file uploads (S3/R2 presigned) · background jobs (BullMQ) · i18n (English to start) |
 | **Docs** | `packages/docs` in every project: getting started, architecture, the shared-validators flow, add-a-feature walkthrough, UI & theming, testing, deployment, upgrading |
 
 Pick Postgres, MySQL or SQLite, and bun, pnpm or npm. Unused code is stripped,
@@ -115,7 +115,7 @@ centered — six steps, each a page of text chips you snap on and off:
 
 1. **Base** — name your kit (validated live: `✓ ./my-app is free to use`), package manager, a preset to start from
 2. **Stack** — NestJS or plain · Express or Fastify · Postgres, MySQL or SQLite · Vite or Next.js for the web app
-3. **Auth** — sign-in methods and Better Auth power-ups
+3. **Auth** — sign-in methods and power-ups
 4. **Toolbox** — CORS, Helmet, rate limiting (on by default, with a warning if you switch one off), email, uploads, jobs, i18n, Docker, CI
 5. **Looks** — where shadcn/ui lives (`apps/web` or `packages/ui`) and one of shadcn's 18 theme colors
 6. **Build** — review, then build with live progress
@@ -154,7 +154,7 @@ A preset is a starting point: flags and the wizard change anything on top of it.
 | `--db <name>` | `postgres` · `mysql` · `sqlite` |
 | `--web <name>` | `vite` · `next` (picked once, at create) |
 | `--auth <list>` | `password,google,github,magic-link,two-factor,passkey` |
-| `--plugins <list>` | `organizations,admin,api-keys` or `none` |
+| `--plugins <list>` | `organizations,admin,api-keys,pwa` or `none` |
 | `--security <list>` | `cors,helmet,rate-limit` or `none` |
 | `--extras <list>` | `email,uploads,queues,i18n,docker,ci` or `none` |
 | `--components <where>` | `apps-web` · `packages-ui` |

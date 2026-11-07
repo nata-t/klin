@@ -41,7 +41,7 @@ A six-step, full-screen, keyboard-driven wizard (or flags plus `--yes`):
 - **API:** NestJS (with nestjs-zod DTOs) or plain, on Express or Fastify. CORS, Helmet and rate limiting are on by default.
 - **Web app:** Vite + TanStack Router, or Next.js (App Router, signed-in pages checked on the server).
 - **Database:** Postgres, MySQL or SQLite, through Prisma.
-- **Sign-in:** email & password, Google, GitHub, magic links, two-factor (TOTP), passkeys. Power-ups: organizations & RBAC, admin dashboard, API keys.
+- **Sign-in:** email & password, Google, GitHub, magic links, two-factor (TOTP), passkeys. Power-ups: organizations & RBAC, admin dashboard, API keys, installable app (PWA).
 - **Extras:** transactional email (Resend + React Email), S3/R2 uploads, BullMQ background jobs, i18n, Docker, GitHub Actions + Renovate.
 - **Looks:** shadcn/ui in `apps/web` or a shared `packages/ui`, in any of shadcn's 18 theme colors.
 
@@ -66,7 +66,7 @@ npm create klin@latest [name] [options]
 | `--db <name>` | `postgres` · `mysql` · `sqlite` |
 | `--web <name>` | `vite` · `next` (picked once, at create) |
 | `--auth <list>` | `password,google,github,magic-link,two-factor,passkey` |
-| `--plugins <list>` | `organizations,admin,api-keys` or `none` |
+| `--plugins <list>` | `organizations,admin,api-keys,pwa` or `none` |
 | `--security <list>` | `cors,helmet,rate-limit` or `none` |
 | `--extras <list>` | `email,uploads,queues,i18n,docker,ci` or `none` |
 | `--components <where>` | `apps-web` · `packages-ui` |
