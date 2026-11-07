@@ -230,8 +230,9 @@ for (const file of ["favicon.svg", "favicon.ico", "apple-touch-icon.png", "icon-
   copyFileSync(join(BRAND, "favicon", file), join(REPO, "website/public", file))
 copyFileSync(join(BRAND, "social/og.png"), join(REPO, "website/public/og.png"))
 
-// The generated app's favicon (both web variants serve apps/web/public).
-copyFileSync(join(BRAND, "favicon/favicon.svg"), join(REPO, "template/apps/web/public/favicon.svg"))
+// The generated app's favicon and its installable-app icons (both web variants serve apps/web/public).
+for (const file of ["favicon.svg", "apple-touch-icon.png", "icon-192.png", "icon-512.png", "icon-maskable-512.png"])
+  copyFileSync(join(BRAND, "favicon", file), join(REPO, "template/apps/web/public", file))
 
 // Inline components (currentColor), so the mark takes the color of the text around it.
 const viewBox = (w, h) => `0 0 ${f(w)} ${f(h)}`

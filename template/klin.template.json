@@ -89,8 +89,8 @@
       "type": "multiselect",
       "flag": "plugins",
       "title": "Power-ups",
-      "message": "Any Better Auth power-ups?",
-      "options": ["organizations", "admin", "api-keys"],
+      "message": "Any power-ups?",
+      "options": ["organizations", "admin", "api-keys", "pwa"],
       "default": []
     },
     {
@@ -293,6 +293,26 @@
         },
         "apps/api/package.json": {
           "dependencies": ["@better-auth/api-key"]
+        }
+      }
+    },
+    "pwa": {
+      "label": "Installable app (PWA)",
+      "hint": "install prompt, update-and-reload",
+      "about": "People install the web app to their home screen or dock. A service worker caches the build, and when you deploy a new version a toast and the user menu offer a reload into it.",
+      "remove": [
+        "apps/web/public/apple-touch-icon.png",
+        "apps/web/public/icon-*.png",
+        "apps/web/src/lib/pwa.ts",
+        "apps/web/src/hooks/use-pwa.ts",
+        "apps/web/src/components/pwa-prompts.tsx",
+        "variants/next/web/src/app/manifest.ts",
+        "variants/next/web/src/app/sw.js/**",
+        "packages/docs/pwa.md"
+      ],
+      "json": {
+        "apps/web/package.json": {
+          "devDependencies": ["vite-plugin-pwa"]
         }
       }
     },
@@ -833,7 +853,7 @@
       "about": "Every module switched on, so you can tour the whole kit and delete what you don't need. Expect Docker for Postgres, Redis and RustFS.",
       "answers": {
         "auth": ["password", "google", "github", "magic-link", "two-factor", "passkey"],
-        "plugins": ["organizations", "admin", "api-keys"],
+        "plugins": ["organizations", "admin", "api-keys", "pwa"],
         "extras": ["email", "uploads", "queues", "i18n", "docker", "ci"]
       }
     }

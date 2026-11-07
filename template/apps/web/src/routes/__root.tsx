@@ -2,6 +2,7 @@ import type { QueryClient } from "@tanstack/react-query"
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools"
 import { createRootRouteWithContext, Outlet } from "@tanstack/react-router"
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools"
+import { PWAPrompts } from "@/components/pwa-prompts" // klin:only pwa
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
@@ -21,6 +22,7 @@ function RootLayout() {
       <TooltipProvider>
         <Outlet />
         <Toaster richColors closeButton position="top-right" />
+        <PWAPrompts /> {/* klin:only pwa */}
         {import.meta.env.DEV && (
           <>
             <TanStackRouterDevtools position="bottom-right" />
