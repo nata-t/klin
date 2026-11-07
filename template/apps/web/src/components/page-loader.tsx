@@ -1,4 +1,4 @@
-import { Spinner } from "@/components/ui/spinner"
+import { LogoMark } from "@/components/logo"
 import { cn } from "@/lib/utils"
 
 /** Shown while a route's loader runs (router default) or for any full-area wait. */ // klin:only vite
@@ -10,7 +10,7 @@ export function PageLoader({ label = "Loading…", className }: { label?: string
       aria-live="polite"
       className={cn("flex min-h-48 w-full flex-1 flex-col items-center justify-center gap-3 text-muted-foreground", className)}
     >
-      <Spinner className="size-6 text-brand" />
+      <LogoMark hatch="busy" className="h-8 text-brand" />
       <p className="text-sm">{label}</p>
     </div>
   )

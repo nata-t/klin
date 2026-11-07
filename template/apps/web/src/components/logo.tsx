@@ -1,15 +1,18 @@
 import { siteConfig } from "@/config/site"
 import { cn } from "@/lib/utils"
-import { KlinMark } from "./klin-mark"
+import { type Hatch, KlinMark } from "./klin-mark"
 
-/** Your app's logo: the klin mark on your brand color, and the app's name. Make it yours. */
-export function Logo({ className, showName = true }: { className?: string; showName?: boolean }) {
+/** The mark on its own, in the color of the text around it (so it works on light and dark). Swap it for your own. */
+export function LogoMark({ className, hatch }: { className?: string; hatch?: Hatch }) {
+  return <KlinMark hatch={hatch} className={cn("h-6 w-auto shrink-0", className)} />
+}
+
+/** Your app's logo: the mark and the app's name. The egg hatches while the logo is hovered. Make it yours. */
+export function Logo({ className, showName = true, hatch = "hover" }: { className?: string; showName?: boolean; hatch?: Hatch }) {
   return (
-    <span className={cn("inline-flex items-center gap-2 font-semibold tracking-tight", className)}>
-      <span className="grid size-7 place-items-center rounded-lg bg-brand text-brand-foreground shadow-sm">
-        <KlinMark className="h-4 w-auto" />
-      </span>
-      {showName && <span>{siteConfig.name}</span>}
+    <span className={cn("group/hatch inline-flex items-center gap-2 font-semibold tracking-tight", className)}>
+      <LogoMark hatch={hatch} />
+      {showName && <span className="truncate">{siteConfig.name}</span>}
     </span>
   )
 }
