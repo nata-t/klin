@@ -24,3 +24,6 @@ Everything you need to work on this codebase. Start at the top.
 <!-- klin:if queues -->
 | [Background jobs](./background-jobs.md) | BullMQ queues, processors, retries |
 <!-- klin:endif -->
+<!-- klin:if pwa -->
+| [Installable app](./pwa.md) | Install prompt, service worker, update-and-reload |
+<!-- klin:endif -->

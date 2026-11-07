@@ -105,7 +105,7 @@ rate limiting (120 requests/min per IP) ·
 <!-- klin:endif -->
 consistent error envelopes.
 <!-- klin:endif -->
-<!-- klin:if organizations || admin || api-keys || email || uploads || queues || i18n -->
+<!-- klin:if organizations || admin || api-keys || pwa || email || uploads || queues || i18n -->
 
 **Modules:**
 <!-- klin:if organizations -->
@@ -116,6 +116,9 @@ admin dashboard ·
 <!-- klin:endif -->
 <!-- klin:if api-keys -->
 API keys ·
+<!-- klin:endif -->
+<!-- klin:if pwa -->
+installable app (PWA) ·
 <!-- klin:endif -->
 <!-- klin:if email -->
 transactional email (Resend + React Email) ·
