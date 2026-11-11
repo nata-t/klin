@@ -1,6 +1,6 @@
 {
   "name": "create-klin",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Scaffold a spotless full-stack TypeScript monorepo: NestJS + Better Auth + Prisma + TanStack + shadcn, wired end to end.",
   "type": "module",
   "license": "MIT",
