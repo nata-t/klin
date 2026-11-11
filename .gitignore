@@ -10,3 +10,5 @@ coverage
 .astro
 brag-output*/
 .claude/
+.vercel
+.env*.local
